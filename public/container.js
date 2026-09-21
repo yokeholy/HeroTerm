@@ -197,7 +197,11 @@
       }
     };
 
-    ws.onclose = () => setState('no', 'Shell ended');
+    // The server closes with a reason worth reading — the shell's exit code,
+    // another tab taking the session over, or the cap on how many terminals
+    // can be open at once. Reporting all of those as "Shell ended" turns a
+    // plain answer into a mystery.
+    ws.onclose = (ev) => setState('no', ev.reason || 'Shell ended');
     ws.onerror = () => setState('no', 'Could not reach the server');
 
     term.onData((d) => {

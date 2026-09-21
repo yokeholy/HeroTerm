@@ -120,7 +120,9 @@ you are nearest decides who takes which half. The middle of a window means
 nothing, so you can drag across one without disturbing it, and a split that
 would leave either window under the minimum size is refused rather than
 attempted. Two outlines show it before you let go — solid for the window you're
-holding, dashed for where the other one ends up.
+holding, dashed for where the other one ends up — and they draw over the
+windows rather than under them, since the one you are aiming at is usually the
+one underneath.
 
 Drag a window against a *screen* edge and it snaps instead: a side for a half,
 a corner for a quarter, the top to fill. The screen wins over a split, so the
@@ -154,6 +156,18 @@ One star array serves both — each star has a depth, drawn in perspective, and
 the only difference is whether that depth is falling. The speed is eased rather
 than switched, which is what gives you the lurch into hyperspace instead of an
 abrupt cut.
+
+It flies from whatever is working: the centre of the window running a command,
+or the mean of their centres when several are. Start a second command and the
+vanishing point slides to sit between them; let one finish and it slides to the
+one still going. Moving or resizing a busy window takes the sky with it, since
+the origin is asked for once a frame rather than set when a command starts.
+
+Moving the vanishing point would drag the whole sky sideways with it, so every
+star is shifted back by the same amount as the origin moves — they stay where
+they are, and only the direction they stream changes. Stars that leave the
+screen are respawned rather than merely skipped, because once the origin is off
+to one side the far edge would otherwise empty out.
 
 Every window carries its own verdict in its border, so a glance down the deck
 tells you which of the last dozen commands went wrong:

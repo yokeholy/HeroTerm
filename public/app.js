@@ -239,6 +239,31 @@ function add() {
   page.save();
 }
 
+/* ---------- where the sky flies from ---------- */
+
+// The vanishing point is the middle of whatever is working: one window's
+// centre, or the mean of several when more than one is busy. Nothing running
+// gives null, and the sky falls back to the middle of the screen.
+//
+// This is handed to the sky as a function rather than a value because it has
+// to answer for the current frame: commands start and stop, and a window can
+// be dragged or resized while its command runs.
+function runningCentre() {
+  let x = 0;
+  let y = 0;
+  let n = 0;
+  for (const c of containers) {
+    if (!c.session.running) continue;
+    const r = c.visibleRect();
+    x += r.x + r.w / 2;
+    y += r.y + r.h / 2;
+    n += 1;
+  }
+  return n ? { x: x / n, y: y / n } : null;
+}
+
+sky.trackOrigin(runningCentre);
+
 /* ---------- snapping ---------- */
 
 // All of this works in *visible window* coordinates — the card you can see —

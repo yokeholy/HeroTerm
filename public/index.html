@@ -781,11 +781,13 @@
         opacity: 0.5;
       }
 
-      /* Where the window will land if you let go now. Sits under the windows
-         on purpose: it's a hint, not a thing to look at. */
+      /* Where the window will land if you let go now. Above the windows — the
+         one you are aiming at is usually the one underneath, and an outline
+         hidden behind it tells you nothing. Still below the status bar and the
+         controls, which are not part of the gesture. */
       #snap {
         position: fixed;
-        z-index: 5;
+        z-index: 30;
         border: 2px solid var(--cursor, #e9a13b);
         border-radius: 10px;
         background: rgba(233, 161, 59, 0.09);
@@ -801,7 +803,7 @@
          up. Dashed and dimmer, because it isn't the one you're holding. */
       #snap-b {
         position: fixed;
-        z-index: 5;
+        z-index: 30;
         border: 2px dashed var(--label, #6b7384);
         border-radius: 10px;
         background: rgba(107, 115, 132, 0.07);

@@ -21,6 +21,7 @@
   const WARP = 0.02; // z per frame at full tilt
   const EASE = 0.035; // how quickly we get there, and back
   const TRAIL = 3.2; // streak length as a multiple of one frame's travel
+  const DRIFT = 0.05; // how quickly the vanishing point moves to a new window
 
   let w = 0;
   let h = 0;
@@ -31,6 +32,9 @@
   let stars = [];
   let speed = 0;
   let target = 0;
+  // Asked every frame rather than pushed, so that moving or resizing a window
+  // while its command runs drags the vanishing point along with it.
+  let originOf = () => null;
   let raf = null;
   let last = 0;
   let running = false;
@@ -44,14 +48,15 @@
   // space, rather than picked in the cube and projected. Do it the other way
   // round and the perspective divide throws all but the most distant stars off
   // the edges, leaving a nearly empty sky — the field has to be a frustum, not
-  // a box.
+  // a box. Working back from a screen point also means a spawn lands where it
+  // should whatever the vanishing point currently is.
   function star(z) {
     const zz = z === undefined ? rand(0.12, 1) : 1;
-    const ax = rand(-1, 1);
-    const ay = rand(-1, 1);
+    const px = rand(-0.05 * w, 1.05 * w);
+    const py = rand(-0.05 * h, 1.05 * h);
     return {
-      x: ax * zz,
-      y: ay * zz,
+      x: ((px - cx) / spanX) * zz,
+      y: ((py - cy) / spanY) * zz,
       z: zz,
       tw: rand(0.4, 1.7), // twinkle rate
       phase: rand(0, Math.PI * 2),
@@ -81,6 +86,24 @@
     last = now;
     speed += (target - speed) * EASE;
 
+    // Slide the vanishing point toward whatever is running, and carry every
+    // star with it. Without the second part the whole sky would slide sideways
+    // as the origin moved; with it, the stars stay where they are and only the
+    // direction they stream changes — which is the point.
+    const aim = originOf() || { x: w / 2, y: h / 2 };
+    const wasX = cx;
+    const wasY = cy;
+    cx += (aim.x - cx) * DRIFT;
+    cy += (aim.y - cy) * DRIFT;
+    const shiftX = wasX - cx;
+    const shiftY = wasY - cy;
+    if (shiftX || shiftY) {
+      for (const s of stars) {
+        s.x += (shiftX * s.z) / spanX;
+        s.y += (shiftY * s.z) / spanY;
+      }
+    }
+
     g.fillStyle = T.chrome.space;
     g.fillRect(0, 0, w, h);
 
@@ -99,7 +122,12 @@
       const k = 1 / s.z;
       const x = cx + s.x * k * spanX;
       const y = cy + s.y * k * spanY;
-      if (x < -60 || x > w + 60 || y < -60 || y > h + 60) continue;
+      // Off the edge: put it back rather than leaving a hole. Once the origin
+      // is off-centre, one side of the sky empties out otherwise.
+      if (x < -60 || x > w + 60 || y < -60 || y > h + 60) {
+        Object.assign(s, star(1));
+        continue;
+      }
 
       const near = 1 - s.z; // 0 at the back wall, ~1 in your lap
       let alpha = 0.38 + near * 0.62;
@@ -138,6 +166,12 @@
   });
 
   window.WEBTERM_SKY = {
+    // A function returning {x, y} in page pixels, or null for the middle of
+    // the screen. Called once per frame.
+    trackOrigin(fn) {
+      originOf = fn;
+    },
+
     // Only painted in windowed mode — in full screen the terminal covers every
     // pixel of it, and burning a GPU on an invisible canvas is just rude.
     setActive(on) {
