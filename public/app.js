@@ -117,6 +117,62 @@ const page = {
     if (c === focused) paintStatus();
   },
 
+  // --- snapping, asked for by whichever container is being dragged ---
+
+  zoneAt: snapZone,
+
+  guidesFor(except) {
+    return guides(except);
+  },
+
+  align(r, except, edges) {
+    const g = guides(except);
+    if (!edges) {
+      // Free drag: the whole window slides onto the nearest line.
+      return { ...r, x: r.x + pull(r.x, r.x + r.w, g.xs), y: r.y + pull(r.y, r.y + r.h, g.ys) };
+    }
+    // Resizing: only the edge under the pointer is allowed to move.
+    const out = { ...r };
+    if (edges.includes('w')) {
+      const d = pull(out.x, out.x, g.xs);
+      out.x += d;
+      out.w -= d;
+    }
+    if (edges.includes('e')) out.w += pull(out.x + out.w, out.x + out.w, g.xs);
+    if (edges.includes('n')) {
+      const d = pull(out.y, out.y, g.ys);
+      out.y += d;
+      out.h -= d;
+    }
+    if (edges.includes('s')) out.h += pull(out.y + out.h, out.y + out.h, g.ys);
+    return out;
+  },
+
+  preview(r) {
+    if (!r) {
+      snapEl.hidden = true;
+      return;
+    }
+    if (snapEl.hidden) {
+      // Put it in place before revealing, or it slides in from wherever it
+      // was left last time.
+      Object.assign(snapEl.style, {
+        left: `${r.x}px`,
+        top: `${r.y}px`,
+        width: `${r.w}px`,
+        height: `${r.h}px`,
+      });
+      snapEl.hidden = false;
+      return;
+    }
+    Object.assign(snapEl.style, {
+      left: `${r.x}px`,
+      top: `${r.y}px`,
+      width: `${r.w}px`,
+      height: `${r.h}px`,
+    });
+  },
+
   runStateChanged() {
     // The sky warps and the clock ticks while anything at all is running, not
     // just the container you happen to be looking at.
@@ -200,7 +256,86 @@ function add() {
   page.save();
 }
 
-/* ---------- full-bleed vs floating ---------- */
+/* ---------- snapping ---------- */
+
+// All of this works in *visible window* coordinates — the card you can see —
+// not the deck box. A deck is taller than its window by the band the older
+// commands cascade into, and snapping to the top of the screen should put the
+// window's title bar there, not 36px of empty air.
+
+const snapEl = document.getElementById('snap');
+
+const STATUS_H = 30; // the fixed bar along the bottom
+const EDGE = 26; // how close to an edge counts as aiming at it
+const CORNER = 140; // ...and how far along that edge still counts as a corner
+const MAGNET = 8; // free-drag alignment to nearby edges
+
+function workArea() {
+  return { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight - STATUS_H };
+}
+
+const rect = (x, y, w, h) => ({
+  x: Math.round(x),
+  y: Math.round(y),
+  w: Math.round(w),
+  h: Math.round(h),
+});
+
+// Where the pointer is aiming, or null for "leave it where you drop it".
+// Corners are tested first: within EDGE of one side and CORNER along another
+// is a quarter, not a half.
+function snapZone(px, py) {
+  const a = workArea();
+  const L = px <= EDGE;
+  const R = px >= a.w - EDGE;
+  const T = py <= EDGE;
+  const B = py >= a.h - EDGE;
+  const nearT = py <= CORNER;
+  const nearB = py >= a.h - CORNER;
+  const nearL = px <= CORNER;
+  const nearR = px >= a.w - CORNER;
+
+  if ((L && nearT) || (T && nearL)) return rect(0, 0, a.w / 2, a.h / 2);
+  if ((R && nearT) || (T && nearR)) return rect(a.w / 2, 0, a.w / 2, a.h / 2);
+  if ((L && nearB) || (B && nearL)) return rect(0, a.h / 2, a.w / 2, a.h / 2);
+  if ((R && nearB) || (B && nearR)) return rect(a.w / 2, a.h / 2, a.w / 2, a.h / 2);
+
+  if (T) return rect(0, 0, a.w, a.h); // the whole work area
+  if (L) return rect(0, 0, a.w / 2, a.h);
+  if (R) return rect(a.w / 2, 0, a.w / 2, a.h);
+  if (B) return rect(0, a.h / 2, a.w, a.h / 2);
+  return null;
+}
+
+// Lines worth lining up with: the work area's sides and middle, and the edges
+// of every other window.
+function guides(except) {
+  const a = workArea();
+  const xs = [a.x, a.w / 2, a.w];
+  const ys = [a.y, a.h / 2, a.h];
+  for (const c of containers) {
+    if (c === except) continue;
+    const r = c.visibleRect();
+    xs.push(r.x, r.x + r.w);
+    ys.push(r.y, r.y + r.h);
+  }
+  return { xs, ys };
+}
+
+// The smallest shift that would put either end on a guide, or 0.
+function pull(lo, hi, lines, tol = MAGNET) {
+  let shift = 0;
+  let best = tol + 1;
+  for (const line of lines) {
+    for (const d of [line - lo, line - hi]) {
+      if (Math.abs(d) < best) {
+        best = Math.abs(d);
+        shift = d;
+      }
+    }
+  }
+  return best <= tol ? shift : 0;
+}
 
 function applyMode() {
   document.body.dataset.mode = windowed ? 'windowed' : 'full';

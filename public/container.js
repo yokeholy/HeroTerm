@@ -14,6 +14,12 @@
   const MIN_W = 420;
   const MIN_H = 260;
 
+  // How far the card sits below the top of its deck — the band the older
+  // commands cascade into. Must match `.card { top: … }` in index.html.
+  // Everything the user thinks of as "the window" is the card, so positions
+  // are converted through this whenever they leave this file.
+  const CARD_TOP = 36;
+
   function createContainer(opts) {
     const { id, page } = opts;
 
@@ -24,7 +30,7 @@
     const deck = el;
     const liveCard = el.querySelector('.card');
     const termEl = el.querySelector('.body');
-    const grip = el.querySelector('.grip');
+    const handles = [...el.querySelectorAll('.edge')];
 
     const session = window.WEBTERM_SESSION.create();
 
@@ -250,9 +256,15 @@
       // Keep at least a strip of the title bar reachable, whatever the viewport
       // did while we weren't looking.
       box.w = Math.max(MIN_W, Math.min(box.w, window.innerWidth));
-      box.h = Math.max(MIN_H, Math.min(box.h, window.innerHeight));
+      // The deck is taller than the window you see by CARD_TOP, and that band
+      // sits above the top of the screen when the window is flush with it — so
+      // the ceiling here is the viewport plus that band, not the viewport.
+      // Clamping to innerHeight left full-height snaps short by exactly 36px.
+      box.h = Math.max(MIN_H, Math.min(box.h, window.innerHeight + CARD_TOP));
       box.x = Math.max(24 - box.w, Math.min(box.x, window.innerWidth - 24));
-      box.y = Math.max(0, Math.min(box.y, window.innerHeight - 30));
+      // -CARD_TOP, not 0: that's where the deck sits when the card's own top
+      // edge is flush with the top of the screen.
+      box.y = Math.max(-CARD_TOP, Math.min(box.y, window.innerHeight - 30));
       Object.assign(deck.style, {
         left: `${box.x}px`,
         top: `${box.y}px`,
@@ -261,10 +273,21 @@
       });
     }
 
+    // The window you can see is the card, which starts CARD_TOP below the deck's
+    // own top. Everything outside this file talks in those coordinates.
+    function visibleRect() {
+      return { x: box.x, y: box.y + CARD_TOP, w: box.w, h: box.h - CARD_TOP };
+    }
+
+    function setVisible(r) {
+      Object.assign(box, { x: r.x, y: r.y - CARD_TOP, w: r.w, h: r.h + CARD_TOP });
+      applyBox();
+    }
+
     // Dragging is by the title bar of the front window. The cards behind it have
     // pointer-events turned off, so "only the top one" falls out of that on its
     // own — and moving it moves the whole deck, since they are one stack.
-    function gesture(target, grab, onMove) {
+    function gesture(target, grab, onMove, onEnd) {
       target.addEventListener('pointerdown', (e) => {
         if (!page.windowed || e.button !== 0 || e.target.closest('button')) return;
         if (!grab(e)) return;
@@ -273,10 +296,11 @@
         document.body.dataset.dragging = 'yes';
         const from = { px: e.clientX, py: e.clientY, ...box };
 
-        const move = (ev) => onMove(ev.clientX - from.px, ev.clientY - from.py, from);
+        const move = (ev) => onMove(ev.clientX - from.px, ev.clientY - from.py, from, ev);
         const done = () => {
           target.removeEventListener('pointermove', move);
           delete document.body.dataset.dragging;
+          if (onEnd) onEnd();
           page.save();
           term.focus();
         };
@@ -287,25 +311,85 @@
       });
     }
 
+    // --- moving, with snapping ---
+
+    let zone = null; // where it would land if you let go right now
+    let unsnapped = null; // the size it had before it was snapped to an edge
+
     gesture(
       deck,
       (e) => Boolean(e.target.closest('.card-head')) && !e.target.isContentEditable,
-      (dx, dy, from) => {
-        box.x = from.x + dx;
-        box.y = from.y + dy;
-        applyBox();
+      (dx, dy, from, ev) => {
+        let r = { x: from.x + dx, y: from.y + dy + CARD_TOP, w: from.w, h: from.h - CARD_TOP };
+
+        // Dragging a snapped window off its edge gives it its old size back,
+        // under the pointer, rather than leaving you towing a half-screen slab.
+        if (unsnapped && (Math.abs(dx) > 12 || Math.abs(dy) > 12)) {
+          const grab = (ev.clientX - r.x) / r.w; // keep the pointer at the same spot along the bar
+          r.w = unsnapped.w;
+          r.h = unsnapped.h;
+          r.x = ev.clientX - grab * r.w;
+          Object.assign(from, { x: r.x - dx, y: r.y - dy - CARD_TOP, w: r.w, h: r.h + CARD_TOP });
+          unsnapped = null;
+        }
+
+        zone = page.zoneAt(ev.clientX, ev.clientY);
+        page.preview(zone);
+        if (!zone) r = page.align(r, self, null);
+
+        setVisible(r);
+      },
+      () => {
+        page.preview(null);
+        if (zone) {
+          unsnapped = { w: box.w, h: box.h - CARD_TOP };
+          setVisible(zone);
+          zone = null;
+        }
       }
     );
 
-    gesture(
-      grip,
-      () => true,
-      (dx, dy, from) => {
-        box.w = from.w + dx;
-        box.h = from.h + dy;
-        applyBox(); // the ResizeObserver on the body re-fits the grid from here
-      }
-    );
+    // --- resizing, from any edge or corner ---
+
+    for (const handle of handles) {
+      const edges = handle.dataset.edge; // some of n s e w
+      gesture(
+        handle,
+        () => true,
+        (dx, dy, from) => {
+          const start = { x: from.x, y: from.y + CARD_TOP, w: from.w, h: from.h - CARD_TOP };
+          let r = { ...start };
+
+          if (edges.includes('e')) r.w = start.w + dx;
+          if (edges.includes('s')) r.h = start.h + dy;
+          if (edges.includes('w')) {
+            r.w = start.w - dx;
+            r.x = start.x + dx;
+          }
+          if (edges.includes('n')) {
+            r.h = start.h - dy;
+            r.y = start.y + dy;
+          }
+
+          // Clamp by moving the edge you're dragging, so the opposite one
+          // stays put instead of the window walking across the screen.
+          const minH = MIN_H - CARD_TOP;
+          if (r.w < MIN_W) {
+            if (edges.includes('w')) r.x = start.x + (start.w - MIN_W);
+            r.w = MIN_W;
+          }
+          if (r.h < minH) {
+            if (edges.includes('n')) r.y = start.y + (start.h - minH);
+            r.h = minH;
+          }
+
+          setVisible(page.align(r, self, edges));
+        },
+        () => {
+          unsnapped = null; // you've sized it by hand; there's nothing to restore
+        }
+      );
+    }
 
     // Anywhere in the container brings it forward. Capture, so it happens even
     // when the press lands on the terminal and xterm keeps the event.
@@ -404,6 +488,8 @@
       },
 
       setName,
+      visibleRect,
+      setVisible,
 
       get state() {
         return { live: state, text: stateText, cols, rows };

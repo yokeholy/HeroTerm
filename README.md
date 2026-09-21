@@ -110,8 +110,23 @@ in three directories.
 The windows themselves are the cards in the deck. Drag the front one by its
 title bar and the whole stack comes with it; the ones behind take no pointer
 events at all, which is what makes the top one the only one you can pick up.
-Resize from the bottom-right corner. Where you put it is remembered, including
-which mode you were in. The two size buttons are independent, so a floating
+Resize from any edge or corner — dragging the top or left edge moves that edge
+and leaves the opposite one where it is, and the minimum size stops the edge
+you're holding rather than walking the window across the screen.
+
+Drag a window against a screen edge and it snaps: a side for a half, a corner
+for a quarter, the top to fill. An outline shows where it will land before you
+let go, and dragging it back off an edge hands its old size back rather than
+leaving you towing a half-screen slab. On a free drag the edges are magnetic —
+they line up with the screen's sides and middle and with every other window,
+within a few pixels.
+
+Snapping works in the coordinates of the window you can see, not the deck box
+that holds it: a deck is taller than its window by the band the older commands
+cascade into, so a window snapped to the top of the screen puts its title bar
+there rather than 36px of empty air.
+
+Where you put it is remembered, including which mode you were in. The two size buttons are independent, so a floating
 deck on a full-screen star field is available if you want it.
 
 The status line along the bottom — connection, deck position, grid size — is
