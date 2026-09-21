@@ -88,7 +88,8 @@ let windowed = false;
 //    40  the status bar
 //    50  the help button and controls
 //    60  the window being dragged      (over all of it, while you hold it)
-//   100  the help and stats sheets
+//   100  the help, stats and settings sheets
+//   101  the window shown beside settings, so you can see what you change
 //
 // The first three are set here; the rest live in index.html.
 function restack() {
@@ -486,6 +487,37 @@ page.focus(containers.find((c) => saved && c.id === saved.focused) || containers
 applyMode();
 focused.focus();
 paintStatus();
+
+/* ---------- shown beside the settings sheet ---------- */
+
+// Settings moves the focused window next to itself while it's open, so a new
+// theme or font lands on something you can see. Which window was moved is
+// remembered, so it's that one that goes back.
+let previewed = null;
+
+window.HEROTERM_WINDOWS = {
+  // The focused window where it lives, not where it's being shown: its own
+  // box when windowed, the whole work area under the deck band when it fills
+  // the tab.
+  home() {
+    const c = previewed || focused;
+    if (!c) return null;
+    if (windowed) return c.visibleRect();
+    const a = workArea();
+    const top = c.el.querySelector('.card').offsetTop;
+    return { x: a.x, y: a.y + top, w: a.w, h: a.h - top };
+  },
+
+  preview(r) {
+    if (r) {
+      previewed = previewed || focused;
+      if (previewed) previewed.preview(r);
+    } else if (previewed) {
+      previewed.preview(null, window.HEROTERM_WINDOWS.home());
+      previewed = null;
+    }
+  },
+};
 
 /* ---------- page furniture ---------- */
 

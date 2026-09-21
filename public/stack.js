@@ -293,11 +293,13 @@ function createStack(opts) {
       return cursor;
     },
 
-    // Terminals keep the theme they were built with, so the replayed ones have
-    // to be told. Their bytes are untouched — only the palette changes.
+    // Terminals keep the theme and face they were built with, so the replayed
+    // ones have to be told. Their bytes are untouched — only how they're drawn.
     retheme() {
       for (const c of cards) {
-        if (c.term) c.term.options.theme = T.xterm;
+        if (!c.term) continue;
+        c.term.options.theme = T.xterm;
+        if (c.term.options.fontFamily !== T.font) c.term.options.fontFamily = T.font;
       }
     },
 

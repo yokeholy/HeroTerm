@@ -142,14 +142,213 @@
     themeBox.appendChild(card);
   }
 
+  // What the row on the main page shows: the palette you're on, and its name.
+  const themeChips = document.getElementById('set-theme-chips');
+  const themeName = document.getElementById('set-theme-name');
+
   function markActive() {
     for (const card of themeBox.children) {
       card.setAttribute('aria-pressed', String(card.dataset.key === themes.active));
     }
+    const t = themes.list.find((x) => x.key === themes.active);
+    themeName.textContent = t ? t.name : themes.active;
+    themeChips.replaceChildren(
+      ...(t ? t.swatch : []).map((colour) => {
+        const chip = document.createElement('i');
+        chip.style.background = colour;
+        return chip;
+      })
+    );
   }
 
   markActive();
   themes.on(markActive);
+
+  /* ---------- fonts ---------- */
+
+  // The list comes from the server, which reads the font files themselves —
+  // a page can't enumerate what's installed, and couldn't tell you which are
+  // monospaced if it could. See fonts.js.
+  const fontBox = document.getElementById('set-fonts');
+  const fontQuery = document.getElementById('set-font-q');
+  const fontAll = document.getElementById('set-font-all');
+  const fontName = document.getElementById('set-font-name');
+
+  let fonts = null; // [{ family, mono }] once fetched
+  let fontError = null;
+
+  // Whether the browser can actually draw a family. A font file being on disk
+  // isn't the same thing — the browser may not see it by that name — and a
+  // family it can't reach silently falls back, so picking it would change
+  // nothing. Measured the usual way: a family that's really there changes the
+  // width of some text against at least one of the generic fallbacks.
+  const probe = document.createElement('canvas').getContext('2d');
+  const PROBE_TEXT = 'mmmmmmmmmmlli10OWW@#';
+  const GENERIC = ['monospace', 'serif', 'sans-serif'];
+  const widthIn = (font) => {
+    probe.font = `32px ${font}`;
+    return probe.measureText(PROBE_TEXT).width;
+  };
+  const baseline = GENERIC.map(widthIn);
+  const reach = new Map();
+
+  function reachable(family) {
+    if (!reach.has(family)) {
+      const q = `"${family.replace(/["\\]/g, '\\$&')}"`;
+      reach.set(family, GENERIC.some((g, i) => widthIn(`${q}, ${g}`) !== baseline[i]));
+    }
+    return reach.get(family);
+  }
+
+  // What "Default" comes to on this machine: the first family in the default
+  // stack the browser can reach, rather than the first one written down.
+  function defaultLabel() {
+    for (const part of themes.defaultFont.split(',')) {
+      const name = part.trim().replace(/^["']|["']$/g, '');
+      if (GENERIC.includes(name) || reachable(name)) return name;
+    }
+    return 'monospace';
+  }
+
+  function paintFontRow() {
+    fontName.textContent = themes.font || `Default (${defaultLabel()})`;
+    fontName.style.fontFamily = window.HEROTERM_THEME.font;
+  }
+
+  function fontOption(family, label, face, sample, missing) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'font';
+    if (missing) {
+      b.disabled = true;
+      b.title = "Installed, but this browser can't draw it by that name";
+    }
+    b.setAttribute('role', 'option');
+    b.dataset.family = family || '';
+    b.setAttribute('aria-selected', String(b.dataset.family === (themes.font || '')));
+    b.style.fontFamily = face;
+    const fam = document.createElement('span');
+    fam.className = 'fam';
+    fam.textContent = label;
+    b.append(fam);
+    if (sample) {
+      const eg = document.createElement('span');
+      eg.className = 'sample';
+      eg.textContent = sample;
+      b.append(eg);
+    }
+    b.addEventListener('mousedown', (e) => e.preventDefault());
+    b.addEventListener('click', () => themes.setFont(family));
+    return b;
+  }
+
+  function group(text) {
+    const g = document.createElement('div');
+    g.className = 'group';
+    g.textContent = text;
+    return g;
+  }
+
+  // Characters that tell faces apart at a glance: the zero and the O, the one
+  // and the ell, and the brackets you'll be reading all day.
+  const SAMPLE = '0O 1lI {}[] =>';
+
+  function renderFonts() {
+    const q = fontQuery.value.trim().toLowerCase();
+    const out = [];
+
+    if (!q || 'default'.includes(q) || themes.defaultFont.toLowerCase().includes(q)) {
+      out.push(
+        fontOption(null, `Default — ${defaultLabel()}`, themes.defaultFont, SAMPLE)
+      );
+    }
+
+    if (fontError) {
+      const e = document.createElement('p');
+      e.className = 'empty';
+      e.textContent = fontError;
+      out.push(e);
+    } else if (!fonts) {
+      const e = document.createElement('p');
+      e.className = 'empty';
+      e.textContent = 'Reading the installed fonts…';
+      out.push(e);
+    } else {
+      const match = (f) => !q || f.family.toLowerCase().includes(q);
+      // The rest of the stack follows each name, so a face the browser can't
+      // actually reach shows up as the default rather than as a stranger.
+      const face = (f) => `"${f.family.replace(/["\\]/g, '\\$&')}", ${themes.defaultFont}`;
+      const mono = fonts.filter((f) => f.mono && match(f));
+      const prop = fontAll.checked ? fonts.filter((f) => !f.mono && match(f)) : [];
+
+      if (mono.length) out.push(group('Monospaced'));
+      const option = (f) => {
+        const missing = !reachable(f.family);
+        return fontOption(f.family, f.family, face(f), missing ? 'not available here' : SAMPLE, missing);
+      };
+      for (const f of mono) out.push(option(f));
+      if (prop.length) out.push(group('Proportional — squeezed onto the grid'));
+      for (const f of prop) out.push(option(f));
+
+      // Say why, once, rather than leaving greyed-out names to be puzzled at.
+      // Brave is the usual cause: its fingerprinting protection hides every
+      // font it didn't ship with from pages.
+      if ([...mono, ...prop].some((f) => !reachable(f.family))) {
+        const note = document.createElement('p');
+        note.className = 'empty';
+        note.textContent =
+          "Greyed out: installed, but this browser won't draw it. In Brave, that's " +
+          'fingerprinting protection — allow fingerprinting for this site in Shields to use them.';
+        out.push(note);
+      }
+
+      if (!mono.length && !prop.length) {
+        const e = document.createElement('p');
+        e.className = 'empty';
+        e.textContent = q ? `Nothing installed matches “${fontQuery.value.trim()}”.` : 'No fonts found.';
+        out.push(e);
+      }
+    }
+    fontBox.replaceChildren(...out);
+  }
+
+  // Asked for every time the page opens rather than once, so a font you've
+  // just installed is there without reloading anything.
+  async function loadFonts() {
+    renderFonts();
+    try {
+      const token = new URLSearchParams(location.search).get('token') || '';
+      const res = await fetch(`/fonts?token=${encodeURIComponent(token)}`, { cache: 'no-store' });
+      if (!res.ok) {
+        throw new Error(
+          res.status === 404 ? 'Server is running an older build — restart it' : `HTTP ${res.status}`
+        );
+      }
+      const body = await res.json();
+      if (!body.ok) throw new Error(body.reason || 'the server could not read the fonts');
+      fonts = body.fonts;
+      fontError = null;
+    } catch (err) {
+      // Keep a list we already had; say so only if there's nothing to show.
+      if (!fonts) fontError = `Couldn't list the fonts: ${err.message}`;
+    }
+    renderFonts();
+  }
+
+  fontQuery.addEventListener('input', renderFonts);
+  fontAll.addEventListener('change', renderFonts);
+
+  paintFontRow();
+  function markFont() {
+    for (const b of fontBox.querySelectorAll('.font')) {
+      b.setAttribute('aria-selected', String(b.dataset.family === (themes.font || '')));
+    }
+  }
+
+  themes.on(() => {
+    paintFontRow();
+    markFont();
+  });
 
   /* ---------- switches ---------- */
 
@@ -182,16 +381,96 @@
     }
   );
 
+  /* ---------- pages ---------- */
+
+  const sheet = panel.querySelector('.sheet');
+  const title = document.getElementById('settings-title');
+  const backBtn = panel.querySelector('[data-back]');
+  const TITLES = { main: 'Settings', theme: 'Theme', font: 'Font' };
+  let opener = null; // the row that led to the page you're on, to go back to
+
+  function go(page, from) {
+    panel.dataset.page = page;
+    for (const el of panel.querySelectorAll('.page')) el.hidden = el.dataset.page !== page;
+    title.textContent = TITLES[page];
+    sheet.setAttribute('aria-label', TITLES[page]);
+    if (page === 'main') {
+      if (opener) opener.focus();
+      opener = null;
+    } else {
+      opener = from || null;
+      if (page === 'font') {
+        // A filter left over from last time would hide fonts without saying
+        // why; the checkbox is a preference, so that one is kept.
+        fontQuery.value = '';
+        loadFonts();
+        fontQuery.focus();
+      } else {
+        backBtn.focus();
+      }
+    }
+    place(); // the sheet changed height; the window beside it may need to follow
+  }
+
+  for (const row of panel.querySelectorAll('[data-go]')) {
+    row.addEventListener('click', () => go(row.dataset.go, row));
+  }
+  backBtn.addEventListener('click', () => go('main'));
+
+  /* ---------- the window beside it ---------- */
+
+  // While the sheet is open, the window you were working in sits to its left,
+  // above the veil, so a theme or a font lands somewhere you can see it. It
+  // keeps its own size where that fits and only shrinks where it doesn't. When
+  // the sheet closes it goes back to exactly where it was: nothing about its
+  // real position is changed in between, so there is nothing to lose.
+  const MARGIN = 24;
+  const GAP = 24;
+  const TOP = 56; // matches #settings's top padding, so the two line up
+  const STATUS_H = 30;
+  const MIN_ROOM = 300; // below this there's no window worth showing
+
+  function place() {
+    const W = window.HEROTERM_WINDOWS;
+    if (panel.hidden || !W) return;
+    const home = W.home();
+    const sheetW = sheet.offsetWidth;
+    const room = window.innerWidth - 2 * MARGIN - GAP - sheetW;
+    if (!home || room < MIN_ROOM) {
+      // Too narrow for both side by side: the sheet takes the middle, as it
+      // always did, and the window stays where it is.
+      W.preview(null);
+      panel.removeAttribute('data-preview');
+      return;
+    }
+    const w = Math.min(home.w, room);
+    const h = Math.min(home.h, window.innerHeight - STATUS_H - TOP - MARGIN);
+    // Centre the pair rather than pinning the window to the edge: a small
+    // window then sits right beside the sheet instead of across the screen.
+    const left = Math.round((window.innerWidth - (w + GAP + sheetW)) / 2);
+    panel.style.setProperty('--sheet-x', `${left + w + GAP}px`);
+    panel.setAttribute('data-preview', '');
+    W.preview({ x: left, y: TOP, w, h });
+  }
+
+  window.addEventListener('resize', place);
+
+  /* ---------- open and close ---------- */
+
   function open() {
     returnFocus = document.activeElement;
     panel.hidden = false;
     openBtn.setAttribute('aria-expanded', 'true');
+    go('main');
     closeBtn.focus(); // so that typing doesn't quietly go to the shell behind
   }
 
   function close() {
     panel.hidden = true;
+    panel.removeAttribute('data-preview');
     openBtn.setAttribute('aria-expanded', 'false');
+    opener = null;
+    if (window.HEROTERM_WINDOWS) window.HEROTERM_WINDOWS.preview(null);
     if (returnFocus && returnFocus.focus) returnFocus.focus();
   }
 
@@ -203,14 +482,21 @@
     if (e.target === panel) close();
   });
 
-  // Capture, so Escape closes this instead of reaching the shell.
+  // Capture, so Escape doesn't reach the shell. One level at a time: a typed
+  // filter is cleared first, then out of a page and back to the list, then
+  // out of settings.
   document.addEventListener(
     'keydown',
     (e) => {
-      if (panel.hidden) return;
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        e.stopPropagation();
+      if (panel.hidden || e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (panel.dataset.page === 'font' && fontQuery.value) {
+        fontQuery.value = '';
+        renderFonts();
+      } else if (panel.dataset.page !== 'main') {
+        go('main');
+      } else {
         close();
       }
     },

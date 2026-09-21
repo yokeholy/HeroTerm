@@ -24,6 +24,7 @@
   // Everything the user thinks of as "the window" is the card, so positions
   // are converted through this whenever they leave this file.
   const CARD_TOP = 36;
+  const GLIDE_MS = 360; // keep in step with .deck.gliding in index.html
 
   function createContainer(opts) {
     const { id, page } = opts;
@@ -102,6 +103,13 @@
     window.HEROTERM_THEMES.on(() => {
       term.options.theme = T.xterm;
       stack.retheme();
+      // A new face means a new character cell, and so a different number of
+      // columns in the same box. The box didn't change size, so nothing else
+      // is going to notice.
+      if (term.options.fontFamily !== T.font) {
+        term.options.fontFamily = T.font;
+        relayout();
+      }
     });
 
     /* ---------- sizing ---------- */
@@ -276,7 +284,24 @@
 
     const box = { x: 0, y: 0, w: 0, h: 0 };
 
+    // Somewhere to be shown for a while without moving: the settings sheet puts
+    // the window beside itself so you can watch what you change. `box` is left
+    // alone throughout, so that is also what it goes back to — and what's saved
+    // if the page is closed in the meantime.
+    let preview = null;
+
     function applyBox() {
+      if (preview) {
+        Object.assign(deck.style, {
+          inset: 'auto',
+          left: `${preview.x}px`,
+          top: `${preview.y - CARD_TOP}px`,
+          width: `${preview.w}px`,
+          height: `${preview.h + CARD_TOP}px`,
+        });
+        return;
+      }
+      deck.style.inset = '';
       if (!page.windowed) {
         deck.style.cssText = '';
         return;
@@ -313,6 +338,7 @@
     }
 
     let unsnapped = null; // the size it had before it was snapped or split
+    let glideTimer = null;
 
     // Snapping remembers what the window was, so dragging it back out of a
     // half or a split hands that size back instead of leaving you towing a
@@ -327,7 +353,7 @@
     // own — and moving it moves the whole deck, since they are one stack.
     function gesture(target, grab, onMove, onEnd) {
       target.addEventListener('pointerdown', (e) => {
-        if (!page.windowed || e.button !== 0 || e.target.closest('button')) return;
+        if (!page.windowed || preview || e.button !== 0 || e.target.closest('button')) return;
         if (!grab(e)) return;
         e.preventDefault();
         target.setPointerCapture(e.pointerId);
@@ -548,6 +574,45 @@
 
       applyBox,
       relayout,
+
+      // A visible rect to show the window at, or null to put it back where
+      // `home` says it lives. It glides both ways, and the terminal is refitted
+      // to wherever it lands.
+      preview(r, home) {
+        // Pin where it is right now in plain pixels first. A window that fills
+        // the tab is sized by `inset`, and nothing glides from that — and if
+        // it's already mid-glide, this is where it has got to.
+        const now = deck.getBoundingClientRect();
+        Object.assign(deck.style, {
+          inset: 'auto',
+          left: `${now.left}px`,
+          top: `${now.top}px`,
+          width: `${now.width}px`,
+          height: `${now.height}px`,
+        });
+        void deck.offsetWidth; // commit that before the transition is switched on
+
+        deck.classList.add('gliding');
+        preview = r ? { ...r } : null;
+        deck.toggleAttribute('data-preview', Boolean(r));
+        if (r || !home) {
+          applyBox();
+        } else {
+          Object.assign(deck.style, {
+            left: `${home.x}px`,
+            top: `${home.y - CARD_TOP}px`,
+            width: `${home.w}px`,
+            height: `${home.h + CARD_TOP}px`,
+          });
+        }
+
+        // Once it has landed, hand the geometry back to whoever owns it.
+        clearTimeout(glideTimer);
+        glideTimer = setTimeout(() => {
+          deck.classList.remove('gliding');
+          if (!preview) applyBox();
+        }, GLIDE_MS);
+      },
 
       focus() {
         term.focus();

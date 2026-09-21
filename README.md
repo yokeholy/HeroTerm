@@ -127,9 +127,9 @@ Everything visual is in `public/theme.js`: the typeface, size, line height, the
 sixteen ANSI colors, the cursor, the star field. Everything audible is in
 `public/audio.js`. Edit and reload.
 
-For a Powerlevel10k or Starship prompt you need a Nerd Font **installed on the
-machine**, not just named in the theme — the browser can only use what the
-system has:
+Any installed font can be picked from settings. For a Powerlevel10k or
+Starship prompt you need a Nerd Font **installed on the machine**, not just
+named in the theme — the browser can only use what the system has:
 
 ```bash
 brew install --cask font-meslo-lg-nerd-font
@@ -271,8 +271,15 @@ Star count and colours are in `public/theme.js`.
 ## Settings
 
 The sliders button opens a sheet for the things that are taste rather than
-correctness: the theme, how far unfocused windows fade, whether the stars fly,
-and whether any of it makes a sound.
+correctness: the theme, the font, how far unfocused windows fade, whether the
+stars fly, and whether any of it makes a sound. Theme and font each open a page
+of their own.
+
+While the sheet is open, the window you were working in moves to its left,
+above the dimmed background, so every change lands on something you can see.
+It keeps its size where that fits and shrinks only where it doesn't. Closing
+settings puts it back exactly where it was — its real position is never
+touched in between, so a refresh with the sheet open loses nothing either.
 
 Six themes ship — **Deep Field** (blue-grey), **Ember** (coal and firelight),
 **Fathom** (deep water), **Amethyst** (violet), **Moss** (forest), and
@@ -284,6 +291,21 @@ A theme is *only colour*. Type, spacing and the timings are shared, so
 switching can never hand you a font you didn't ask for — and adding one is a
 palette in `public/theme.js`, with the picker building itself from the
 registry.
+
+The font page lists what's installed on this machine, each name set in its
+own face. A page can't enumerate installed fonts by itself, and even the
+permission-gated API Chromium offers won't say which are monospaced — the one
+thing a terminal cares about — so the server reads the font files directly
+(`fonts.js`): the name table for the family, and the metrics for the spacing.
+Monospaced fonts are listed by default; proportional ones are a checkbox away,
+for the adventurous. The one you pick goes in *front* of the default stack
+rather than replacing it, so glyphs it lacks — the icons in a Nerd Font prompt,
+say — still come from the default.
+
+A font being installed doesn't mean the browser will draw it, so the page
+checks each one itself and greys out any it can't reach. Brave is the usual
+culprit: its fingerprinting protection hides every font it didn't ship with.
+Allowing fingerprinting for `localhost` in Shields brings them back.
 
 Two things make live switching work. `window.HEROTERM_THEME` is mutated in place
 rather than replaced, because every module holds a reference to it and

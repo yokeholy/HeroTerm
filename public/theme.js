@@ -2,7 +2,8 @@
 //
 // A theme is only colour. Type, spacing and timing are shared, because those
 // are decisions about this application rather than about a palette — so
-// switching themes can never leave you with a font you didn't ask for.
+// switching themes can never leave you with a font you didn't ask for. The font
+// you pick in settings is stored on its own for the same reason.
 //
 // window.HEROTERM_THEME is mutated in place when you switch, never replaced:
 // every module holds a reference to it, and reassigning the global would leave
@@ -262,23 +263,42 @@
   };
 
   const KEY = 'heroterm.theme';
+  const FONT_KEY = 'heroterm.font';
   const DEFAULT = 'deep-field';
 
   const listeners = new Set();
   let active = DEFAULT;
+  let chosenFont = null; // a family name, or null for BASE.font as written
 
   try {
     const stored = localStorage.getItem(KEY);
     if (stored && THEMES[stored]) active = stored;
+    chosenFont = localStorage.getItem(FONT_KEY) || null;
   } catch {
     /* storage blocked; the default stands */
+  }
+
+  // The family you picked goes in front of the default stack rather than in
+  // place of it. Anything your font lacks — the powerline and icon glyphs a
+  // Nerd Font prompt draws, say — then falls through to one that has it.
+  const quote = (name) => `"${name.replace(/["\\]/g, '\\$&')}"`;
+  const fontStack = () => (chosenFont ? `${quote(chosenFont)}, ${BASE.font}` : BASE.font);
+
+  function notify() {
+    for (const fn of listeners) {
+      try {
+        fn(window.HEROTERM_THEME);
+      } catch (err) {
+        console.error('heroterm: theme listener failed', err);
+      }
+    }
   }
 
   // The flat shape the rest of the app already expects.
   function compose(key) {
     const t = THEMES[key];
     return {
-      font: BASE.font,
+      font: fontStack(),
       fontSize: BASE.fontSize,
       lineHeight: BASE.lineHeight,
       letterSpacing: BASE.letterSpacing,
@@ -319,13 +339,40 @@
       } catch {
         /* not persisted; it holds for this tab */
       }
-      for (const fn of listeners) {
+      notify();
+    },
+
+    // The family picked in settings, or null for the default stack.
+    get font() {
+      return chosenFont;
+    },
+
+    // What the default stack is, for saying so in the picker.
+    defaultFont: BASE.font,
+
+    // A terminal measures its character cell the moment its font changes, and
+    // a face that hasn't loaded yet measures as the fallback. An installed
+    // font is ready at once, so for those this costs nothing; it's here for a
+    // face a stylesheet supplies, which would otherwise be measured early.
+    async setFont(family) {
+      const next = family ? String(family) : null;
+      if (next === chosenFont) return;
+      if (next && document.fonts && document.fonts.load) {
         try {
-          fn(window.HEROTERM_THEME);
-        } catch (err) {
-          console.error('heroterm: theme listener failed', err);
+          await document.fonts.load(`${BASE.fontSize}px ${quote(next)}`);
+        } catch {
+          /* it may still be drawable; go ahead and let the terminal try */
         }
       }
+      chosenFont = next;
+      window.HEROTERM_THEME.font = fontStack();
+      try {
+        if (next) localStorage.setItem(FONT_KEY, next);
+        else localStorage.removeItem(FONT_KEY);
+      } catch {
+        /* not persisted; it holds for this tab */
+      }
+      notify();
     },
 
     on(fn) {

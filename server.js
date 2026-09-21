@@ -7,6 +7,7 @@ const express = require('express');
 const { WebSocketServer } = require('ws');
 const pty = require('node-pty');
 const history = require('./history');
+const fonts = require('./fonts');
 
 const PORT = Number(process.env.PORT || 7777);
 const HOST = '127.0.0.1'; // loopback only, never 0.0.0.0
@@ -61,6 +62,23 @@ app.get('/stats', (req, res) => {
   res.set('Cache-Control', 'no-store');
   try {
     res.json(history.stats());
+  } catch (err) {
+    res.status(500).json({ ok: false, reason: err.message });
+  }
+});
+
+// The fonts installed on this machine, for the settings sheet. Gated like the
+// rest, though it's far less sensitive: it's still a fingerprint of the
+// machine, and nothing outside this tab has any business asking. Read afresh
+// each time, so a font you've just installed shows up without a restart.
+app.get('/fonts', (req, res) => {
+  if (req.query.token !== TOKEN) {
+    res.sendStatus(403);
+    return;
+  }
+  res.set('Cache-Control', 'no-store');
+  try {
+    res.json({ ok: true, fonts: fonts.list() });
   } catch (err) {
     res.status(500).json({ ok: false, reason: err.message });
   }

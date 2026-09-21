@@ -713,6 +713,213 @@
         font-size: 10px;
       }
 
+      /* ---- pages inside the sheet ---- */
+
+      #settings[data-page='main'] [data-back] {
+        display: none;
+      }
+
+      #settings .page > .hint:first-child {
+        margin-top: 0;
+      }
+
+      /* A row that opens a page of its own: what's chosen now, and a way in. */
+      #settings .nav {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        margin-top: 8px;
+        padding: 9px 12px;
+        border: 1px solid var(--hairline, #252a35);
+        border-radius: 8px;
+        background: transparent;
+        color: var(--fg, #d6d9e0);
+        font: 12px/1.4 var(--font, monospace);
+        text-align: left;
+        cursor: pointer;
+        transition: border-color 120ms;
+      }
+
+      #settings .nav:hover {
+        border-color: var(--label, #6b7384);
+      }
+
+      #settings .nav:focus-visible {
+        outline: 1px solid var(--cursor, #e9a13b);
+        outline-offset: 2px;
+      }
+
+      #settings .nav .chips {
+        flex: 0 0 96px;
+        margin: 0;
+      }
+
+      #settings .nav .chips i {
+        height: 14px;
+        box-shadow: inset 0 0 0 1px var(--hairline, #252a35);
+      }
+
+      #settings .nav .val {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      #settings .nav .more {
+        color: var(--label, #6b7384);
+        font-size: 16px;
+        line-height: 1;
+      }
+
+      #settings .back {
+        margin-left: -6px;
+      }
+
+      /* ---- the font page ---- */
+
+      #settings .search {
+        flex: 1;
+        padding: 7px 10px;
+        border: 1px solid var(--hairline, #252a35);
+        border-radius: 7px;
+        background: transparent;
+        color: var(--fg, #d6d9e0);
+        font: 12px/1.4 var(--font, monospace);
+      }
+
+      #settings .search:focus {
+        outline: none;
+        border-color: var(--cursor, #e9a13b);
+      }
+
+      #settings .check {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 10px 0 12px;
+        color: var(--label, #6b7384);
+        cursor: pointer;
+      }
+
+      #settings .check input {
+        accent-color: var(--cursor, #e9a13b);
+        margin: 0;
+      }
+
+      #settings .fonts {
+        max-height: min(52vh, 460px);
+        overflow: auto;
+        margin: 0 -4px;
+        padding: 0 4px;
+      }
+
+      #settings .fonts .group {
+        margin: 14px 0 6px;
+        color: var(--label, #6b7384);
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      #settings .fonts .group:first-child {
+        margin-top: 0;
+      }
+
+      #settings .fonts .empty {
+        padding: 18px 0;
+        color: var(--label, #6b7384);
+      }
+
+      /* Each name is set in its own face: you pick a font by how it looks. */
+      #settings .font {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        width: 100%;
+        padding: 7px 10px;
+        border: 1px solid transparent;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--fg, #d6d9e0);
+        font-size: 14px;
+        line-height: 1.4;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      #settings .font:hover {
+        border-color: var(--hairline, #252a35);
+      }
+
+      #settings .font[aria-selected='true'] {
+        border-color: var(--cursor, #e9a13b);
+      }
+
+      #settings .font:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+
+      #settings .font:disabled:hover {
+        border-color: transparent;
+      }
+
+      #settings .font:focus-visible {
+        outline: 1px solid var(--cursor, #e9a13b);
+        outline-offset: 1px;
+      }
+
+      #settings .font .fam {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      #settings .font .sample {
+        flex: none;
+        color: var(--label, #6b7384);
+        font-size: 12px;
+      }
+
+      /* ---- the window beside the sheet ---- */
+
+      /* The pair is laid out in settings.js; here the sheet just goes where it
+         is told instead of the middle. */
+      #settings[data-preview] {
+        justify-items: start;
+        padding-left: 0;
+        padding-right: 0;
+      }
+
+      #settings[data-preview] .sheet {
+        margin-left: var(--sheet-x, 0px);
+      }
+
+      /* Over the veil, which would otherwise blur the very thing you're
+         trying to judge. !important because restack() writes z-index inline. */
+      .deck[data-preview] {
+        z-index: 101 !important;
+      }
+
+      /* Only while it's being moved there and back — a drag must follow the
+         pointer exactly, so geometry is never animated otherwise. */
+      .deck.gliding {
+        transition: opacity 260ms ease, left 360ms cubic-bezier(0.2, 0.8, 0.2, 1),
+          top 360ms cubic-bezier(0.2, 0.8, 0.2, 1), width 360ms cubic-bezier(0.2, 0.8, 0.2, 1),
+          height 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .deck.gliding {
+          transition: opacity 260ms ease;
+        }
+      }
+
       /* A range input's default look belongs to a different application
          entirely, so both the track and the thumb are drawn here. */
       #settings input[type='range'] {
@@ -1249,7 +1456,7 @@
           <dt>bars</dt>
           <dd>what you type most, from your whole shell history</dd>
           <dt>sliders</dt>
-          <dd>settings — theme, sound, flying stars, window fade</dd>
+          <dd>settings — theme, font, sound, flying stars, window fade</dd>
           <dt>expand</dt>
           <dd>browser full screen</dd>
           <dt>square</dt>
@@ -1288,7 +1495,19 @@
     <section id="settings" hidden aria-label="Settings">
       <div class="sheet" role="dialog" aria-label="Settings">
         <header>
-          <h1>Settings</h1>
+          <button class="chip back" type="button" data-back aria-label="Back to settings">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+              <path
+                d="M10 3.5L5.5 8l4.5 4.5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <h1 id="settings-title">Settings</h1>
           <button id="settings-close" class="chip" type="button" aria-label="Close">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
               <path
@@ -1302,8 +1521,67 @@
           </button>
         </header>
 
-        <div class="setting">
-          <label>Theme</label>
+        <!-- Three pages in one sheet; data-page on #settings says which shows. -->
+        <div class="page" data-page="main">
+          <div class="setting">
+            <label for="set-theme-open">Theme</label>
+            <button id="set-theme-open" class="nav" type="button" data-go="theme">
+              <span class="chips" id="set-theme-chips"></span>
+              <span class="val" id="set-theme-name"></span>
+              <span class="more" aria-hidden="true">›</span>
+            </button>
+          </div>
+
+          <div class="setting">
+            <label for="set-font-open">Font</label>
+            <button id="set-font-open" class="nav" type="button" data-go="font">
+              <span class="val" id="set-font-name"></span>
+              <span class="more" aria-hidden="true">›</span>
+            </button>
+          </div>
+
+          <div class="setting">
+            <label for="set-dim">Unfocused window opacity</label>
+            <p class="hint">
+              How much of a window you are not working in is left on screen. Lower
+              values let the star field through; the window you're typing into is
+              always solid.
+            </p>
+            <div class="row">
+              <input id="set-dim" type="range" min="0" max="100" step="1" />
+              <input id="set-dim-num" type="number" min="0" max="100" step="1" aria-label="Unfocused window opacity, percent" />
+              <span class="unit">%</span>
+              <button id="set-dim-reset" class="reset" type="button">Reset</button>
+            </div>
+          </div>
+
+          <div class="setting toggle">
+            <div>
+              <label for="set-warp">Flying stars</label>
+              <p class="hint">
+                The rush outward while a command runs, from the middle of whatever
+                is working. Off leaves the sky where it is, still breathing.
+              </p>
+            </div>
+            <input id="set-warp" class="switch" type="checkbox" />
+          </div>
+
+          <div class="setting toggle">
+            <div>
+              <label for="set-sound">Sound</label>
+              <p class="hint">
+                A ding when a command starts, a tick-tock while it runs, and a
+                chime when it finishes — lower and falling if it failed. A
+                short knock when the terminal rings its bell.
+              </p>
+            </div>
+            <input id="set-sound" class="switch" type="checkbox" />
+          </div>
+
+          <p class="src">Kept in this browser. The defaults are in <code>public/theme.js</code>.</p>
+        </div>
+
+        <div class="page" data-page="theme" hidden>
           <p class="hint">
             Colour only — the typeface, spacing and timings are the same
             whichever you pick, so switching can never hand you a font you
@@ -1312,45 +1590,21 @@
           <div id="set-themes" class="themes"></div>
         </div>
 
-        <div class="setting">
-          <label for="set-dim">Unfocused window opacity</label>
+        <div class="page" data-page="font" hidden>
           <p class="hint">
-            How much of a window you are not working in is left on screen. Lower
-            values let the star field through; the window you're typing into is
-            always solid.
+            The fonts installed on this machine. A terminal draws on a grid, so
+            only monospaced ones are listed unless you ask; anything the one you
+            pick is missing — prompt icons, say — still comes from the default.
           </p>
           <div class="row">
-            <input id="set-dim" type="range" min="0" max="100" step="1" />
-            <input id="set-dim-num" type="number" min="0" max="100" step="1" aria-label="Unfocused window opacity, percent" />
-            <span class="unit">%</span>
-            <button id="set-dim-reset" class="reset" type="button">Reset</button>
+            <input id="set-font-q" class="search" type="search" placeholder="Filter" autocomplete="off" spellcheck="false" aria-label="Filter fonts" />
           </div>
+          <label class="check">
+            <input id="set-font-all" type="checkbox" />
+            Show proportional fonts too
+          </label>
+          <div id="set-fonts" class="fonts" role="listbox" aria-label="Installed fonts"></div>
         </div>
-
-        <div class="setting toggle">
-          <div>
-            <label for="set-warp">Flying stars</label>
-            <p class="hint">
-              The rush outward while a command runs, from the middle of whatever
-              is working. Off leaves the sky where it is, still breathing.
-            </p>
-          </div>
-          <input id="set-warp" class="switch" type="checkbox" />
-        </div>
-
-        <div class="setting toggle">
-          <div>
-            <label for="set-sound">Sound</label>
-            <p class="hint">
-              A ding when a command starts, a tick-tock while it runs, and a
-              chime when it finishes — lower and falling if it failed. A
-              short knock when the terminal rings its bell.
-            </p>
-          </div>
-          <input id="set-sound" class="switch" type="checkbox" />
-        </div>
-
-        <p class="src">Kept in this browser. The defaults are in <code>public/theme.js</code>.</p>
       </div>
     </section>
 
