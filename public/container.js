@@ -193,7 +193,10 @@
         // callback on an empty one fires once everything before it is done.
         replaying = true;
         stack.restore(msg);
-        term.write('', () => (replaying = false));
+        term.write('', () => {
+          replaying = false;
+          session.settleAgent(); // an agent's state is only known from the replay
+        });
         session.adopt(msg.live);
       }
     }
@@ -247,6 +250,15 @@
       else if (kind === 'D') session.markerEnd(Number(code) || 0);
       return true;
     });
+
+    // The window title, for an agent that reports whether it's working there.
+    // Returning false leaves xterm's own title handling to carry on as usual.
+    const onTitle = (title) => {
+      session.agentTitle(title, replaying);
+      return false;
+    };
+    term.parser.registerOscHandler(0, onTitle);
+    term.parser.registerOscHandler(2, onTitle);
 
     // OSC 633;E carries the command line itself, so a card can be labelled.
     term.parser.registerOscHandler(633, (payload) => {

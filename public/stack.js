@@ -58,6 +58,14 @@ function createStack(opts) {
   }
 
   function meta(rec) {
+    // Inside an agent, the time that matters is this turn's, not how long the
+    // agent has been open.
+    if (rec && rec.running && rec.agent) {
+      const a = rec.agent;
+      if (!a.started) return '';
+      const ms = (a.ended || now()) - a.started;
+      return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${Math.round(ms)}ms`;
+    }
     if (!rec || !rec.started) return '';
     const ms = (rec.ended || now()) - rec.started;
     const time = ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${Math.round(ms)}ms`;
@@ -65,8 +73,14 @@ function createStack(opts) {
     return rec.code ? `${time} · exit ${rec.code}` : time;
   }
 
+  // An agent's turns borrow the colours a command would have: yellow while it
+  // works, green once it has answered, and no colour at all while it waits
+  // for you before its first turn.
+  const AGENT_STATUS = { busy: 'run', done: 'ok', idle: 'idle' };
+
   function status(rec) {
     if (!rec) return 'idle';
+    if (rec.running && rec.agent) return AGENT_STATUS[rec.agent.state];
     if (rec.running) return 'run';
     return rec.ok ? 'ok' : 'err';
   }
@@ -233,6 +247,25 @@ function createStack(opts) {
       render();
     },
 
+    // A turn of an agent inside the command on the front card. Same window:
+    // an agent draws full-screen, so its output can't be cut into cards the
+    // way a shell's can — only the border and the clock follow the turn.
+    agent(type, restored) {
+      if (!current || !current.running) return;
+      const a = current.agent || (current.agent = { state: 'idle', started: null, ended: null });
+      if (type === 'start') {
+        a.state = 'busy';
+        a.started = restored ? null : now(); // when a restored turn began is unknown
+        a.ended = null;
+      } else if (type === 'end') {
+        a.state = 'done';
+        a.ended = now();
+      } else if (a.state !== 'busy') {
+        a.state = a.started ? 'done' : 'idle';
+      }
+      paintHead(liveEl, current);
+    },
+
     finish(ok, code) {
       if (!current) return;
       // Drop the end marker and the prompt that follows it — that belongs to
@@ -241,6 +274,7 @@ function createStack(opts) {
       if (closed) current.bytes = current.bytes.slice(0, closed.index);
       current.running = false;
       current.ended = now();
+      delete current.agent; // the command itself is what finished
       current.ok = ok;
       current.code = code == null ? (ok ? 0 : 1) : code;
       paintHead(liveEl, current);
@@ -319,6 +353,13 @@ function createStack(opts) {
   };
 
   session.on((e) => {
+    // Agent turns change the front card rather than opening one. They're
+    // handled even when restored: the server doesn't know about them, so
+    // restore() can't have put their state back.
+    if (e.agent) {
+      api.agent(e.type, e.restored);
+      return;
+    }
     // A restored event describes a card restore() has already rebuilt.
     if (e.restored) return;
     if (e.type === 'start') api.begin();

@@ -488,6 +488,33 @@ it to the remote `~/.zshrc` or `~/.bashrc` and real exit codes come back too.
 Full-screen programs are handled separately — entering the alternate screen
 (vim, less, top, tmux) stops the ticking on its own.
 
+### Coding agents
+
+Claude Code is one long command as far as the shell knows, and it's
+full-screen with bracketed paste on, so by both rules above it's a program
+waiting for you — no stars, no ticking, a window stuck on yellow for as long as
+it's open. But its turns are exactly the thing you'd want the sky for.
+
+So Hero Term reads one more signal: the window title. Claude Code titles itself
+`✳ <task>` while it waits and leads with a spinner, `◐` / `◑`, while it works.
+Once a program has announced itself with `✳`, each turn is treated as a command
+of its own: a ding when it starts, the stars and the ticking while it works,
+the chime and a green border when it's done, and the window's clock timing the
+turn. Waiting for your first prompt, the border is grey. The window itself
+doesn't change — a full-screen program's output can't be cut into cards — and
+when Claude Code exits, it finishes like any other command.
+
+Nothing needs installing, in Claude Code or anywhere else. It does have a proper
+signal for this — the OSC 9;4 progress sequence — but only sends it to Ghostty,
+iTerm2 and ConEmu, chosen by `TERM_PROGRAM`, and pretending to be one of those
+would change what every other program assumes this terminal can do. The title
+is a UI detail rather than a contract, so if a future version changes its
+spinner, this is the place to look: `AGENT_IDLE` and `AGENT_BUSY` at the top of
+`public/session.js`.
+
+After a refresh mid-turn the stars pick up again without a ding, but the turn's
+clock starts blank: the server doesn't know when it began.
+
 Two consequences worth knowing. An empty Enter and a remote command that
 finishes in under 120ms look identical over bracketed paste, so both are
 silent. And a REPL that uses readline — python, irb, node — marks every

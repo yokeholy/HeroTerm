@@ -12,6 +12,8 @@
 //   ESC [ ?2004 l / h          bracketed paste, from whichever line editor is
 //                              actually in front of you — including one at the
 //                              far end of an ssh, where the markers can't reach.
+//   ESC ] 0 / 2 ; <title>      the window title, for an agent that says in it
+//                              whether it's working — see agentTitle() below.
 //
 // Events emitted to listeners:
 //
@@ -20,6 +22,17 @@
 //   {type:'quiet'}                    it stopped mattering, with no verdict —
 //                                     a prompt appeared somewhere, or a
 //                                     full-screen program took the grid
+//
+// Any of the three may carry `agent: true`: a turn of an agent running inside
+// a command that is still open, rather than a command of its own. The deck
+// keeps the same window for it; everything else treats it like a command.
+
+// Claude Code's title convention: "✳ <title>" while it waits for you, and the
+// same title led by a two-frame spinner, ◐ ◑, while it works. It's the only
+// signal it gives a terminal it doesn't recognise — its progress sequence
+// (OSC 9;4) goes only to Ghostty, iTerm2 and ConEmu, picked by TERM_PROGRAM.
+const AGENT_IDLE = '\u2733 '; // ✳
+const AGENT_BUSY = /^[\u25D0\u25D1] /; // ◐ ◑
 
 function createSession() {
   // Bracketed-paste transitions arrive slightly *before* the OSC 133 marker for
@@ -37,6 +50,11 @@ function createSession() {
   let altScreen = false;
   let settling = null;
   let running = false;
+  // null until something announces itself with an idle title; then 'idle' or
+  // 'busy'. While it's set, the agent's own titles are the authority on
+  // whether anything is running, and bracketed paste is ignored — the agent
+  // turns it on for its input box, which is what used to silence everything.
+  let agent = null;
 
   const listeners = new Set();
 
@@ -93,6 +111,7 @@ function createSession() {
       cancelSettle();
       sawMarker = true;
       depth += 1;
+      agent = null;
       start();
     },
 
@@ -101,13 +120,56 @@ function createSession() {
       sawMarker = true;
       depth = Math.max(0, depth - 1);
       pasteRun = false;
+      agent = null;
       end(code === 0, code);
+    },
+
+    // A title was set. Most titles are only titles; the agent convention above
+    // is the exception. A busy frame counts only after the idle one has been
+    // seen, so a program that merely happens to start its title with ◐ is
+    // left alone. `silent` is for a title being replayed after a refresh:
+    // the state is followed, but nothing is announced — see settleAgent().
+    agentTitle(title, silent) {
+      if (title.startsWith(AGENT_IDLE)) {
+        const was = agent;
+        agent = 'idle';
+        if (silent || was === 'idle') return;
+        cancelSettle();
+        if (was === 'busy') {
+          running = false;
+          emit({ type: 'end', ok: true, code: null, agent: true });
+        } else {
+          // It has just announced itself, and it's waiting for you.
+          running = false;
+          emit({ type: 'quiet', agent: true });
+        }
+        return;
+      }
+      if (AGENT_BUSY.test(title) && agent === 'idle') {
+        agent = 'busy';
+        if (silent) return;
+        cancelSettle();
+        running = true;
+        emit({ type: 'start', agent: true });
+      }
+    },
+
+    // After a refresh, once the restored screen has been replayed: say where
+    // the agent had got to, without dinging about it.
+    settleAgent() {
+      if (agent === 'busy') {
+        running = true;
+        emit({ type: 'start', agent: true, restored: true });
+      } else if (agent === 'idle') {
+        emit({ type: 'quiet', agent: true, restored: true });
+      }
     },
 
     // ESC[?2004l — the line editor just handed a line off to be run.
     promptBusy() {
-      if (altScreen) return;
+      if (altScreen || agent) return;
       settle(() => {
+        if (agent) return;
         // depth 0 under a wired-up shell means this is the local prompt, and
         // the marker that owns it is already on its way.
         if (sawMarker && depth === 0) return;
@@ -120,8 +182,9 @@ function createSession() {
     // the signal that an ssh session which has finished connecting is idle,
     // not busy, and it's what stops the ticking running for the whole session.
     promptReady() {
-      if (altScreen) return;
+      if (altScreen || agent) return;
       settle(() => {
+        if (agent) return;
         if (sawMarker && depth === 0) return;
         if (pasteRun) {
           pasteRun = false;
@@ -136,7 +199,9 @@ function createSession() {
     // about that is a command grinding away, whatever the hooks think.
     setAltScreen(on) {
       altScreen = !!on;
-      if (!altScreen) return;
+      // An agent that draws full-screen is still the authority on whether
+      // it's working; its switching screens says nothing about that.
+      if (!altScreen || agent) return;
       cancelSettle();
       quiet();
     },
@@ -150,6 +215,7 @@ function createSession() {
       sawMarker = true;
       pasteRun = false;
       altScreen = false;
+      agent = null; // the replayed screen will say, if it can
       if (live && live.running) {
         depth = 1;
         running = true;
