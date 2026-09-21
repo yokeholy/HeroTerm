@@ -13,7 +13,6 @@ const els = {
   place: document.getElementById('place'),
   prev: document.getElementById('prev'),
   next: document.getElementById('next'),
-  sound: document.getElementById('sound'),
   mode: document.getElementById('mode'),
   expand: document.getElementById('expand'),
   add: document.getElementById('add'),
@@ -493,22 +492,6 @@ els.prev.addEventListener('mousedown', (e) => e.preventDefault());
 els.next.addEventListener('mousedown', (e) => e.preventDefault());
 els.prev.addEventListener('click', () => focused && focused.stack.go(1));
 els.next.addEventListener('click', () => focused && focused.stack.go(-1));
-
-function renderSound() {
-  const on = audio.enabled;
-  els.sound.setAttribute('aria-pressed', String(on));
-  els.sound.setAttribute('aria-label', on ? 'Sound on' : 'Sound off');
-  els.sound.title = on ? 'Sound on' : 'Sound off';
-}
-renderSound();
-
-els.sound.addEventListener('mousedown', (e) => e.preventDefault());
-els.sound.addEventListener('click', () => {
-  audio.enabled = !audio.enabled;
-  renderSound();
-  if (audio.enabled) audio.ding(); // so you know what you just turned on
-  if (focused) focused.focus();
-});
 
 window.addEventListener('resize', () => {
   for (const c of containers) c.applyBox();

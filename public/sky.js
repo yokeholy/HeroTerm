@@ -195,9 +195,26 @@
     for (const s of stars) s.col = T.stars.colors[(Math.random() * T.stars.colors.length) | 0];
   });
 
+  // Two separate questions: is something running, and are you willing to watch
+  // the sky move about it. Both are remembered, so toggling either recomputes
+  // rather than overwriting the other's answer — turning the flying back on
+  // mid-command starts flying, instead of waiting for the next one.
+  let wantWarp = false;
+  let warpAllowed = true;
+
+  function aim() {
+    target = wantWarp && warpAllowed ? WARP : 0;
+  }
+
   // Driven by whether *anything* is running rather than by one container's
   // events, so a build in a terminal you aren't looking at still moves the sky.
   window.WEBTERM_SKY.setWarp = (on) => {
-    target = on ? WARP : 0;
+    wantWarp = on;
+    aim();
+  };
+
+  window.WEBTERM_SKY.allowWarp = (on) => {
+    warpAllowed = on;
+    aim();
   };
 })();

@@ -90,18 +90,6 @@
         opacity: 0.22;
       }
 
-      #sound .wave {
-        display: none;
-      }
-
-      #sound[aria-pressed='true'] .wave {
-        display: inline;
-      }
-
-      #sound[aria-pressed='true'] .slash {
-        display: none;
-      }
-
       #expand[aria-pressed='true'] .out,
       #expand[aria-pressed='false'] .in {
         display: none;
@@ -612,6 +600,61 @@
         font-size: 10px;
       }
 
+      #settings .setting + .setting {
+        margin-top: 24px;
+      }
+
+      #settings .toggle {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 18px;
+      }
+
+      #settings .toggle .hint {
+        margin-bottom: 0;
+      }
+
+      #settings .switch {
+        flex: none;
+        width: 38px;
+        height: 21px;
+        margin-top: 2px;
+        position: relative;
+        appearance: none;
+        -webkit-appearance: none;
+        border-radius: 11px;
+        background: var(--hairline, #252a35);
+        cursor: pointer;
+        transition: background 150ms;
+      }
+
+      #settings .switch::after {
+        content: '';
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        background: var(--label, #6b7384);
+        transition: transform 150ms, background 150ms;
+      }
+
+      #settings .switch:checked {
+        background: var(--cursor, #e9a13b);
+      }
+
+      #settings .switch:checked::after {
+        transform: translateX(17px);
+        background: var(--bg, #171b24);
+      }
+
+      #settings .switch:focus-visible {
+        outline: 1px solid var(--cursor, #e9a13b);
+        outline-offset: 3px;
+      }
+
       #settings .themes {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
@@ -1094,15 +1137,6 @@
         </svg>
       </button>
 
-      <button id="sound" class="chip" type="button" aria-pressed="true" aria-label="Sound on">
-        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
-          <path d="M3 6h2.6L9 3.1v9.8L5.6 10H3z" fill="currentColor" />
-          <g fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
-            <path class="wave" d="M11.2 5.6a3.4 3.4 0 0 1 0 4.8" />
-            <path class="slash" d="M11.4 6.1l3.4 3.8M14.8 6.1l-3.4 3.8" />
-          </g>
-        </svg>
-      </button>
     </div>
 
     <template id="container-tpl">
@@ -1215,13 +1249,12 @@
           <dt>bars</dt>
           <dd>what you type most, from your whole shell history</dd>
           <dt>sliders</dt>
-          <dd>settings — theme, and how far unfocused windows fade</dd>
+          <dd>settings — theme, sound, flying stars, window fade</dd>
           <dt>expand</dt>
           <dd>browser full screen</dd>
           <dt>square</dt>
           <dd>float the terminal over a star field</dd>
-          <dt>speaker</dt>
-          <dd>sound on and off</dd>
+
         </dl>
 
         <h2>Keys</h2>
@@ -1279,7 +1312,7 @@
           <div id="set-themes" class="themes"></div>
         </div>
 
-        <div class="setting" style="margin-top: 26px">
+        <div class="setting">
           <label for="set-dim">Unfocused window opacity</label>
           <p class="hint">
             How much of a window you are not working in is left on screen. Lower
@@ -1292,6 +1325,28 @@
             <span class="unit">%</span>
             <button id="set-dim-reset" class="reset" type="button">Reset</button>
           </div>
+        </div>
+
+        <div class="setting toggle">
+          <div>
+            <label for="set-warp">Flying stars</label>
+            <p class="hint">
+              The rush outward while a command runs, from the middle of whatever
+              is working. Off leaves the sky where it is, still breathing.
+            </p>
+          </div>
+          <input id="set-warp" class="switch" type="checkbox" />
+        </div>
+
+        <div class="setting toggle">
+          <div>
+            <label for="set-sound">Sound</label>
+            <p class="hint">
+              A ding when a command starts, a tick-tock while it runs, and a
+              chime when it finishes — lower and falling if it failed.
+            </p>
+          </div>
+          <input id="set-sound" class="switch" type="checkbox" />
         </div>
 
         <p class="src">Kept in this browser. The defaults are in <code>public/theme.js</code>.</p>

@@ -90,7 +90,6 @@ than to any window, so they stay put whatever the deck is doing:
 | sliders | settings |
 | expand | the browser's own full screen — the whole display, tab strip gone |
 | square | pop the deck out of the tab into a floating window, and back |
-| speaker | sound on/off |
 
 The window you're working in breathes: its glow swells and settles on a slow
 cycle, in whatever colour its last command left behind — grey when nothing has
@@ -203,7 +202,8 @@ Star count and colours are in `public/theme.js`.
 ## Settings
 
 The sliders button opens a sheet for the things that are taste rather than
-correctness: the theme, and how far unfocused windows fade.
+correctness: the theme, how far unfocused windows fade, whether the stars fly,
+and whether any of it makes a sound.
 
 Six themes ship — **Deep Field** (blue-grey), **Ember** (coal and firelight),
 **Fathom** (deep water), **Amethyst** (violet), **Moss** (forest), and
@@ -233,7 +233,15 @@ makes `10` impossible to type on the way to `100`.
 
 Defaults live in `public/theme.js` and settings only record where you have
 moved away from them, so `Reset` is a delete rather than a second copy of the
-default.
+default. Sound is the exception: `public/audio.js` has owned whether it is
+muted since before this sheet existed, and the switch drives that rather than
+keeping a second copy — two stores for one fact is how they come to disagree.
+
+Turning the flying stars off leaves the sky where it is, still breathing.
+Whether something is running and whether you want to watch the sky move about
+it are separate questions, both remembered, so switching the flying back on
+part way through a command starts it flying rather than waiting for the next
+one.
 
 ## Refreshing
 

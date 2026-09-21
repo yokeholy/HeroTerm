@@ -17,6 +17,10 @@
       fallback: () => Math.round(T.chrome.dimmed * 100),
       apply: (v) => document.documentElement.style.setProperty('--dim', String(v / 100)),
     },
+    warp: {
+      fallback: () => 1,
+      apply: (v) => window.WEBTERM_SKY.allowWarp(Boolean(v)),
+    },
   };
 
   let saved = {};
@@ -146,6 +150,37 @@
 
   markActive();
   themes.on(markActive);
+
+  /* ---------- switches ---------- */
+
+  // A switch whose state lives somewhere else entirely — the audio module owns
+  // whether it is muted, and has done since before this sheet existed. Two
+  // stores for one fact is how they end up disagreeing, so this drives the
+  // owner rather than keeping a copy.
+  function bindSwitch(input, get, set) {
+    input.checked = Boolean(get());
+    input.addEventListener('change', () => set(input.checked));
+  }
+
+  bindSwitch(
+    document.getElementById('set-sound'),
+    () => window.WEBTERM_AUDIO.enabled,
+    (on) => {
+      window.WEBTERM_AUDIO.enabled = on;
+      if (on) window.WEBTERM_AUDIO.ding(); // so you know what you just turned on
+    }
+  );
+
+  // This one has no other owner, so it is stored here like the slider.
+  bindSwitch(
+    document.getElementById('set-warp'),
+    () => Boolean(valueOf('warp')),
+    (on) => {
+      saved.warp = on ? 1 : 0;
+      save();
+      OPTIONS.warp.apply(on);
+    }
+  );
 
   function open() {
     returnFocus = document.activeElement;
