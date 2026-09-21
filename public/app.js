@@ -67,7 +67,25 @@ function writeLayout(obj) {
 
 const containers = [];
 let focused = null;
+let dragging = null;
 let windowed = false;
+
+// Stacking order, in one place because the numbers only make sense together:
+//
+//    10  a window
+//    20  the focused window
+//    30  the snap and split outlines   (over the window you're aiming at)
+//    40  the status bar
+//    50  the help button and controls
+//    60  the window being dragged      (over all of it, while you hold it)
+//   100  the help and stats sheets
+//
+// The first three are set here; the rest live in index.html.
+function restack() {
+  for (const c of containers) {
+    c.el.style.zIndex = String(c === dragging ? 60 : c === focused ? 20 : 10);
+  }
+}
 
 const page = {
   get windowed() {
@@ -85,13 +103,18 @@ const page = {
   focus(c) {
     if (focused === c) return;
     focused = c;
-    for (const other of containers) {
-      other.el.toggleAttribute('data-focused', other === c);
-      // Stacking order is focus order: the one you last touched is on top.
-      other.el.style.zIndex = String(other === c ? 20 : 10);
-    }
+    for (const other of containers) other.el.toggleAttribute('data-focused', other === c);
+    restack();
     paintStatus();
     page.save();
+  },
+
+  // Held for as long as a drag or a resize lasts, so the window in your hand
+  // can sit above everything — including the snap outlines and the page's own
+  // furniture, which would otherwise be drawn across the thing you're moving.
+  setDragging(c) {
+    dragging = c;
+    restack();
   },
 
   close(c) {

@@ -313,12 +313,14 @@
         e.preventDefault();
         target.setPointerCapture(e.pointerId);
         document.body.dataset.dragging = 'yes';
+        page.setDragging(self);
         const from = { px: e.clientX, py: e.clientY, ...box };
 
         const move = (ev) => onMove(ev.clientX - from.px, ev.clientY - from.py, from, ev);
         const done = () => {
           target.removeEventListener('pointermove', move);
           delete document.body.dataset.dragging;
+          page.setDragging(null);
           if (onEnd) onEnd();
           page.save();
           term.focus();

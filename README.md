@@ -122,7 +122,10 @@ would leave either window under the minimum size is refused rather than
 attempted. Two outlines show it before you let go — solid for the window you're
 holding, dashed for where the other one ends up — and they draw over the
 windows rather than under them, since the one you are aiming at is usually the
-one underneath.
+one underneath. The window in your hand goes above all of it for as long as you
+hold it: above the other windows, above the outlines, and above the status bar
+and the controls. The whole stacking order is written down in one place, at the
+top of `public/app.js`, because the numbers only make sense together.
 
 Drag a window against a *screen* edge and it snaps instead: a side for a half,
 a corner for a quarter, the top to fill. The screen wins over a split, so the
