@@ -1,1 +1,5 @@
-[[ -r "$USER_ZDOTDIR/.zprofile" ]] && source "$USER_ZDOTDIR/.zprofile"
+# Same hand-back as .zshenv: your file should see your ZDOTDIR, and zsh still
+# needs ours afterwards to find .zshrc.
+ZDOTDIR=$USER_ZDOTDIR
+[[ -r "$ZDOTDIR/.zprofile" ]] && source "$ZDOTDIR/.zprofile"
+ZDOTDIR=$WEBTERM_ZDOTDIR

@@ -1,3 +1,16 @@
+# /etc/zshrc has already run by the time we get here, and macOS ships one that
+# says:
+#
+#     HISTFILE=${ZDOTDIR:-$HOME}/.zsh_history
+#
+# ZDOTDIR is still ours at that point — it has to be, or zsh would never have
+# found this file — so your shell history ends up being written into this
+# directory instead of your home. Put it back, but only when it really does
+# point here: if you set HISTFILE yourself, that decision stands.
+if [[ ${HISTFILE:h} == "$ZDOTDIR" ]]; then
+  HISTFILE="$USER_ZDOTDIR/.zsh_history"
+fi
+
 # Hand ZDOTDIR back before sourcing your rc, so anything inside it that refers
 # to $ZDOTDIR sees your directory and not ours. zsh has already located this
 # file, and it will now look for .zlogin in your directory, which is correct.
