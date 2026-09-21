@@ -796,6 +796,22 @@
       #snap[hidden] {
         display: none;
       }
+
+      /* The other half of a split: where the window you're dropping onto ends
+         up. Dashed and dimmer, because it isn't the one you're holding. */
+      #snap-b {
+        position: fixed;
+        z-index: 5;
+        border: 2px dashed var(--label, #6b7384);
+        border-radius: 10px;
+        background: rgba(107, 115, 132, 0.07);
+        pointer-events: none;
+        transition: left 110ms ease, top 110ms ease, width 110ms ease, height 110ms ease;
+      }
+
+      #snap-b[hidden] {
+        display: none;
+      }
     </style>
   </head>
   <body data-mode="full" data-run="idle">
@@ -893,6 +909,7 @@
     </template>
 
     <div id="snap" hidden></div>
+    <div id="snap-b" hidden></div>
 
     <footer id="status">
       <span id="state" data-live="pending"><span id="dot"></span><span id="state-text">Connecting</span></span>
@@ -966,6 +983,8 @@
           <dd>drag any edge or corner</dd>
           <dt>snap</dt>
           <dd>drag to a screen edge for a half, a corner for a quarter, the top to fill</dd>
+          <dt>split</dt>
+          <dd>drop a window on another one's edge and they share its space</dd>
           <dt>bars</dt>
           <dd>what you type most, from your whole shell history</dd>
           <dt>expand</dt>

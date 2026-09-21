@@ -114,8 +114,18 @@ Resize from any edge or corner — dragging the top or left edge moves that edge
 and leaves the opposite one where it is, and the minimum size stops the edge
 you're holding rather than walking the window across the screen.
 
-Drag a window against a screen edge and it snaps: a side for a half, a corner
-for a quarter, the top to fill. An outline shows where it will land before you
+Drop a window against the inside edge of another one and they split its space
+between them, the way iTerm divides a pane: whichever of that window's edges
+you are nearest decides who takes which half. The middle of a window means
+nothing, so you can drag across one without disturbing it, and a split that
+would leave either window under the minimum size is refused rather than
+attempted. Two outlines show it before you let go — solid for the window you're
+holding, dashed for where the other one ends up.
+
+Drag a window against a *screen* edge and it snaps instead: a side for a half,
+a corner for a quarter, the top to fill. The screen wins over a split, so the
+outer 26px of the display is always a deliberate aim even when a window happens
+to be flush against it. An outline shows where it will land before you
 let go, and dragging it back off an edge hands its old size back rather than
 leaving you towing a half-screen slab. On a free drag the edges are magnetic —
 they line up with the screen's sides and middle and with every other window,

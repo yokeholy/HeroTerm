@@ -11,8 +11,13 @@
 (function () {
   const T = window.WEBTERM_THEME;
 
-  const MIN_W = 420;
-  const MIN_H = 260;
+  // Floors, not defaults, and low on purpose. They were 420x260 — a sensible
+  // size for a window, but it made splitting unreachable: halving anything
+  // narrower than 840px landed under the minimum and was refused. Splitting a
+  // half-screen window is the common case, and on a 1024-wide display that
+  // asks for 256, so the floor has to sit below that. ~22 columns.
+  const MIN_W = 220;
+  const MIN_H = 160;
 
   // How far the card sits below the top of its deck — the band the older
   // commands cascade into. Must match `.card { top: … }` in index.html.
@@ -284,6 +289,16 @@
       applyBox();
     }
 
+    let unsnapped = null; // the size it had before it was snapped or split
+
+    // Snapping remembers what the window was, so dragging it back out of a
+    // half or a split hands that size back instead of leaving you towing a
+    // slab. Used for the window being dragged and for the one it splits with.
+    function snapTo(r) {
+      unsnapped = { w: box.w, h: box.h - CARD_TOP };
+      setVisible(r);
+    }
+
     // Dragging is by the title bar of the front window. The cards behind it have
     // pointer-events turned off, so "only the top one" falls out of that on its
     // own — and moving it moves the whole deck, since they are one stack.
@@ -313,8 +328,7 @@
 
     // --- moving, with snapping ---
 
-    let zone = null; // where it would land if you let go right now
-    let unsnapped = null; // the size it had before it was snapped to an edge
+    let drop = null; // where it would land if you let go right now
 
     gesture(
       deck,
@@ -333,19 +347,25 @@
           unsnapped = null;
         }
 
-        zone = page.zoneAt(ev.clientX, ev.clientY);
-        page.preview(zone);
-        if (!zone) r = page.align(r, self, null);
+        // A screen edge wins over a split: the outer 26px of the display is a
+        // deliberate aim, even when a window happens to be flush against it.
+        const zone = page.zoneAt(ev.clientX, ev.clientY);
+        const split = zone ? null : page.splitAt(ev.clientX, ev.clientY, self);
 
+        drop = zone ? { mine: zone } : split;
+        page.preview(drop && drop.mine, drop && drop.theirs);
+
+        if (!drop) r = page.align(r, self, null);
         setVisible(r);
       },
       () => {
-        page.preview(null);
-        if (zone) {
-          unsnapped = { w: box.w, h: box.h - CARD_TOP };
-          setVisible(zone);
-          zone = null;
-        }
+        page.preview(null, null);
+        if (!drop) return;
+        // The window being split moves first, so that its old rectangle is
+        // still what the guides saw while you were aiming.
+        if (drop.into) drop.into.snapTo(drop.theirs);
+        snapTo(drop.mine);
+        drop = null;
       }
     );
 
@@ -490,6 +510,7 @@
       setName,
       visibleRect,
       setVisible,
+      snapTo,
 
       get state() {
         return { live: state, text: stateText, cols, rows };
@@ -529,5 +550,10 @@
     return self;
   }
 
-  window.WEBTERM_CONTAINER = { create: createContainer };
+  window.WEBTERM_CONTAINER = {
+    create: createContainer,
+    // The smallest a *visible* window can be, which is what the page needs in
+    // order to refuse a split that would produce two of them below it.
+    minVisible: { w: MIN_W, h: MIN_H - CARD_TOP },
+  };
 })();

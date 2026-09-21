@@ -120,6 +120,7 @@ const page = {
   // --- snapping, asked for by whichever container is being dragged ---
 
   zoneAt: snapZone,
+  splitAt,
 
   guidesFor(except) {
     return guides(except);
@@ -148,29 +149,11 @@ const page = {
     return out;
   },
 
-  preview(r) {
-    if (!r) {
-      snapEl.hidden = true;
-      return;
-    }
-    if (snapEl.hidden) {
-      // Put it in place before revealing, or it slides in from wherever it
-      // was left last time.
-      Object.assign(snapEl.style, {
-        left: `${r.x}px`,
-        top: `${r.y}px`,
-        width: `${r.w}px`,
-        height: `${r.h}px`,
-      });
-      snapEl.hidden = false;
-      return;
-    }
-    Object.assign(snapEl.style, {
-      left: `${r.x}px`,
-      top: `${r.y}px`,
-      width: `${r.w}px`,
-      height: `${r.h}px`,
-    });
+  // `mine` is where the window you're holding lands; `theirs` is where the one
+  // you're splitting ends up, and is absent for a plain screen-edge snap.
+  preview(mine, theirs) {
+    place(snapEl, mine);
+    place(snapBEl, theirs);
   },
 
   runStateChanged() {
@@ -264,11 +247,28 @@ function add() {
 // window's title bar there, not 36px of empty air.
 
 const snapEl = document.getElementById('snap');
+const snapBEl = document.getElementById('snap-b');
 
 const STATUS_H = 30; // the fixed bar along the bottom
 const EDGE = 26; // how close to an edge counts as aiming at it
 const CORNER = 140; // ...and how far along that edge still counts as a corner
 const MAGNET = 8; // free-drag alignment to nearby edges
+
+function place(el, r) {
+  if (!r) {
+    el.hidden = true;
+    return;
+  }
+  const appearing = el.hidden;
+  Object.assign(el.style, {
+    left: `${r.x}px`,
+    top: `${r.y}px`,
+    width: `${r.w}px`,
+    height: `${r.h}px`,
+  });
+  // Position it before revealing, or it slides in from wherever it was left.
+  if (appearing) el.hidden = false;
+}
 
 function workArea() {
   return { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight - STATUS_H };
@@ -304,6 +304,53 @@ function snapZone(px, py) {
   if (L) return rect(0, 0, a.w / 2, a.h);
   if (R) return rect(a.w / 2, 0, a.w / 2, a.h);
   if (B) return rect(0, a.h / 2, a.w, a.h / 2);
+  return null;
+}
+
+// Dropping a window against the inside edge of another one splits that window
+// between the two of them, the way iTerm divides a pane. Which edge you're
+// nearest decides who gets which half; the middle of a window means nothing, so
+// you can still drag across one without disturbing it.
+//
+// Topmost first: every unfocused window shares a z-index, so paint order is DOM
+// order and the last one is the one you can see.
+function splitAt(px, py, except) {
+  const min = window.WEBTERM_CONTAINER.minVisible;
+
+  for (let i = containers.length - 1; i >= 0; i -= 1) {
+    const c = containers[i];
+    if (c === except) continue;
+
+    const r = c.visibleRect();
+    if (px < r.x || px > r.x + r.w || py < r.y || py > r.y + r.h) continue;
+
+    // Refuse rather than produce two windows below the size either can hold.
+    if (r.w / 2 < min.w && r.h / 2 < min.h) return null;
+
+    const bandX = Math.min(r.w * 0.3, 170);
+    const bandY = Math.min(r.h * 0.3, 130);
+    const left = px - r.x;
+    const right = r.x + r.w - px;
+    const top = py - r.y;
+    const bottom = r.y + r.h - py;
+    const nearest = Math.min(left, right, top, bottom);
+
+    const halfW = rect(r.x, r.y, r.w / 2, r.h);
+    const halfE = rect(r.x + r.w / 2, r.y, r.w / 2, r.h);
+    const halfN = rect(r.x, r.y, r.w, r.h / 2);
+    const halfS = rect(r.x, r.y + r.h / 2, r.w, r.h / 2);
+
+    if (r.w / 2 >= min.w) {
+      if (nearest === left && left <= bandX) return { into: c, mine: halfW, theirs: halfE };
+      if (nearest === right && right <= bandX) return { into: c, mine: halfE, theirs: halfW };
+    }
+    if (r.h / 2 >= min.h) {
+      if (nearest === top && top <= bandY) return { into: c, mine: halfN, theirs: halfS };
+      if (nearest === bottom && bottom <= bandY) return { into: c, mine: halfS, theirs: halfN };
+    }
+
+    return null; // over this window, but in the middle of it
+  }
   return null;
 }
 
