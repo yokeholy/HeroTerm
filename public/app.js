@@ -30,6 +30,8 @@ const cssVars = {
   '--hairline': T.chrome.hairline,
   '--label': T.chrome.label,
   '--space': T.chrome.space,
+  '--dim': String(T.chrome.dimmed),
+  '--breath': T.chrome.breath,
   '--bg': T.xterm.background,
   '--fg': T.xterm.foreground,
   '--cursor': T.xterm.cursor,

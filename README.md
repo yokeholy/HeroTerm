@@ -91,6 +91,14 @@ than to any window, so they stay put whatever the deck is doing:
 | square | pop the deck out of the tab into a floating window, and back |
 | speaker | sound on/off |
 
+The window you're working in breathes: its glow swells and settles on a slow
+cycle, in whatever colour its last command left behind — grey when nothing has
+run, yellow while something is, green or red once it's done. The others fade to
+a fifth of their opacity and the star field shows through them, so there is
+never a question which one your keys are going to. Both numbers — `dimmed` and
+`breath` — are in `public/theme.js`. The breathing stops under
+`prefers-reduced-motion`.
+
 Each window is named when it's made — stars, given what's behind them — and the
 name sits in the middle of its title bar. Double-click it to rename; Enter or
 clicking away keeps it, Escape puts it back. Names are remembered with the rest

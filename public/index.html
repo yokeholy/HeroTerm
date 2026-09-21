@@ -209,9 +209,15 @@
       }
 
       /* The container you last touched is the one keys go to. Everything else
-         steps back a little so there's no doubt which that is. */
-      body[data-mode='windowed'] .deck:not([data-focused]) .card[data-front] {
-        opacity: 0.82;
+         fades most of the way out, so there is never a question which — and
+         the star field shows through what's left. On the deck rather than the
+         front card, so the cascade behind it goes too. */
+      body[data-mode='windowed'] .deck:not([data-focused]) {
+        opacity: var(--dim, 0.2);
+      }
+
+      .deck {
+        transition: opacity 260ms ease;
       }
 
       .card {
@@ -241,34 +247,54 @@
       }
 
       /* Each window carries its own verdict, so a glance down the deck tells
-         you which of the last dozen commands went wrong. */
+         you which of the last dozen commands went wrong. --glow is the same
+         colour, kept as a variable so one animation can breathe in whichever
+         one the window currently wears. */
+      .card {
+        --glow: var(--label, #6b7384);
+      }
+
       .card[data-status='run'] {
+        --glow: var(--yellow, #d9a86c);
         border-color: var(--yellow, #d9a86c);
       }
 
       .card[data-status='ok'] {
+        --glow: var(--green, #93b07a);
         border-color: var(--green, #93b07a);
       }
 
       .card[data-status='err'] {
+        --glow: var(--red, #d4736b);
         border-color: var(--red, #d4736b);
       }
 
       .card[data-front] {
         border-width: 2px;
-        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.7);
+        box-shadow: 0 0 16px -5px var(--glow), 0 24px 70px rgba(0, 0, 0, 0.7);
       }
 
-      .card[data-front][data-status='run'] {
-        box-shadow: 0 0 22px -4px var(--yellow, #d9a86c), 0 24px 70px rgba(0, 0, 0, 0.7);
+      /* The focused window breathes. An animation outranks the plain rule
+         above, so this only applies to the one window that has focus and the
+         rest keep a steady glow. */
+      .deck[data-focused] .card[data-front] {
+        animation: breathe var(--breath, 3.6s) ease-in-out infinite;
       }
 
-      .card[data-front][data-status='ok'] {
-        box-shadow: 0 0 18px -6px var(--green, #93b07a), 0 24px 70px rgba(0, 0, 0, 0.7);
+      @keyframes breathe {
+        0%,
+        100% {
+          box-shadow: 0 0 9px -6px var(--glow), 0 24px 70px rgba(0, 0, 0, 0.7);
+        }
+        50% {
+          box-shadow: 0 0 34px -2px var(--glow), 0 24px 70px rgba(0, 0, 0, 0.7);
+        }
       }
 
-      .card[data-front][data-status='err'] {
-        box-shadow: 0 0 18px -6px var(--red, #d4736b), 0 24px 70px rgba(0, 0, 0, 0.7);
+      @media (prefers-reduced-motion: reduce) {
+        .deck[data-focused] .card[data-front] {
+          animation: none;
+        }
       }
 
       .card-head {

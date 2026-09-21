@@ -14,6 +14,14 @@ window.WEBTERM_THEME = {
     hairline: '#252a35',
     label: '#6b7384',
     space: '#05070c', // behind the window, under the stars
+
+    // How much of an unfocused window is left. 0.2 is faint enough that the
+    // one you're working in is unmistakable and the star field shows through
+    // the rest; raise it toward 1 if you'd rather read them all at once.
+    dimmed: 0.2,
+
+    // One breath of the focused window's glow, in and out again.
+    breath: '3.6s',
   },
 
   // The sky you see once the terminal is popped out of full screen. Keep the
