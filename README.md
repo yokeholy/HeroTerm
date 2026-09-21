@@ -346,8 +346,8 @@ you. If that's the wrong trade, `live.clear()` in `public/stack.js` is the line.
 
 A ding when a command starts, a tick-tock while it runs, and a chime when it
 finishes — a falling two-note one if it exited non-zero, so you can tell a
-finished build from a broken one without looking. The speaker button in the
-top-right corner turns all of it off, and the choice is remembered.
+finished build from a broken one without looking. The switch under the sliders
+button turns all of it off, and the choice is remembered.
 
 Commands shorter than 300ms never tick; otherwise every `ls` would rattle.
 
