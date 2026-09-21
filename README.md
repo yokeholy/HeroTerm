@@ -420,6 +420,12 @@ button turns all of it off, and the choice is remembered.
 
 Commands shorter than 300ms never tick; otherwise every `ls` would rattle.
 
+The terminal bell gets a sound too: a short, low knock whenever anything writes
+BEL — zsh when a completion has nothing to offer, vim on a bad motion, a script
+that echoes `\a`. It's deliberately unlike the failure phrase: one is a
+complaint about a keystroke, the other a verdict on a command. If you never
+hear it, check for `setopt NO_BEEP` in your `.zshrc`.
+
 Working out *when* a command starts and stops is `public/session.js`, which is
 also what drives the border and the star field — so muting the sound never
 takes the visuals down with it.

@@ -100,6 +100,27 @@
     tone(311.1, t + 0.13, 0.34, { type: 'triangle', peak: 0.4 });
   }
 
+  // The terminal bell: BEL from the shell or anything running in it. zsh rings
+  // it when a completion has nothing to offer or you backspace past the start
+  // of the line; vim rings it on a bad motion. It's a complaint about a
+  // keystroke, not a verdict on a command, so it's shorter and flatter than
+  // failure() — a dull knock, not a phrase.
+  //
+  // Held keys ring it at the key-repeat rate, and a program can write a run of
+  // BELs in one go; one knock per BELL_GAP is plenty and keeps it from buzzing.
+  const BELL_GAP = 120;
+  let lastBell = 0;
+
+  function bell() {
+    if (!enabled || !ready()) return;
+    const now = performance.now();
+    if (now - lastBell < BELL_GAP) return;
+    lastBell = now;
+    const t = ctx.currentTime;
+    tone(196, t, 0.12, { type: 'triangle', peak: 0.5, attack: 0.002 });
+    tone(185, t, 0.1, { type: 'square', peak: 0.06, attack: 0.002 });
+  }
+
   function stopTicking() {
     clearTimeout(startTimer);
     clearInterval(tickTimer);
@@ -119,6 +140,7 @@
 
   window.HEROTERM_AUDIO = {
     ding,
+    bell,
 
     // The ticking is continuous, so it can't be driven per event: with two
     // containers open, one command finishing would stop the tick for a build

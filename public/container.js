@@ -160,6 +160,8 @@
       page.sized(self);
     };
 
+    let replaying = false; // a restored screen is being written back; see below
+
     function control(msg) {
       if (msg.t === 'hello') {
         // A server older than the per-container sessions ignores the id in the
@@ -177,7 +179,13 @@
       if (msg.t === 'restore') {
         // Order matters: the deck and the screen first, then the run state, so
         // that the border and the ticking land on a card that already exists.
+        //
+        // The restored screen is written into this terminal again, and any BEL
+        // in it would ring on every refresh. Writes are parsed in order, so the
+        // callback on an empty one fires once everything before it is done.
+        replaying = true;
         stack.restore(msg);
+        term.write('', () => (replaying = false));
         session.adopt(msg.live);
       }
     }
@@ -214,6 +222,12 @@
       send({ t: 'i', d });
     });
     term.onBinary((d) => send({ t: 'i', d }));
+
+    // BEL. Only this terminal listens: the replayed cards are built from the
+    // same bytes, and a bell is something happening now, not a record of one.
+    term.onBell(() => {
+      if (!replaying) window.HEROTERM_AUDIO.bell();
+    });
 
     /* ---------- what the shell is doing ---------- */
 
