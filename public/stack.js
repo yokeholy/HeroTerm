@@ -1,0 +1,332 @@
+'use strict';
+
+// One card per command, stacked back into the screen the way Time Machine does
+// it. The front card is the live terminal; everything behind it is a finished
+// command replayed into a terminal of its own.
+//
+// One of these per container. A container has one pty and one live Terminal,
+// so history can't be a live view
+// of anything — it's the raw bytes each command produced, kept and written into
+// a second Terminal when you walk back to it. Replaying the real bytes through
+// the real renderer means the colours, the cursor moves and the overwrites all
+// come out exactly as they did the first time, which no amount of scraping the
+// text would give you.
+
+function createStack(opts) {
+  const T = window.WEBTERM_THEME;
+
+  const MAX_CARDS = 12; // how far back you can walk
+  const MAX_BYTES = 1 << 18; // 256 KB of output kept per command — the tail, which is the part you want
+  const DEPTH = 6; // cards drawn behind the front one
+
+  const deckEl = opts.deck;
+  const liveEl = opts.liveCard;
+  const session = opts.session;
+  // The page owns the status bar, so the deck reports its position rather than
+  // writing it: only the focused container's numbers belong down there.
+  const onChange = opts.onChange || (() => {});
+
+  // term.write() parses on its own schedule, so the OSC handlers fire *after*
+  // feed() has already seen the bytes that contain them. Left alone that makes
+  // a card's extent depend on how the pty happened to chunk its reads: output
+  // sharing a chunk with the start marker would be dropped, and the next prompt
+  // sharing one with the end marker would be kept. So the boundaries are cut
+  // against the markers themselves rather than against chunk edges.
+  const START = /\x1b\]133;C(?:;[^\x07\x1b]*)?(?:\x07|\x1b\\)/;
+  const END = /\x1b\]133;D(?:;[^\x07\x1b]*)?(?:\x07|\x1b\\)/;
+
+  let live = null; // the live Terminal, handed over by the container
+  let cards = []; // finished commands, newest first
+  let cursor = 0; // 0 = the live card, 1.. = further back
+  let current = null; // the command the live terminal is showing
+  let lastChunk = ''; // the chunk the start marker probably arrived in
+
+  const now = () => performance.now();
+
+  function head(el) {
+    return {
+      cmd: el.querySelector('.cmd'),
+      meta: el.querySelector('.meta'),
+    };
+  }
+
+  function label(rec) {
+    if (!rec) return 'live';
+    // Nothing sends us the command text over ssh, where there are no hooks to
+    // send it — the card is still the command, we just can't name it.
+    return rec.cmd || 'command';
+  }
+
+  function meta(rec) {
+    if (!rec || !rec.started) return '';
+    const ms = (rec.ended || now()) - rec.started;
+    const time = ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${Math.round(ms)}ms`;
+    if (rec.running) return time;
+    return rec.code ? `${time} · exit ${rec.code}` : time;
+  }
+
+  function status(rec) {
+    if (!rec) return 'idle';
+    if (rec.running) return 'run';
+    return rec.ok ? 'ok' : 'err';
+  }
+
+  function paintHead(el, rec) {
+    const h = head(el);
+    h.cmd.textContent = label(rec);
+    h.meta.textContent = meta(rec);
+    el.dataset.status = status(rec);
+  }
+
+  // A finished command only gets a Terminal of its own once you can actually
+  // see it. Walk back far enough and the ones that fall off the end never cost
+  // anything; the DOM renderer is used deliberately, because WebGL contexts are
+  // a small fixed pool and the live terminal has the one that matters.
+  function ensureTerm(card) {
+    if (card.term || !window.Terminal) return;
+    const t = new window.Terminal({
+      theme: T.xterm,
+      fontFamily: T.font,
+      fontSize: live ? live.options.fontSize : T.fontSize,
+      lineHeight: T.lineHeight,
+      letterSpacing: T.letterSpacing,
+      cols: live ? live.cols : 80,
+      rows: live ? live.rows : 24,
+      scrollback: 2000,
+      cursorStyle: 'bar',
+      cursorInactiveStyle: 'none',
+      disableStdin: true,
+      convertEol: false,
+    });
+    t.open(card.el.querySelector('.body'));
+    t.write(card.rec.bytes);
+    card.term = t;
+  }
+
+  function render() {
+    const all = [{ el: liveEl }, ...cards];
+    cursor = Math.max(0, Math.min(cursor, all.length - 1));
+
+    all.forEach((card, i) => {
+      const d = i - cursor;
+      const el = card.el;
+
+      // Behind the back of the deck, or already flown past the camera.
+      if (d > DEPTH || d < -2) {
+        el.style.display = 'none';
+        return;
+      }
+      el.style.display = '';
+
+      if (d < 0) {
+        // Newer than what you're looking at: coming at you and fading out.
+        el.style.transform = `translate3d(0, ${-d * 26}px, ${-d * 240}px)`;
+        el.style.opacity = '0';
+        el.style.filter = '';
+      } else {
+        // Depth alone. The upward cascade is the perspective origin's doing —
+        // see the note on #stack.
+        el.style.transform = `translate3d(0, 0, ${-d * 170}px)`;
+        el.style.opacity = d === 0 ? '1' : String(Math.max(0.18, 1 - d * 0.16));
+        el.style.filter = d === 0 ? '' : `brightness(${1 - d * 0.07})`;
+      }
+
+      el.style.zIndex = String(100 - d);
+      // Only the front window takes pointer events, which is also what makes
+      // it the only one you can pick up and drag.
+      el.style.pointerEvents = d === 0 ? '' : 'none';
+      el.toggleAttribute('data-front', d === 0);
+
+      if (d >= 0 && d <= DEPTH && card.rec) ensureTerm(card);
+    });
+
+    onChange({ cursor, depth: all.length });
+  }
+
+  function addCard(rec) {
+    const el = document.createElement('div');
+    el.className = 'card';
+    // Same shape as the live card in the template: a replayed command becomes
+    // the front window when you walk back to it, and it has to carry the same
+    // name and the same close button when it does.
+    el.innerHTML =
+      '<div class="card-head">' +
+      '<span class="lead"><span class="dot"></span><span class="cmd"></span></span>' +
+      '<span class="name" title="Double-click to rename"></span>' +
+      '<span class="tail"><span class="meta"></span>' +
+      '<button class="close" type="button" aria-label="Close this terminal">' +
+      '<svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true" focusable="false">' +
+      '<path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>' +
+      '</svg></button></span>' +
+      '</div><div class="body"></div>';
+    // windowName, not name: api.name() below is the *command* on a card, which
+    // is a different thing entirely.
+    el.querySelector('.name').textContent = opts.windowName();
+    deckEl.appendChild(el);
+
+    paintHead(el, rec);
+    cards.unshift({ el, rec, term: null });
+
+    while (cards.length > MAX_CARDS) {
+      const old = cards.pop();
+      if (old.term) old.term.dispose();
+      old.el.remove();
+    }
+  }
+
+  // Promote whatever the live terminal is currently showing into a card of its
+  // own, so the live terminal can be wiped for the command about to run.
+  function promote() {
+    if (!current || !current.bytes) return;
+    addCard(current);
+    current = null;
+  }
+
+  const api = {
+    attach(terminal) {
+      live = terminal;
+      render();
+    },
+
+    // Every byte the pty sends, while a command is running.
+    feed(data) {
+      lastChunk = data;
+      if (!current || !current.running) return;
+      current.bytes += data;
+      if (current.bytes.length > MAX_BYTES) {
+        current.bytes = current.bytes.slice(-MAX_BYTES);
+        current.clipped = true;
+      }
+    },
+
+    // The shell told us what it is about to run (OSC 633;E).
+    name(text) {
+      if (current && current.running) {
+        current.cmd = text;
+        paintHead(liveEl, current);
+      } else {
+        // Arrives a beat before the start marker; hold it for that.
+        api._pendingName = text;
+      }
+    },
+
+    begin() {
+      promote();
+      cursor = 0; // a new command always brings you back to the present
+      // Anything that shared a chunk with the start marker is this command's
+      // output, and feed() has already passed it by.
+      const opened = lastChunk.match(START);
+      current = {
+        cmd: api._pendingName || '',
+        bytes: opened ? lastChunk.slice(opened.index + opened[0].length) : '',
+        started: now(),
+        ended: null,
+        running: true,
+        ok: true,
+        code: 0,
+      };
+      api._pendingName = '';
+      // Wipe the live terminal so this command starts on a clean screen. Its
+      // predecessor isn't lost — promote() just put it on a card behind.
+      if (live) live.clear();
+      paintHead(liveEl, current);
+      render();
+    },
+
+    finish(ok, code) {
+      if (!current) return;
+      // Drop the end marker and the prompt that follows it — that belongs to
+      // whatever you type next, not to the command that just ran.
+      const closed = current.bytes.match(END);
+      if (closed) current.bytes = current.bytes.slice(0, closed.index);
+      current.running = false;
+      current.ended = now();
+      current.ok = ok;
+      current.code = code == null ? (ok ? 0 : 1) : code;
+      paintHead(liveEl, current);
+    },
+
+    // Put the deck back after a refresh, from what the server kept. The server
+    // parses the same markers off the same stream, so its records and the ones
+    // this file builds live agree — it just still has the older ones.
+    //
+    // `started`/`ended` come back as wall-clock milliseconds, while everything
+    // here is measured against performance.now(); they're rebased so the
+    // durations on restored cards stay right.
+    restore(payload) {
+      const skew = Date.now() - now();
+      const rebase = (rec) => ({
+        ...rec,
+        started: rec.started ? rec.started - skew : null,
+        ended: rec.ended ? rec.ended - skew : null,
+      });
+
+      for (const card of cards) {
+        if (card.term) card.term.dispose();
+        card.el.remove();
+      }
+      cards = [];
+
+      // Oldest first on the wire; addCard unshifts, so this ends up newest-first.
+      for (const rec of payload.cards || []) addCard(rebase(rec));
+
+      current = payload.live ? rebase(payload.live) : null;
+      if (current) current.bytes = payload.screen || '';
+
+      if (live) {
+        live.clear();
+        if (payload.screen) live.write(payload.screen);
+      }
+
+      cursor = 0;
+      paintHead(liveEl, current);
+      render();
+    },
+
+    go(delta) {
+      cursor += delta;
+      render();
+      return cursor;
+    },
+
+    get cursor() {
+      return cursor;
+    },
+
+    // The live terminal changed shape; bring the replayed ones along so their
+    // content doesn't sit at the old width.
+    resize(cols, rows) {
+      for (const c of cards) {
+        if (c.term) {
+          try {
+            c.term.resize(cols, rows);
+          } catch {
+            /* a disposed terminal, nothing to do */
+          }
+        }
+      }
+    },
+  };
+
+  session.on((e) => {
+    // A restored event describes a card restore() has already rebuilt.
+    if (e.restored) return;
+    if (e.type === 'start') api.begin();
+    else if (e.type === 'end') api.finish(e.ok, e.code);
+  });
+
+  // Keep the elapsed time on a running card ticking over.
+  const ticker = setInterval(() => {
+    if (current && current.running) paintHead(liveEl, current);
+  }, 200);
+
+  api.dispose = () => {
+    clearInterval(ticker);
+    for (const card of cards) if (card.term) card.term.dispose();
+    cards = [];
+  };
+
+  return api;
+}
+
+window.WEBTERM_STACK = { create: createStack };

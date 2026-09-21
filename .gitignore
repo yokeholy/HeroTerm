@@ -1,0 +1,12 @@
+node_modules/
+.DS_Store
+
+# Claude Code's per-machine settings, not the project's.
+.claude/settings.local.json
+
+# zsh writes a history file into the shim directory whenever your own rc files
+# compute HISTFILE from ZDOTDIR — which is ours while your .zshenv is being
+# sourced. That file is your command history and has no business in a
+# repository. See "Editing server.js needs a restart" in the README for why the
+# shim exists at all.
+shell/zdotdir/.zsh_history

@@ -1,0 +1,944 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Terminal</title>
+    <link rel="stylesheet" href="/vendor/xterm/css/xterm.css" />
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: var(--space, #05070c);
+      }
+
+      /* Only painted in windowed mode, where there is something to see. */
+      #sky {
+        position: fixed;
+        inset: 0;
+        display: none;
+      }
+
+      body[data-mode='windowed'] #sky {
+        display: block;
+      }
+
+      /* ---- page furniture: belongs to the page, not to any window ---- */
+
+      #controls {
+        position: fixed;
+        /* 4 + 26 + 2*2 padding = 34, which is where the cards start in
+           full-bleed mode. Any lower and this clips the front window's edge. */
+        top: 4px;
+        right: 8px;
+        z-index: 50;
+        display: flex;
+        gap: 2px;
+        padding: 2px;
+        border-radius: 9px;
+        /* Its own backdrop, because it sits over whatever happens to be
+           underneath — a card, a peeking title bar, or open sky. */
+        background: rgba(8, 10, 16, 0.55);
+        backdrop-filter: blur(6px);
+      }
+
+      .chip {
+        width: 30px;
+        height: 26px;
+        display: grid;
+        place-items: center;
+        flex: none;
+        padding: 0;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--label, #6b7384);
+        opacity: 0.7;
+        cursor: pointer;
+        transition: opacity 120ms, color 120ms, background 120ms;
+      }
+
+      .chip:hover {
+        opacity: 1;
+        color: var(--cursor, #e9a13b);
+        background: var(--hairline, #252a35);
+      }
+
+      .chip:focus-visible {
+        outline: 1px solid var(--cursor, #e9a13b);
+        outline-offset: 1px;
+      }
+
+      .chip[hidden] {
+        display: none; /* display:grid above would otherwise win */
+      }
+
+      .chip:disabled {
+        opacity: 0.22;
+        cursor: default;
+      }
+
+      .chip:disabled:hover {
+        background: transparent;
+        color: var(--label, #6b7384);
+        opacity: 0.22;
+      }
+
+      #sound .wave {
+        display: none;
+      }
+
+      #sound[aria-pressed='true'] .wave {
+        display: inline;
+      }
+
+      #sound[aria-pressed='true'] .slash {
+        display: none;
+      }
+
+      #expand[aria-pressed='true'] .out,
+      #expand[aria-pressed='false'] .in {
+        display: none;
+      }
+
+      #mode .restore {
+        display: none;
+      }
+
+      body[data-mode='windowed'] #mode .pop {
+        display: none;
+      }
+
+      body[data-mode='windowed'] #mode .restore {
+        display: inline;
+      }
+
+      #status {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 40;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 0 var(--gutter, 18px);
+        height: 30px;
+        background: var(--bg, #171b24);
+        border-top: 1px solid var(--hairline, #252a35);
+        color: var(--label, #6b7384);
+        font: 11px/1 var(--font, monospace);
+        letter-spacing: 0.02em;
+        user-select: none;
+      }
+
+      /* Over open sky the solid bar would read as a slab, so it thins out. */
+      body[data-mode='windowed'] #status {
+        background: rgba(8, 10, 16, 0.55);
+        backdrop-filter: blur(6px);
+        border-top-color: transparent;
+      }
+
+      #state {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+
+      #dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--label, #6b7384);
+      }
+
+      #state[data-live='yes'] #dot {
+        background: var(--cursor, #e9a13b);
+      }
+
+      #state[data-live='no'] #dot {
+        background: var(--red, #d4736b);
+      }
+
+      #nav {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        margin: 0 auto;
+      }
+
+      #nav .chip {
+        width: 24px;
+        height: 22px;
+        border-radius: 5px;
+      }
+
+      #place {
+        min-width: 58px;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+        opacity: 0.8;
+      }
+
+      #size {
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* ---- the deck: the windows themselves ---- */
+
+      .deck {
+        position: absolute;
+        inset: 0 0 30px 0; /* clear of the status bar */
+        z-index: 10;
+        perspective: 1500px;
+        /* Above the viewport on purpose: cards converge toward it as they
+           recede, so the deck cascades upward and you see the top edge of
+           everything behind. Put it inside the box and they'd shrink straight
+           into the front card and vanish behind it. */
+        perspective-origin: 50% -30%;
+      }
+
+      body[data-mode='windowed'] .deck {
+        inset: auto; /* position and size come from JS */
+      }
+
+      /* The container you last touched is the one keys go to. Everything else
+         steps back a little so there's no doubt which that is. */
+      body[data-mode='windowed'] .deck:not([data-focused]) .card[data-front] {
+        opacity: 0.82;
+      }
+
+      .card {
+        position: absolute;
+        /* The gap at the top is where the deck goes. Absolutely positioned
+           children ignore padding on the container, so it has to be here. */
+        top: 36px;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        box-sizing: border-box;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        /* minmax(0,1fr), not the default auto: an auto column is sized to
+           max-content, and the terminal's intrinsic width is wider than the
+           card, which pushed the title bar out past the right edge where
+           overflow:hidden ate the end of it. */
+        grid-template-columns: minmax(0, 1fr);
+        min-height: 0;
+        background: var(--bg, #171b24);
+        border: 1px solid var(--hairline, #252a35);
+        border-radius: 9px;
+        overflow: hidden;
+        transform-origin: 50% 50%;
+        transition: transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 420ms,
+          filter 420ms, border-color 200ms, box-shadow 200ms;
+      }
+
+      /* Each window carries its own verdict, so a glance down the deck tells
+         you which of the last dozen commands went wrong. */
+      .card[data-status='run'] {
+        border-color: var(--yellow, #d9a86c);
+      }
+
+      .card[data-status='ok'] {
+        border-color: var(--green, #93b07a);
+      }
+
+      .card[data-status='err'] {
+        border-color: var(--red, #d4736b);
+      }
+
+      .card[data-front] {
+        border-width: 2px;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.7);
+      }
+
+      .card[data-front][data-status='run'] {
+        box-shadow: 0 0 22px -4px var(--yellow, #d9a86c), 0 24px 70px rgba(0, 0, 0, 0.7);
+      }
+
+      .card[data-front][data-status='ok'] {
+        box-shadow: 0 0 18px -6px var(--green, #93b07a), 0 24px 70px rgba(0, 0, 0, 0.7);
+      }
+
+      .card[data-front][data-status='err'] {
+        box-shadow: 0 0 18px -6px var(--red, #d4736b), 0 24px 70px rgba(0, 0, 0, 0.7);
+      }
+
+      .card-head {
+        /* 1fr auto 1fr is what actually centres the middle column: the two
+           flexible ends always take an equal share, so the name sits in the
+           middle of the window regardless of how long the command is. */
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        gap: 8px;
+        height: 26px;
+        padding: 0 10px;
+        background: var(--bg, #171b24);
+        border-bottom: 1px solid var(--hairline, #252a35);
+        color: var(--label, #6b7384);
+        font: 10px/1 var(--font, monospace);
+        white-space: nowrap;
+        overflow: hidden;
+        user-select: none;
+      }
+
+      /* Only the front window can be picked up; the ones behind it don't take
+         pointer events at all. */
+      body[data-mode='windowed'] .card[data-front] .card-head {
+        cursor: grab;
+      }
+
+      body[data-mode='windowed'][data-dragging='yes'] .card[data-front] .card-head {
+        cursor: grabbing;
+      }
+
+      .card-head .dot {
+        width: 6px;
+        height: 6px;
+        flex: none;
+        border-radius: 50%;
+        background: var(--label, #6b7384);
+      }
+
+      .card[data-status='run'] .dot {
+        background: var(--yellow, #d9a86c);
+      }
+
+      .card[data-status='ok'] .dot {
+        background: var(--green, #93b07a);
+      }
+
+      .card[data-status='err'] .dot {
+        background: var(--red, #d4736b);
+      }
+
+      .card-head .lead,
+      .card-head .tail {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0; /* or a long command widens the column instead of ellipsing */
+        overflow: hidden;
+      }
+
+      .card-head .tail {
+        justify-content: flex-end;
+      }
+
+      .card-head .cmd {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .card-head .meta {
+        flex: none; /* the duration never gets truncated; the command does */
+        opacity: 0.8;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* The window's name. Only the front card carries it — repeating it down
+         the whole cascade would just be noise. */
+      .card-head .name {
+        display: none;
+        /* The header as a whole is user-select: none, which leaves a
+           double-click here with no word to select — and the browser then
+           reports the dblclick against an ancestor rather than this span, so
+           the rename never triggers. Being selectable makes it behave like the
+           text it is. */
+        user-select: text;
+        max-width: 22ch;
+        padding: 2px 7px;
+        border-radius: 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: var(--fg, #d6d9e0);
+        cursor: text;
+      }
+
+      .card[data-front] .card-head .name {
+        display: block;
+      }
+
+      .card[data-front] .card-head .name:hover {
+        background: var(--hairline, #252a35);
+      }
+
+      .card-head .name[contenteditable='true'] {
+        background: var(--hairline, #252a35);
+        outline: 1px solid var(--cursor, #e9a13b);
+        color: var(--fg, #d6d9e0);
+        user-select: text; /* the header as a whole sets user-select: none */
+        cursor: text;
+      }
+
+      .card-head .close {
+        flex: none;
+        width: 18px;
+        height: 18px;
+        margin-right: -4px;
+        display: none;
+        place-items: center;
+        padding: 0;
+        border: 0;
+        border-radius: 4px;
+        background: transparent;
+        color: var(--label, #6b7384);
+        opacity: 0.6;
+        cursor: pointer;
+      }
+
+      /* Only the front window of a deck can be closed — the ones behind it are
+         previous commands, not terminals. */
+      .card[data-front] .card-head .close {
+        display: grid;
+      }
+
+      .card-head .close:hover {
+        opacity: 1;
+        color: var(--red, #d4736b);
+        background: var(--hairline, #252a35);
+      }
+
+      .card .body {
+        min-height: 0;
+        min-width: 0;
+        overflow: hidden;
+        padding: 10px var(--gutter, 18px) 0;
+        background: var(--bg, #171b24);
+      }
+
+      /* xterm draws its own scrollbar region; keep it out of the gutter */
+      .card .body .xterm-viewport {
+        background-color: transparent !important;
+        scrollbar-width: thin;
+        scrollbar-color: var(--hairline, #252a35) transparent;
+      }
+
+      /* ---- help ---- */
+
+      #helpbtn {
+        position: fixed;
+        top: 4px;
+        left: 8px;
+        z-index: 50;
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        /* Its own backdrop, same as the controls opposite: it sits over a card,
+           a peeking title bar or open sky depending on the moment. */
+        background: rgba(8, 10, 16, 0.55);
+        backdrop-filter: blur(6px);
+        font: 600 13px/1 var(--font, monospace);
+      }
+
+      #helpbtn:hover {
+        background: var(--hairline, #252a35);
+      }
+
+      #help {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        background: rgba(5, 7, 12, 0.6);
+      }
+
+      #help[hidden] {
+        display: none;
+      }
+
+      #help .pop {
+        position: absolute;
+        top: 40px;
+        left: 8px;
+        width: min(430px, calc(100vw - 16px));
+        max-height: calc(100vh - 56px);
+        overflow: auto;
+        padding: 16px 18px 18px;
+        border: 1px solid var(--hairline, #252a35);
+        border-radius: 11px;
+        background: var(--bg, #171b24);
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.75);
+        color: var(--fg, #d6d9e0);
+        font: 12px/1.6 var(--font, monospace);
+      }
+
+      #help h1 {
+        margin: 0 0 4px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      #help h2 {
+        margin: 18px 0 6px;
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--label, #6b7384);
+      }
+
+      #help p {
+        margin: 0 0 4px;
+        color: var(--label, #6b7384);
+      }
+
+      #help dl {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 2px 14px;
+        margin: 0;
+      }
+
+      #help dt {
+        white-space: nowrap;
+        color: var(--cursor, #e9a13b);
+      }
+
+      #help dd {
+        margin: 0;
+        min-width: 0;
+      }
+
+      #help .close {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+      }
+
+      /* ---- the stats sheet ---- */
+
+      #stats {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: grid;
+        place-items: start center;
+        padding: 46px 18px 24px;
+        overflow: auto;
+        background: rgba(5, 7, 12, 0.88);
+        backdrop-filter: blur(10px);
+      }
+
+      #stats[hidden] {
+        display: none;
+      }
+
+      #stats .sheet {
+        width: min(960px, 100%);
+        padding: 18px 22px 22px;
+        border: 1px solid var(--hairline, #252a35);
+        border-radius: 12px;
+        background: var(--bg, #171b24);
+        box-shadow: 0 30px 90px rgba(0, 0, 0, 0.75);
+        color: var(--fg, #d6d9e0);
+        font: 12px/1.5 var(--font, monospace);
+      }
+
+      #stats header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      #stats h1 {
+        flex: 1;
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+
+      #stats h2 {
+        margin: 0 0 10px;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--label, #6b7384);
+      }
+
+      #stats section + section {
+        margin-top: 24px;
+      }
+
+      #stats .muted {
+        color: var(--label, #6b7384);
+      }
+
+      #stats .summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 10px;
+        margin-bottom: 24px;
+      }
+
+      #stats .summary div {
+        padding: 10px 12px;
+        border: 1px solid var(--hairline, #252a35);
+        border-radius: 8px;
+      }
+
+      #stats .summary b {
+        display: block;
+        font-size: 17px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: var(--fg, #d6d9e0);
+      }
+
+      #stats .summary span {
+        color: var(--label, #6b7384);
+        font-size: 10px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      #stats .cols {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+        gap: 26px;
+      }
+
+      #stats .bars {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      #stats .bars li {
+        display: grid;
+        /* minmax(0,…) on the label column, or a long command line widens the
+           whole grid instead of ellipsing. */
+        grid-template-columns: minmax(0, 11em) 1fr auto;
+        align-items: center;
+        gap: 10px;
+        padding: 2px 0;
+      }
+
+      #stats .bars .k {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        color: var(--fg, #d6d9e0);
+      }
+
+      #stats .bars .track {
+        height: 8px;
+        border-radius: 4px;
+        background: var(--hairline, #252a35);
+        overflow: hidden;
+      }
+
+      #stats .bars .fill {
+        display: block;
+        height: 100%;
+        border-radius: 4px;
+        background: linear-gradient(90deg, var(--cyan, #82b8b8), var(--cursor, #e9a13b));
+      }
+
+      #stats .bars .n {
+        min-width: 3.6em;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        color: var(--label, #6b7384);
+      }
+
+      #stats .hours {
+        display: grid;
+        grid-template-columns: repeat(24, 1fr);
+        gap: 3px;
+        height: 96px;
+      }
+
+      #stats .hour {
+        display: grid;
+        grid-template-rows: 1fr auto;
+        align-items: end;
+        gap: 4px;
+        min-width: 0;
+      }
+
+      #stats .hour .col {
+        align-self: end;
+        border-radius: 3px 3px 0 0;
+        background: var(--blue, #7a9cc6);
+        opacity: 0.85;
+      }
+
+      #stats .hour .hl {
+        text-align: center;
+        font-size: 9px;
+        color: var(--label, #6b7384);
+      }
+
+      #stats .src {
+        margin: 22px 0 0;
+        color: var(--label, #6b7384);
+        font-size: 10px;
+        word-break: break-all;
+      }
+
+      /* Resize corner. Windowed only — there is nothing to drag in full screen. */
+      .grip {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        width: 16px;
+        height: 16px;
+        display: none;
+        cursor: nwse-resize;
+        touch-action: none;
+        z-index: 200;
+      }
+
+      body[data-mode='windowed'] .grip {
+        display: block;
+      }
+
+      .grip::after {
+        content: '';
+        position: absolute;
+        right: 3px;
+        bottom: 3px;
+        width: 7px;
+        height: 7px;
+        border-right: 1.5px solid var(--label, #6b7384);
+        border-bottom: 1.5px solid var(--label, #6b7384);
+        opacity: 0.5;
+      }
+    </style>
+  </head>
+  <body data-mode="full" data-run="idle">
+    <canvas id="sky"></canvas>
+
+    <button id="helpbtn" class="chip" type="button" aria-expanded="false" aria-label="Help">?</button>
+
+    <div id="controls">
+      <button id="add" class="chip" type="button" aria-label="New terminal">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+          <path d="M8 3.5v9M3.5 8h9" fill="none" stroke="currentColor"
+                stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+      </button>
+
+      <button
+        id="statsbtn"
+        class="chip"
+        type="button"
+        aria-expanded="false"
+        aria-label="Command history stats"
+      >
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+          <g fill="currentColor">
+            <rect x="2" y="9" width="3" height="5" rx="1" />
+            <rect x="6.5" y="5.5" width="3" height="8.5" rx="1" />
+            <rect x="11" y="2" width="3" height="12" rx="1" />
+          </g>
+        </svg>
+      </button>
+
+      <button id="expand" class="chip" type="button" aria-pressed="false" aria-label="Full screen">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+          <g
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.35"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <g class="out"><path d="M6 2H2v4M10 2h4v4M6 14H2v-4M10 14h4v-4" /></g>
+            <g class="in"><path d="M2 6h4V2M14 6h-4V2M2 10h4v4M14 10h-4v4" /></g>
+          </g>
+        </svg>
+      </button>
+
+      <button id="mode" class="chip" type="button" aria-label="Pop out into a window">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+          <g fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
+            <rect class="pop" x="2.5" y="4" width="11" height="8.5" rx="1.5" />
+            <rect class="restore" x="1.5" y="2.5" width="13" height="11" rx="1.5" />
+          </g>
+        </svg>
+      </button>
+
+      <button id="sound" class="chip" type="button" aria-pressed="true" aria-label="Sound on">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+          <path d="M3 6h2.6L9 3.1v9.8L5.6 10H3z" fill="currentColor" />
+          <g fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+            <path class="wave" d="M11.2 5.6a3.4 3.4 0 0 1 0 4.8" />
+            <path class="slash" d="M11.4 6.1l3.4 3.8M14.8 6.1l-3.4 3.8" />
+          </g>
+        </svg>
+      </button>
+    </div>
+
+    <template id="container-tpl">
+      <div class="deck" data-status="idle" data-run="idle">
+        <div class="card" data-status="idle" data-front>
+          <div class="card-head">
+            <span class="lead"><span class="dot"></span><span class="cmd">live</span></span>
+            <span class="name" title="Double-click to rename"></span>
+            <span class="tail">
+              <span class="meta"></span>
+              <button class="close" type="button" aria-label="Close this terminal">
+                <svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true" focusable="false">
+                  <path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor"
+                        stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+              </button>
+            </span>
+          </div>
+          <div class="body"></div>
+        </div>
+
+        <div class="grip"></div>
+      </div>
+    </template>
+
+    <footer id="status">
+      <span id="state" data-live="pending"><span id="dot"></span><span id="state-text">Connecting</span></span>
+
+      <span id="nav">
+        <button id="prev" class="chip" type="button" aria-label="Older command">
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+            <path
+              d="M10 3L5 8l5 5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <span id="place">live</span>
+        <button id="next" class="chip" type="button" aria-label="Newer command">
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+            <path
+              d="M6 3l5 5-5 5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+      </span>
+
+      <span id="size"></span>
+    </footer>
+
+    <script src="/vendor/xterm/lib/xterm.js"></script>
+    <script src="/vendor/addon-fit/lib/addon-fit.js"></script>
+    <script src="/vendor/addon-webgl/lib/addon-webgl.js"></script>
+    <script src="/vendor/addon-web-links/lib/addon-web-links.js"></script>
+    <section id="help" hidden aria-label="Help">
+      <div class="pop" role="dialog" aria-label="Help">
+        <button id="help-close" class="chip close" type="button" aria-label="Close">
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+            <path
+              d="M4 4l8 8M12 4l-8 8"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
+
+        <h1>webterm</h1>
+        <p>Your real shell, in a browser tab.</p>
+
+        <h2>Each command gets a window</h2>
+        <p>
+          The screen clears for every command, and the one before it stacks up
+          behind. The border says how it went: yellow running, green clean, red
+          failed.
+        </p>
+
+        <h2>Buttons, top right</h2>
+        <dl>
+          <dt>plus</dt>
+          <dd>another terminal — click one to bring it forward, × to close it</dd>
+          <dt>name</dt>
+          <dd>double-click the name in a window's bar to rename it</dd>
+          <dt>bars</dt>
+          <dd>what you type most, from your whole shell history</dd>
+          <dt>expand</dt>
+          <dd>browser full screen</dd>
+          <dt>square</dt>
+          <dd>float the terminal over a star field</dd>
+          <dt>speaker</dt>
+          <dd>sound on and off</dd>
+        </dl>
+
+        <h2>Keys</h2>
+        <dl>
+          <dt>Cmd T</dt>
+          <dd>another terminal</dd>
+          <dt>Cmd [ &nbsp;Cmd ]</dt>
+          <dd>older / newer command</dd>
+          <dt>Cmd C &nbsp;Cmd V</dt>
+          <dd>copy, paste</dd>
+          <dt>Cmd K</dt>
+          <dd>clear</dd>
+          <dt>Cmd + &nbsp;− &nbsp;0</dt>
+          <dd>font size</dd>
+          <dt>Esc</dt>
+          <dd>close this</dd>
+        </dl>
+
+        <h2>Worth knowing</h2>
+        <dl>
+          <dt>Refresh</dt>
+          <dd>keeps everything — same shell, cwd and deck</dd>
+          <dt>Scrolling</dt>
+          <dd>won't go above the current command; use Cmd [</dd>
+          <dt>Closing the tab</dt>
+          <dd>ends the shell. Run tmux first if you'd rather it didn't</dd>
+        </dl>
+      </div>
+    </section>
+
+    <section id="stats" hidden aria-label="Command history">
+      <div class="sheet">
+        <header>
+          <h1>What you actually type</h1>
+          <button id="stats-close" class="chip" type="button" aria-label="Close">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+              <path
+                d="M4 4l8 8M12 4l-8 8"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+        </header>
+        <div id="stats-body"></div>
+      </div>
+    </section>
+
+    <script src="/theme.js"></script>
+    <script src="/session.js"></script>
+    <script src="/audio.js"></script>
+    <script src="/sky.js"></script>
+    <script src="/stack.js"></script>
+    <script src="/container.js"></script>
+    <script src="/stats.js"></script>
+    <script src="/help.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>
