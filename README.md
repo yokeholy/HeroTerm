@@ -87,6 +87,7 @@ than to any window, so they stay put whatever the deck is doing:
 |---|---|
 | plus | another terminal, in a container of its own |
 | bars | what you actually type — see below |
+| sliders | settings |
 | expand | the browser's own full screen — the whole display, tab strip gone |
 | square | pop the deck out of the tab into a floating window, and back |
 | speaker | sound on/off |
@@ -95,8 +96,11 @@ The window you're working in breathes: its glow swells and settles on a slow
 cycle, in whatever colour its last command left behind — grey when nothing has
 run, yellow while something is, green or red once it's done. The others fade to
 a fifth of their opacity and the star field shows through them, so there is
-never a question which one your keys are going to. Both numbers — `dimmed` and
-`breath` — are in `public/theme.js`. The breathing stops under
+never a question which one your keys are going to. How faded is under the sliders button, with a
+slider and a number box that drive each other — drag one and the windows fade
+as you go. Reset puts it back to the default. It's kept in this browser, not on
+the server, and `public/theme.js` holds the defaults: `dimmed` for the fade and
+`breath` for the length of one breath. The breathing stops under
 `prefers-reduced-motion`.
 
 Each window is named when it's made — stars, given what's behind them — and the
@@ -195,6 +199,22 @@ forever, so you can look over long after the fact and still see how it went.
 None of this is painted in full screen, where the terminal covers every pixel
 of it — the animation loop stops rather than running behind an opaque window.
 Star count and colours are in `public/theme.js`.
+
+## Settings
+
+The sliders button opens a sheet for the handful of things that are taste
+rather than correctness — at the moment, how far unfocused windows fade. Both
+a slider and a number box are wired to the same value and each updates the
+other, since neither is the right control on its own: one is for finding a
+number by eye, the other for saying exactly which number you meant.
+
+Whichever you are using is left alone while you use it. Writing a clamped value
+back into the box you are typing in moves the caret out from under you, and
+makes `10` impossible to type on the way to `100`.
+
+Defaults live in `public/theme.js` and settings only record where you have
+moved away from them, so `Reset` is a delete rather than a second copy of the
+default.
 
 ## Refreshing
 

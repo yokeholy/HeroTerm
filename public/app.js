@@ -23,6 +23,8 @@ const audio = window.WEBTERM_AUDIO;
 const sky = window.WEBTERM_SKY;
 
 // Push the theme into CSS so the chrome and the grid can never drift apart.
+// --dim is deliberately absent: settings.js owns it, because it is the one of
+// these the user can move, and two writers would race on reload.
 const cssVars = {
   '--font': T.font,
   '--gutter': T.chrome.gutter,
@@ -30,7 +32,6 @@ const cssVars = {
   '--hairline': T.chrome.hairline,
   '--label': T.chrome.label,
   '--space': T.chrome.space,
-  '--dim': String(T.chrome.dimmed),
   '--breath': T.chrome.breath,
   '--bg': T.xterm.background,
   '--fg': T.xterm.foreground,
