@@ -293,6 +293,14 @@ function createStack(opts) {
       return cursor;
     },
 
+    // Terminals keep the theme they were built with, so the replayed ones have
+    // to be told. Their bytes are untouched — only the palette changes.
+    retheme() {
+      for (const c of cards) {
+        if (c.term) c.term.options.theme = T.xterm;
+      }
+    },
+
     // The live terminal changed shape; bring the replayed ones along so their
     // content doesn't sit at the old width.
     resize(cols, rows) {

@@ -44,7 +44,7 @@
         border-radius: 9px;
         /* Its own backdrop, because it sits over whatever happens to be
            underneath — a card, a peeking title bar, or open sky. */
-        background: rgba(8, 10, 16, 0.55);
+        background: var(--backdrop, rgba(8, 10, 16, 0.55));
         backdrop-filter: blur(6px);
       }
 
@@ -140,7 +140,7 @@
 
       /* Over open sky the solid bar would read as a slab, so it thins out. */
       body[data-mode='windowed'] #status {
-        background: rgba(8, 10, 16, 0.55);
+        background: var(--backdrop, rgba(8, 10, 16, 0.55));
         backdrop-filter: blur(6px);
         border-top-color: transparent;
       }
@@ -271,7 +271,7 @@
 
       .card[data-front] {
         border-width: 2px;
-        box-shadow: 0 0 16px -5px var(--glow), 0 24px 70px rgba(0, 0, 0, 0.7);
+        box-shadow: 0 0 16px -5px var(--glow), 0 24px 70px var(--shadow, rgba(0, 0, 0, 0.7));
       }
 
       /* The focused window breathes. An animation outranks the plain rule
@@ -284,10 +284,10 @@
       @keyframes breathe {
         0%,
         100% {
-          box-shadow: 0 0 9px -6px var(--glow), 0 24px 70px rgba(0, 0, 0, 0.7);
+          box-shadow: 0 0 9px -6px var(--glow), 0 24px 70px var(--shadow, rgba(0, 0, 0, 0.7));
         }
         50% {
-          box-shadow: 0 0 34px -2px var(--glow), 0 24px 70px rgba(0, 0, 0, 0.7);
+          box-shadow: 0 0 34px -2px var(--glow), 0 24px 70px var(--shadow, rgba(0, 0, 0, 0.7));
         }
       }
 
@@ -461,7 +461,7 @@
         border-radius: 9px;
         /* Its own backdrop, same as the controls opposite: it sits over a card,
            a peeking title bar or open sky depending on the moment. */
-        background: rgba(8, 10, 16, 0.55);
+        background: var(--backdrop, rgba(8, 10, 16, 0.55));
         backdrop-filter: blur(6px);
         font: 600 13px/1 var(--font, monospace);
       }
@@ -474,7 +474,7 @@
         position: fixed;
         inset: 0;
         z-index: 100;
-        background: rgba(5, 7, 12, 0.6);
+        background: var(--veil, rgba(5, 7, 12, 0.6));
       }
 
       #help[hidden] {
@@ -492,7 +492,7 @@
         border: 1px solid var(--hairline, #252a35);
         border-radius: 11px;
         background: var(--bg, #171b24);
-        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.75);
+        box-shadow: 0 24px 70px var(--shadow, rgba(0, 0, 0, 0.75));
         color: var(--fg, #d6d9e0);
         font: 12px/1.6 var(--font, monospace);
       }
@@ -550,7 +550,7 @@
         place-items: start center;
         padding: 56px 18px 24px;
         overflow: auto;
-        background: rgba(5, 7, 12, 0.88);
+        background: var(--veil, rgba(5, 7, 12, 0.88));
         backdrop-filter: blur(10px);
       }
 
@@ -564,7 +564,7 @@
         border: 1px solid var(--hairline, #252a35);
         border-radius: 12px;
         background: var(--bg, #171b24);
-        box-shadow: 0 30px 90px rgba(0, 0, 0, 0.75);
+        box-shadow: 0 30px 90px var(--shadow, rgba(0, 0, 0, 0.75));
         color: var(--fg, #d6d9e0);
         font: 12px/1.5 var(--font, monospace);
       }
@@ -608,6 +608,64 @@
 
       #settings .src {
         margin: 22px 0 0;
+        color: var(--label, #6b7384);
+        font-size: 10px;
+      }
+
+      #settings .themes {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+        gap: 10px;
+      }
+
+      #settings .theme {
+        padding: 9px 10px 10px;
+        border: 1px solid var(--hairline, #252a35);
+        border-radius: 8px;
+        background: transparent;
+        color: var(--fg, #d6d9e0);
+        font: 11px/1.4 var(--font, monospace);
+        text-align: left;
+        cursor: pointer;
+        transition: border-color 120ms;
+      }
+
+      #settings .theme:hover {
+        border-color: var(--label, #6b7384);
+      }
+
+      #settings .theme[aria-pressed='true'] {
+        border-color: var(--cursor, #e9a13b);
+        box-shadow: inset 0 0 0 1px var(--cursor, #e9a13b);
+      }
+
+      #settings .theme:focus-visible {
+        outline: 1px solid var(--cursor, #e9a13b);
+        outline-offset: 2px;
+      }
+
+      /* The palette itself is the label that matters; the name is for saying
+         it out loud afterwards. */
+      #settings .chips {
+        display: flex;
+        gap: 3px;
+        margin-bottom: 8px;
+      }
+
+      #settings .chips i {
+        flex: 1;
+        height: 18px;
+        border-radius: 3px;
+      }
+
+      #settings .tname {
+        display: block;
+        font-size: 12px;
+      }
+
+      #settings .tnote {
+        display: block;
+        margin-top: 3px;
         color: var(--label, #6b7384);
         font-size: 10px;
       }
@@ -681,7 +739,7 @@
         place-items: start center;
         padding: 46px 18px 24px;
         overflow: auto;
-        background: rgba(5, 7, 12, 0.88);
+        background: var(--veil, rgba(5, 7, 12, 0.88));
         backdrop-filter: blur(10px);
       }
 
@@ -695,7 +753,7 @@
         border: 1px solid var(--hairline, #252a35);
         border-radius: 12px;
         background: var(--bg, #171b24);
-        box-shadow: 0 30px 90px rgba(0, 0, 0, 0.75);
+        box-shadow: 0 30px 90px var(--shadow, rgba(0, 0, 0, 0.75));
         color: var(--fg, #d6d9e0);
         font: 12px/1.5 var(--font, monospace);
       }
@@ -1157,7 +1215,7 @@
           <dt>bars</dt>
           <dd>what you type most, from your whole shell history</dd>
           <dt>sliders</dt>
-          <dd>settings</dd>
+          <dd>settings — theme, and how far unfocused windows fade</dd>
           <dt>expand</dt>
           <dd>browser full screen</dd>
           <dt>square</dt>
@@ -1212,6 +1270,16 @@
         </header>
 
         <div class="setting">
+          <label>Theme</label>
+          <p class="hint">
+            Colour only — the typeface, spacing and timings are the same
+            whichever you pick, so switching can never hand you a font you
+            didn't ask for.
+          </p>
+          <div id="set-themes" class="themes"></div>
+        </div>
+
+        <div class="setting" style="margin-top: 26px">
           <label for="set-dim">Unfocused window opacity</label>
           <p class="hint">
             How much of a window you are not working in is left on screen. Lower

@@ -25,24 +25,32 @@ const sky = window.WEBTERM_SKY;
 // Push the theme into CSS so the chrome and the grid can never drift apart.
 // --dim is deliberately absent: settings.js owns it, because it is the one of
 // these the user can move, and two writers would race on reload.
-const cssVars = {
-  '--font': T.font,
-  '--gutter': T.chrome.gutter,
-  '--surface': T.chrome.surface,
-  '--hairline': T.chrome.hairline,
-  '--label': T.chrome.label,
-  '--space': T.chrome.space,
-  '--breath': T.chrome.breath,
-  '--bg': T.xterm.background,
-  '--fg': T.xterm.foreground,
-  '--cursor': T.xterm.cursor,
-  '--red': T.xterm.red,
-  '--green': T.xterm.green,
-  '--yellow': T.xterm.yellow,
-  '--blue': T.xterm.blue,
-  '--cyan': T.xterm.cyan,
-};
-for (const [k, v] of Object.entries(cssVars)) document.documentElement.style.setProperty(k, v);
+function paintTheme() {
+  const vars = {
+    '--font': T.font,
+    '--gutter': T.chrome.gutter,
+    '--surface': T.chrome.surface,
+    '--hairline': T.chrome.hairline,
+    '--label': T.chrome.label,
+    '--space': T.chrome.space,
+    '--backdrop': T.chrome.backdrop,
+    '--veil': T.chrome.veil,
+    '--shadow': T.chrome.shadow,
+    '--breath': T.chrome.breath,
+    '--bg': T.xterm.background,
+    '--fg': T.xterm.foreground,
+    '--cursor': T.xterm.cursor,
+    '--red': T.xterm.red,
+    '--green': T.xterm.green,
+    '--yellow': T.xterm.yellow,
+    '--blue': T.xterm.blue,
+    '--cyan': T.xterm.cyan,
+  };
+  for (const [k, v] of Object.entries(vars)) document.documentElement.style.setProperty(k, v);
+}
+
+paintTheme();
+window.WEBTERM_THEMES.on(paintTheme);
 
 /* ---------- layout, remembered ---------- */
 

@@ -99,6 +99,11 @@
       onChange: (pos) => page.deckMoved(self, pos),
     });
 
+    window.WEBTERM_THEMES.on(() => {
+      term.options.theme = T.xterm;
+      stack.retheme();
+    });
+
     /* ---------- sizing ---------- */
 
     let resizeTimer = null;

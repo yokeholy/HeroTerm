@@ -101,6 +101,52 @@
     document.getElementById('set-dim-reset')
   );
 
+  /* ---------- themes ---------- */
+
+  // Built from the registry rather than written out here, so adding a palette
+  // to theme.js is the whole job. The swatch is the real label — you recognise
+  // a theme by its colours long before you remember its name.
+  const themeBox = document.getElementById('set-themes');
+  const themes = window.WEBTERM_THEMES;
+
+  for (const t of themes.list) {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'theme';
+    card.dataset.key = t.key;
+    card.title = t.note;
+
+    const chips = document.createElement('span');
+    chips.className = 'chips';
+    for (const colour of t.swatch) {
+      const chip = document.createElement('i');
+      chip.style.background = colour;
+      chips.appendChild(chip);
+    }
+
+    const label = document.createElement('span');
+    label.className = 'tname';
+    label.textContent = t.name;
+
+    const note = document.createElement('span');
+    note.className = 'tnote';
+    note.textContent = t.note;
+
+    card.append(chips, label, note);
+    card.addEventListener('mousedown', (e) => e.preventDefault());
+    card.addEventListener('click', () => themes.apply(t.key));
+    themeBox.appendChild(card);
+  }
+
+  function markActive() {
+    for (const card of themeBox.children) {
+      card.setAttribute('aria-pressed', String(card.dataset.key === themes.active));
+    }
+  }
+
+  markActive();
+  themes.on(markActive);
+
   function open() {
     returnFocus = document.activeElement;
     panel.hidden = false;

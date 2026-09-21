@@ -13,7 +13,6 @@
 
 (function () {
   const T = window.WEBTERM_THEME;
-  const CFG = T.stars;
 
   const canvas = document.getElementById('sky');
   const g = canvas.getContext('2d', { alpha: false });
@@ -60,7 +59,7 @@
       z: zz,
       tw: rand(0.4, 1.7), // twinkle rate
       phase: rand(0, Math.PI * 2),
-      col: CFG.colors[(Math.random() * CFG.colors.length) | 0],
+      col: T.stars.colors[(Math.random() * T.stars.colors.length) | 0],
     };
   }
 
@@ -183,11 +182,18 @@
         return;
       }
       resize();
-      if (!stars.length) stars = Array.from({ length: CFG.count }, () => star());
+      if (!stars.length) stars = Array.from({ length: T.stars.count }, () => star());
       last = performance.now();
       raf = requestAnimationFrame(frame);
     },
   };
+
+  // A star's colour is chosen when it spawns, so a new palette has to be dealt
+  // out to the ones already up there. The background is read every frame and
+  // needs no help.
+  window.WEBTERM_THEMES.on(() => {
+    for (const s of stars) s.col = T.stars.colors[(Math.random() * T.stars.colors.length) | 0];
+  });
 
   // Driven by whether *anything* is running rather than by one container's
   // events, so a build in a terminal you aren't looking at still moves the sky.

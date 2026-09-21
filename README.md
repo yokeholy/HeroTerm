@@ -202,8 +202,27 @@ Star count and colours are in `public/theme.js`.
 
 ## Settings
 
-The sliders button opens a sheet for the handful of things that are taste
-rather than correctness — at the moment, how far unfocused windows fade. Both
+The sliders button opens a sheet for the things that are taste rather than
+correctness: the theme, and how far unfocused windows fade.
+
+Six themes ship — **Deep Field** (blue-grey), **Ember** (coal and firelight),
+**Fathom** (deep water), **Amethyst** (violet), **Moss** (forest), and
+**Vellum**, a paper light theme where the stars become ink and settle as dust.
+Switching takes effect immediately, across the terminals, the replayed cards
+behind them, the window chrome and the sky.
+
+A theme is *only colour*. Type, spacing and the timings are shared, so
+switching can never hand you a font you didn't ask for — and adding one is a
+palette in `public/theme.js`, with the picker building itself from the
+registry.
+
+Two things make live switching work. `window.WEBTERM_THEME` is mutated in place
+rather than replaced, because every module holds a reference to it and
+reassigning the global would leave them all pointing at the old one. And
+anything that can't simply read it again — terminals already built, stars
+already coloured — subscribes to `WEBTERM_THEMES.on()` and is told.
+
+Both
 a slider and a number box are wired to the same value and each updates the
 other, since neither is the right control on its own: one is for finding a
 number by eye, the other for saying exactly which number you meant.
