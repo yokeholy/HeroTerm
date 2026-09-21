@@ -13,7 +13,7 @@
 // text would give you.
 
 function createStack(opts) {
-  const T = window.WEBTERM_THEME;
+  const T = window.HEROTERM_THEME;
 
   const MAX_CARDS = 12; // how far back you can walk
   const MAX_BYTES = 1 << 18; // 256 KB of output kept per command — the tail, which is the part you want
@@ -337,4 +337,4 @@ function createStack(opts) {
   return api;
 }
 
-window.WEBTERM_STACK = { create: createStack };
+window.HEROTERM_STACK = { create: createStack };

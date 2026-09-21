@@ -1,4 +1,4 @@
-# webterm remote shell integration — optional.
+# Hero Term remote shell integration — optional.
 #
 # You do NOT need this to hear commands you run over ssh. The browser already
 # picks those up from bracketed-paste transitions, which travel back down the
@@ -7,8 +7,8 @@
 #
 # Installing this on a host you ssh into fixes that, and nothing else:
 #
-#   cat webterm-remote.sh >> ~/.zshrc     # on the remote machine
-#   cat webterm-remote.sh >> ~/.bashrc
+#   cat heroterm-remote.sh >> ~/.zshrc     # on the remote machine
+#   cat heroterm-remote.sh >> ~/.bashrc
 #
 # It emits OSC 133, the same sequences the local shell does. Anything that
 # doesn't understand them ignores them, so this is safe to leave in place when
@@ -26,47 +26,47 @@ if [ -n "$ZSH_VERSION" ]; then
   # Note the semicolons before every closing brace in this file: zsh doesn't
   # need them, but bash parses the whole script before it picks a branch, and
   # a one-line body without one is a syntax error that kills the lot.
-  __webterm_remote_preexec() {
+  __heroterm_remote_preexec() {
     printf '\033]133;C\007'
     local line=${1//[[:cntrl:]]/ }
     printf '\033]633;E;%s\007' "${line[1,400]}"
     printf '\r\033[K\033[33m❯\033[0m \033[1m%s\033[0m\r\n' "${line[1,400]}"
   }
 
-  __webterm_remote_precmd() {
+  __heroterm_remote_precmd() {
     local ret=$?
     printf '\033]133;D;%d\007' $ret
     return $ret # hand the status to the next hook untouched
   }
 
-  add-zsh-hook preexec __webterm_remote_preexec
-  add-zsh-hook precmd __webterm_remote_precmd
+  add-zsh-hook preexec __heroterm_remote_preexec
+  add-zsh-hook precmd __heroterm_remote_precmd
   # Run first, while $? is still the command's status and not another hook's.
-  precmd_functions=(__webterm_remote_precmd ${precmd_functions:#__webterm_remote_precmd})
+  precmd_functions=(__heroterm_remote_precmd ${precmd_functions:#__heroterm_remote_precmd})
 
 elif [ -n "$BASH_VERSION" ]; then
 
   # bash has no preexec, so this leans on the DEBUG trap. The two guards below
   # are what keep it from firing on completion and on PROMPT_COMMAND itself.
-  __webterm_remote_preexec() {
+  __heroterm_remote_preexec() {
     [ -n "$COMP_LINE" ] && return
     [ "$BASH_COMMAND" = "$PROMPT_COMMAND" ] && return
-    [ -n "$__webterm_remote_at_prompt" ] || return
-    __webterm_remote_at_prompt=
+    [ -n "$__heroterm_remote_at_prompt" ] || return
+    __heroterm_remote_at_prompt=
     printf '\033]133;C\007'
     printf '\033]633;E;%s\007' "$BASH_COMMAND"
     printf '\r\033[K\033[33m❯\033[0m \033[1m%s\033[0m\r\n' "$BASH_COMMAND"
   }
 
-  __webterm_remote_precmd() {
+  __heroterm_remote_precmd() {
     local ret=$?
-    [ -n "$__webterm_remote_at_prompt" ] || printf '\033]133;D;%d\007' "$ret"
-    __webterm_remote_at_prompt=1
+    [ -n "$__heroterm_remote_at_prompt" ] || printf '\033]133;D;%d\007' "$ret"
+    __heroterm_remote_at_prompt=1
     return $ret
   }
 
-  __webterm_remote_at_prompt=1
-  trap '__webterm_remote_preexec' DEBUG
-  PROMPT_COMMAND="__webterm_remote_precmd${PROMPT_COMMAND:+; $PROMPT_COMMAND}"
+  __heroterm_remote_at_prompt=1
+  trap '__heroterm_remote_preexec' DEBUG
+  PROMPT_COMMAND="__heroterm_remote_precmd${PROMPT_COMMAND:+; $PROMPT_COMMAND}"
 
 fi

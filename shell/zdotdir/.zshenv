@@ -1,4 +1,4 @@
-# webterm shell integration.
+# Hero Term shell integration.
 #
 # server.js points ZDOTDIR at this directory so that our .zshrc can install
 # command hooks *after* yours have run. USER_ZDOTDIR is where your real files
@@ -10,7 +10,7 @@
 # in your own file looks where you meant rather than in here — and then taken
 # back, because zsh uses it again to find .zprofile and .zshrc.
 
-WEBTERM_ZDOTDIR=$ZDOTDIR
+HEROTERM_ZDOTDIR=$ZDOTDIR
 ZDOTDIR=$USER_ZDOTDIR
 [[ -r "$ZDOTDIR/.zshenv" ]] && source "$ZDOTDIR/.zshenv"
-ZDOTDIR=$WEBTERM_ZDOTDIR
+ZDOTDIR=$HEROTERM_ZDOTDIR

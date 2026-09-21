@@ -30,10 +30,10 @@ ZDOTDIR="$USER_ZDOTDIR"
 
 autoload -Uz add-zsh-hook
 
-__webterm_running=''
+__heroterm_running=''
 
-__webterm_preexec() {
-  __webterm_running=1
+__heroterm_preexec() {
+  __heroterm_running=1
   printf '\033]133;C\007'
   # The command line itself, so each card in the stack can be labelled with
   # what it ran. OSC 633;E is what VS Code uses for this; anything that doesn't
@@ -59,23 +59,23 @@ __webterm_preexec() {
   printf '\r\033[K\033[33m❯\033[0m \033[1m%s\033[0m\r\n' "${line[1,400]}"
 }
 
-__webterm_precmd() {
+__heroterm_precmd() {
   local ret=$?
   # precmd also fires for the first prompt of the session and after an empty
   # line, where nothing ran and there is no exit status worth reporting.
-  if [[ -n $__webterm_running ]]; then
+  if [[ -n $__heroterm_running ]]; then
     printf '\033]133;D;%d\007' $ret
-    __webterm_running=''
+    __heroterm_running=''
   fi
   # Hand the status back untouched: the next hook in the chain reads it as $?,
   # and prompts that colour themselves on failure depend on seeing the real one.
   return $ret
 }
 
-add-zsh-hook preexec __webterm_preexec
-add-zsh-hook precmd __webterm_precmd
+add-zsh-hook preexec __heroterm_preexec
+add-zsh-hook precmd __heroterm_precmd
 
 # Run ours first, while $? is still the command's exit status rather than some
 # other precmd hook's return value. p10k and friends register during your
 # .zshrc, which has already been sourced above, so this has to be a re-order.
-precmd_functions=(__webterm_precmd ${precmd_functions:#__webterm_precmd})
+precmd_functions=(__heroterm_precmd ${precmd_functions:#__heroterm_precmd})

@@ -1,7 +1,78 @@
-# webterm
+# Hero Term
 
-Your real shell, rendered in a browser tab. Zsh, your dotfiles, your prompt,
-your aliases — unchanged. Only the pixels are different.
+**A terminal where every command gets its own window.**
+
+Your real shell — zsh, your dotfiles, your prompt, your aliases, unchanged —
+rendered in a browser tab. The difference isn't the pixels. It's that the shell
+*tells the interface what it's doing*, so the interface can be organised by
+command instead of being one endless scroll buffer.
+
+Run something and it opens a clean window. The command before it slides back
+into the screen behind, Time Machine style, and you can walk back through the
+last dozen — each replayed from the original bytes, colours and cursor moves
+intact. The window border is yellow while it runs, green or red when it's
+done. Refresh the page and none of it is lost.
+
+<!-- Screenshots go here. Drop the three files into docs/ and delete these
+     comment markers — see docs/README.md for what each one should show.
+
+![Hero Term](docs/hero.png)
+
+<p align="center">
+  <img src="docs/deck.png" width="49%" alt="Walking back through finished commands" />
+  <img src="docs/split.png" width="49%" alt="Dropping one window onto another to split it" />
+</p>
+-->
+
+## What's actually new here
+
+Browser terminals exist — ttyd, Wetty, and others. They give you the same
+scroll buffer somewhere else. This one asks the shell to mark where each
+command begins and ends, using the OSC 133 "semantic prompt" sequences that
+iTerm2 and VS Code use, and then builds the interface around those boundaries:
+
+- **A window per command**, with its exit status in the border and a deck of
+  the last twelve behind it.
+- **Boundaries that survive an ssh hop.** The markers only describe the local
+  shell, so bracketed-paste transitions are used as a second signal — commands
+  you run on a remote host get their own windows with nothing installed there.
+- **A session that outlives the socket.** The pty lives on the server, so a
+  refresh reattaches to the same shell with its cwd, its environment and
+  whatever was still running.
+- **Several terminals**, each its own shell, tiled by dragging one onto
+  another's edge.
+- And a star field behind it all that flies from whatever is working — which
+  is either the best or the worst idea in here, depending on your taste.
+
+## Is this safe?
+
+It runs a shell, so the question is a fair one. The short version:
+
+- The server binds `127.0.0.1` only, never `0.0.0.0`.
+- Every launch mints a random 192-bit token, held in memory and printed once.
+  Without it the socket returns 403.
+- That token matters more than it looks: **localhost WebSockets aren't
+  protected by CORS**, so without it any page you happened to visit could open
+  a socket to your shell. Loopback is not an access boundary — every process
+  and every user on the machine can reach that port.
+- The stats page reads your shell history file. It's gated on the same token,
+  counted server-side, and only the aggregate is sent.
+
+Longer version, including what it deliberately does *not* protect against, in
+[Security](#security) below.
+
+## What works where
+
+| | |
+|---|---|
+| macOS + zsh | everything |
+| Linux + zsh | should be fine, untested |
+| bash / fish | runs, with reduced features — no exit codes, no command names on the cards |
+| Windows | no |
+
+The shell integration is zsh-only today. Other shells fall back to
+bracketed-paste detection, which knows when a command started and stopped but
+not what it was or how it went.
 
 ## Run it
 
@@ -66,7 +137,7 @@ system has:
 brew install --cask font-meslo-lg-nerd-font
 ```
 
-Then run `p10k configure` once while inside webterm so the prompt is measured
+Then run `p10k configure` once while inside Hero Term so the prompt is measured
 against this renderer.
 
 Anything in `public/index.html` is yours too. The grid is one element, so you
@@ -216,11 +287,11 @@ switching can never hand you a font you didn't ask for — and adding one is a
 palette in `public/theme.js`, with the picker building itself from the
 registry.
 
-Two things make live switching work. `window.WEBTERM_THEME` is mutated in place
+Two things make live switching work. `window.HEROTERM_THEME` is mutated in place
 rather than replaced, because every module holds a reference to it and
 reassigning the global would leave them all pointing at the old one. And
 anything that can't simply read it again — terminals already built, stars
-already coloured — subscribes to `WEBTERM_THEMES.on()` and is told.
+already coloured — subscribes to `HEROTERM_THEMES.on()` and is told.
 
 Both
 a slider and a number box are wired to the same value and each updates the
@@ -254,7 +325,7 @@ back to old cards bolted onto a brand-new shell — no cwd, no environment, no
 running job. So the session lives on the server and outlives the socket:
 
 - The pty keeps running, with a grace period once nobody is attached —
-  ten minutes by default, `WEBTERM_GRACE` in seconds, `0` for the old
+  ten minutes by default, `HEROTERM_GRACE` in seconds, `0` for the old
   kill-on-disconnect behaviour.
 - The server parses the same OSC 133 markers the browser does, which splits the
   stream into per-command records, and keeps the last 12 of them plus the
@@ -284,7 +355,7 @@ does clicking off the sheet.
 It reads your **shell history file**, not this session, so it knows about every
 terminal you have ever had open. `$HISTFILE` if that's set, otherwise
 `~/.zsh_history`, `~/.zhistory` or `~/.bash_history`, whichever turns up first;
-`WEBTERM_HISTFILE` overrides all of it. Both zsh's `EXTENDED_HISTORY` format
+`HEROTERM_HISTFILE` overrides all of it. Both zsh's `EXTENDED_HISTORY` format
 and bash's `HISTTIMEFORMAT` stamps are understood, including commands continued
 across lines.
 
@@ -385,7 +456,7 @@ down the same stream from the remote shell. Ticking stops the moment anything
 far end get their own ding, ticking and chime with nothing installed over there.
 
 What that can't carry is the exit status, so remote commands always finish with
-the success chime. `shell/webterm-remote.sh` fixes that if you want it: append
+the success chime. `shell/heroterm-remote.sh` fixes that if you want it: append
 it to the remote `~/.zshrc` or `~/.bashrc` and real exit codes come back too.
 
 Full-screen programs are handled separately — entering the alternate screen
@@ -416,10 +487,32 @@ top of the functions that use them.
 | `Cmd +` / `Cmd -` / `Cmd 0` | font size |
 | `Option F` / `Option B` | move by word |
 
+## Security
+
+Everything above about the token, plus what it doesn't cover:
+
+- The token lives in the URL, which is the leakiest place for a secret —
+  browser history, anything that logs URLs, and a shell history if you `open`
+  it from a terminal. Redirecting the server's stdout to a file stores a live
+  one.
+- It defends against *other web pages*. It does not defend against code already
+  running as your user, and nothing in this design could.
+- Since the session persists, a leaked token doesn't get a fresh shell — it
+  reattaches to yours, with your cwd and your running jobs.
+- The comparison is `===`, not constant-time. Against a 192-bit random token
+  over loopback that isn't a practical attack, but it is a free habit and
+  `crypto.timingSafeEqual` would be the right call in anything shared.
+- `ws://`, not `wss://`. Irrelevant on loopback; it matters the moment you
+  tunnel it, which is why the README says `ssh -L` rather than binding
+  `0.0.0.0`.
+
+Found something worse? Open an issue, or mail the address on the GitHub
+profile if you'd rather not do it in public.
+
 ## Worth knowing
 
 **The shell outlives the tab by ten minutes.** See "Refreshing" — set
-`WEBTERM_GRACE=0` if you'd rather it died with the socket, the way it used to.
+`HEROTERM_GRACE=0` if you'd rather it died with the socket, the way it used to.
 For a session that survives the *server* too, run `tmux` as the first thing
 inside it; you can then reattach the same session from iTerm.
 
@@ -435,3 +528,7 @@ available through `@xterm/addon-image` if you need pictures in the terminal.
 **Keep it on loopback.** The server binds `127.0.0.1` on purpose. Exposing this
 on a network is handing out a root-capable shell over plaintext HTTP. If you
 want it from another machine, tunnel it: `ssh -L 7777:localhost:7777 you@mac`.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

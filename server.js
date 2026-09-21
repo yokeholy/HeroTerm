@@ -10,13 +10,13 @@ const history = require('./history');
 
 const PORT = Number(process.env.PORT || 7777);
 const HOST = '127.0.0.1'; // loopback only, never 0.0.0.0
-const SHELL = process.env.WEBTERM_SHELL || process.env.SHELL || '/bin/zsh';
+const SHELL = process.env.HEROTERM_SHELL || process.env.SHELL || '/bin/zsh';
 
 // How long the shell outlives the tab. A refresh closes the socket exactly the
 // way closing the tab does, and the server can't tell them apart, so the only
 // way to survive one is to survive both for a while. 0 restores the old
 // behaviour of killing the shell the moment the socket drops.
-const GRACE = Math.max(0, Number(process.env.WEBTERM_GRACE ?? 600)) * 1000;
+const GRACE = Math.max(0, Number(process.env.HEROTERM_GRACE ?? 600)) * 1000;
 
 // A page you visit in another tab can open a WebSocket to localhost without
 // tripping CORS, so the socket is gated on a per-launch token plus an origin
@@ -225,7 +225,7 @@ function createSession(id) {
       ...process.env,
       TERM: 'xterm-256color',
       COLORTERM: 'truecolor',
-      WEBTERM: '1', // so your rc files can branch on this if you want
+      HEROTERM: '1', // so your rc files can branch on this if you want
       ...integration,
     },
   });

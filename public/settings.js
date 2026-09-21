@@ -9,8 +9,8 @@
 // show; --dim wants 0-1.
 
 (function () {
-  const T = window.WEBTERM_THEME;
-  const KEY = 'webterm.settings';
+  const T = window.HEROTERM_THEME;
+  const KEY = 'heroterm.settings';
 
   const OPTIONS = {
     dim: {
@@ -19,7 +19,7 @@
     },
     warp: {
       fallback: () => 1,
-      apply: (v) => window.WEBTERM_SKY.allowWarp(Boolean(v)),
+      apply: (v) => window.HEROTERM_SKY.allowWarp(Boolean(v)),
     },
   };
 
@@ -111,7 +111,7 @@
   // to theme.js is the whole job. The swatch is the real label — you recognise
   // a theme by its colours long before you remember its name.
   const themeBox = document.getElementById('set-themes');
-  const themes = window.WEBTERM_THEMES;
+  const themes = window.HEROTERM_THEMES;
 
   for (const t of themes.list) {
     const card = document.createElement('button');
@@ -164,10 +164,10 @@
 
   bindSwitch(
     document.getElementById('set-sound'),
-    () => window.WEBTERM_AUDIO.enabled,
+    () => window.HEROTERM_AUDIO.enabled,
     (on) => {
-      window.WEBTERM_AUDIO.enabled = on;
-      if (on) window.WEBTERM_AUDIO.ding(); // so you know what you just turned on
+      window.HEROTERM_AUDIO.enabled = on;
+      if (on) window.HEROTERM_AUDIO.ding(); // so you know what you just turned on
     }
   );
 
@@ -217,5 +217,5 @@
     true
   );
 
-  window.WEBTERM_SETTINGS = { open, close, get: valueOf };
+  window.HEROTERM_SETTINGS = { open, close, get: valueOf };
 })();

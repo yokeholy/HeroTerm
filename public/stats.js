@@ -149,5 +149,5 @@
     true
   );
 
-  window.WEBTERM_STATS = { open, close, reload: load };
+  window.HEROTERM_STATS = { open, close, reload: load };
 })();

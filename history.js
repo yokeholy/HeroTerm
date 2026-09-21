@@ -24,7 +24,7 @@ const WRAPPERS = new Set(['sudo', 'doas', 'command', 'nohup', 'time', 'env', 'ex
 function candidates() {
   const home = os.homedir();
   return [
-    process.env.WEBTERM_HISTFILE,
+    process.env.HEROTERM_HISTFILE,
     process.env.HISTFILE,
     path.join(home, '.zsh_history'),
     path.join(home, '.zhistory'),
@@ -119,7 +119,7 @@ function top(counts, min = 1) {
 function stats() {
   const file = findFile();
   if (!file) {
-    return { ok: false, reason: 'No shell history file found. Set WEBTERM_HISTFILE to point at one.' };
+    return { ok: false, reason: 'No shell history file found. Set HEROTERM_HISTFILE to point at one.' };
   }
 
   const entries = parse(read(file));

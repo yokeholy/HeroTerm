@@ -46,5 +46,5 @@
     true
   );
 
-  window.WEBTERM_HELP = { open, close };
+  window.HEROTERM_HELP = { open, close };
 })();

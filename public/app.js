@@ -4,7 +4,7 @@
 // star field, the HUD, the status bar — and a set of containers, each of which
 // is a shell in a box. See container.js.
 
-const T = window.WEBTERM_THEME;
+const T = window.HEROTERM_THEME;
 
 const els = {
   state: document.getElementById('state'),
@@ -18,8 +18,8 @@ const els = {
   add: document.getElementById('add'),
 };
 
-const audio = window.WEBTERM_AUDIO;
-const sky = window.WEBTERM_SKY;
+const audio = window.HEROTERM_AUDIO;
+const sky = window.HEROTERM_SKY;
 
 // Push the theme into CSS so the chrome and the grid can never drift apart.
 // --dim is deliberately absent: settings.js owns it, because it is the one of
@@ -49,11 +49,11 @@ function paintTheme() {
 }
 
 paintTheme();
-window.WEBTERM_THEMES.on(paintTheme);
+window.HEROTERM_THEMES.on(paintTheme);
 
 /* ---------- layout, remembered ---------- */
 
-const LAYOUT_KEY = 'webterm.layout';
+const LAYOUT_KEY = 'heroterm.layout';
 const MAX_CONTAINERS = 8;
 const CASCADE = 28; // how far each new container sits from the last
 
@@ -250,7 +250,7 @@ function defaultBox(n) {
 }
 
 function spawn(id, box, name) {
-  const c = window.WEBTERM_CONTAINER.create({
+  const c = window.HEROTERM_CONTAINER.create({
     id: id || newId(),
     name: name || freshName(),
     page,
@@ -373,7 +373,7 @@ function snapZone(px, py) {
 // Topmost first: every unfocused window shares a z-index, so paint order is DOM
 // order and the last one is the one you can see.
 function splitAt(px, py, except) {
-  const min = window.WEBTERM_CONTAINER.minVisible;
+  const min = window.HEROTERM_CONTAINER.minVisible;
 
   for (let i = containers.length - 1; i >= 0; i -= 1) {
     const c = containers[i];

@@ -8,7 +8,7 @@
 // When each sound plays is not decided here; see session.js.
 
 (function () {
-  const KEY = 'webterm.sound';
+  const KEY = 'heroterm.sound';
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
 
   // A command has to outlast this before the tick-tock starts. Below it, the
@@ -111,13 +111,13 @@
   // One-shot sounds belong to a single command, so they fire per event, from
   // whichever container produced it. A restored event is a command that was
   // already running before you refreshed — it shouldn't announce itself as new.
-  window.WEBTERM_SESSION.any((e) => {
+  window.HEROTERM_SESSION.any((e) => {
     if (e.restored) return;
     if (e.type === 'start') ding();
     else if (e.type === 'end') (e.ok ? success : failure)();
   });
 
-  window.WEBTERM_AUDIO = {
+  window.HEROTERM_AUDIO = {
     ding,
 
     // The ticking is continuous, so it can't be driven per event: with two

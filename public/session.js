@@ -41,7 +41,7 @@ function createSession() {
   const listeners = new Set();
 
   function emit(event) {
-    window.WEBTERM_SESSION.broadcast(event);
+    window.HEROTERM_SESSION.broadcast(event);
     for (const fn of listeners) {
       try {
         fn(event);
@@ -49,7 +49,7 @@ function createSession() {
         // One bad listener shouldn't take the others down — but it shouldn't
         // vanish either. Swallowing these silently once hid a listener that
         // was throwing on every single command.
-        console.error('webterm: session listener failed', err);
+        console.error('heroterm: session listener failed', err);
       }
     }
   }
@@ -182,7 +182,7 @@ function createSession() {
 // *something* is running; see the page.
 const anyListeners = new Set();
 
-window.WEBTERM_SESSION = {
+window.HEROTERM_SESSION = {
   create: createSession,
 
   any(fn) {
@@ -195,7 +195,7 @@ window.WEBTERM_SESSION = {
       try {
         fn(event);
       } catch (err) {
-        console.error('webterm: session listener failed', err);
+        console.error('heroterm: session listener failed', err);
       }
     }
   },

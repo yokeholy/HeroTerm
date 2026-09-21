@@ -2,4 +2,4 @@
 # needs ours afterwards to find .zshrc.
 ZDOTDIR=$USER_ZDOTDIR
 [[ -r "$ZDOTDIR/.zprofile" ]] && source "$ZDOTDIR/.zprofile"
-ZDOTDIR=$WEBTERM_ZDOTDIR
+ZDOTDIR=$HEROTERM_ZDOTDIR

@@ -9,7 +9,7 @@
 // them all fresh ones.
 
 (function () {
-  const T = window.WEBTERM_THEME;
+  const T = window.HEROTERM_THEME;
 
   // Floors, not defaults, and low on purpose. They were 420x260 — a sensible
   // size for a window, but it made splitting unreachable: halving anything
@@ -37,7 +37,7 @@
     const termEl = el.querySelector('.body');
     const handles = [...el.querySelectorAll('.edge')];
 
-    const session = window.WEBTERM_SESSION.create();
+    const session = window.HEROTERM_SESSION.create();
 
     const term = new window.Terminal({
       theme: T.xterm,
@@ -91,7 +91,7 @@
       page.save();
     }
 
-    const stack = window.WEBTERM_STACK.create({
+    const stack = window.HEROTERM_STACK.create({
       deck,
       liveCard,
       session,
@@ -99,7 +99,7 @@
       onChange: (pos) => page.deckMoved(self, pos),
     });
 
-    window.WEBTERM_THEMES.on(() => {
+    window.HEROTERM_THEMES.on(() => {
       term.options.theme = T.xterm;
       stack.retheme();
     });
@@ -210,7 +210,7 @@
     ws.onerror = () => setState('no', 'Could not reach the server');
 
     term.onData((d) => {
-      window.WEBTERM_AUDIO.unlock(); // the keystroke is the gesture that lets audio play
+      window.HEROTERM_AUDIO.unlock(); // the keystroke is the gesture that lets audio play
       send({ t: 'i', d });
     });
     term.onBinary((d) => send({ t: 'i', d }));
@@ -561,7 +561,7 @@
     return self;
   }
 
-  window.WEBTERM_CONTAINER = {
+  window.HEROTERM_CONTAINER = {
     create: createContainer,
     // The smallest a *visible* window can be, which is what the page needs in
     // order to refuse a split that would produce two of them below it.

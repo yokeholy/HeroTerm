@@ -1,8 +1,26 @@
 {
-  "name": "webterm",
-  "version": "1.0.0",
-  "private": true,
-  "description": "A browser front-end for your local shell, backed by a real pty.",
+  "name": "heroterm",
+  "version": "0.1.0",
+  "description": "A terminal in your browser where every command gets its own window. Your real shell, told to explain itself.",
+  "license": "MIT",
+  "author": "Jin Wang",
+  "homepage": "https://github.com/yokeholy/heroterm#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yokeholy/heroterm.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yokeholy/heroterm/issues"
+  },
+  "keywords": [
+    "terminal",
+    "shell",
+    "pty",
+    "xterm",
+    "zsh",
+    "osc-133",
+    "web-terminal"
+  ],
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -11,6 +29,10 @@
   "engines": {
     "node": ">=18"
   },
+  "os": [
+    "darwin",
+    "linux"
+  ],
   "dependencies": {
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-web-links": "^0.11.0",

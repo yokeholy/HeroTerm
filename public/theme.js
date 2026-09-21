@@ -4,7 +4,7 @@
 // are decisions about this application rather than about a palette — so
 // switching themes can never leave you with a font you didn't ask for.
 //
-// window.WEBTERM_THEME is mutated in place when you switch, never replaced:
+// window.HEROTERM_THEME is mutated in place when you switch, never replaced:
 // every module holds a reference to it, and reassigning the global would leave
 // them all pointing at the old one. Anything that can't read it live again —
 // terminals already built, stars already coloured — listens to `on()`.
@@ -261,7 +261,7 @@
     },
   };
 
-  const KEY = 'webterm.theme';
+  const KEY = 'heroterm.theme';
   const DEFAULT = 'deep-field';
 
   const listeners = new Set();
@@ -289,9 +289,9 @@
   }
 
   // Mutated, never replaced — see the note at the top.
-  window.WEBTERM_THEME = compose(active);
+  window.HEROTERM_THEME = compose(active);
 
-  window.WEBTERM_THEMES = {
+  window.HEROTERM_THEMES = {
     list: Object.keys(THEMES).map((key) => ({
       key,
       name: THEMES[key].name,
@@ -313,7 +313,7 @@
     apply(key) {
       if (!THEMES[key] || key === active) return;
       active = key;
-      Object.assign(window.WEBTERM_THEME, compose(key));
+      Object.assign(window.HEROTERM_THEME, compose(key));
       try {
         localStorage.setItem(KEY, key);
       } catch {
@@ -321,9 +321,9 @@
       }
       for (const fn of listeners) {
         try {
-          fn(window.WEBTERM_THEME);
+          fn(window.HEROTERM_THEME);
         } catch (err) {
-          console.error('webterm: theme listener failed', err);
+          console.error('heroterm: theme listener failed', err);
         }
       }
     },

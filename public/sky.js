@@ -12,7 +12,7 @@
 // than a switch being flipped.
 
 (function () {
-  const T = window.WEBTERM_THEME;
+  const T = window.HEROTERM_THEME;
 
   const canvas = document.getElementById('sky');
   const g = canvas.getContext('2d', { alpha: false });
@@ -164,7 +164,7 @@
     if (running) resize();
   });
 
-  window.WEBTERM_SKY = {
+  window.HEROTERM_SKY = {
     // A function returning {x, y} in page pixels, or null for the middle of
     // the screen. Called once per frame.
     trackOrigin(fn) {
@@ -191,7 +191,7 @@
   // A star's colour is chosen when it spawns, so a new palette has to be dealt
   // out to the ones already up there. The background is read every frame and
   // needs no help.
-  window.WEBTERM_THEMES.on(() => {
+  window.HEROTERM_THEMES.on(() => {
     for (const s of stars) s.col = T.stars.colors[(Math.random() * T.stars.colors.length) | 0];
   });
 
@@ -208,12 +208,12 @@
 
   // Driven by whether *anything* is running rather than by one container's
   // events, so a build in a terminal you aren't looking at still moves the sky.
-  window.WEBTERM_SKY.setWarp = (on) => {
+  window.HEROTERM_SKY.setWarp = (on) => {
     wantWarp = on;
     aim();
   };
 
-  window.WEBTERM_SKY.allowWarp = (on) => {
+  window.HEROTERM_SKY.allowWarp = (on) => {
     warpAllowed = on;
     aim();
   };
