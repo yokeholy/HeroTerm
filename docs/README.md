@@ -1,29 +1,33 @@
 # Screenshots
 
-Three images, referenced from the top of the main README. Until they exist the
-block there is commented out; drop these in and remove the comment markers.
+Images referenced from the top of the main README. `hero.png` is in; the other
+two are still to take, and their block up there stays commented out until they
+exist.
 
 Capture with `Cmd-Shift-4` and drag a region, or:
 
-    screencapture -i -o docs/hero.png
+    screencapture -i -o docs/deck.png
 
 Use a retina display if you have one — GitHub serves these at half width, so a
 2x capture is what makes the text sharp rather than soft.
 
-### `hero.png` — the one people judge it by
+### `hero.png` — the one people judge it by ✓
 
-Two or three windows floating over the star field, one of them mid-command so
-its border is yellow and the stars are streaking outward from it. The **Deep
-Field** or **Fathom** theme reads best against GitHub's own dark page.
+`ping 1.1.1.1` running in its own window, border yellow, three finished
+commands stacked behind it, stars streaking outward.
 
-Set it up: two terminals, `sleep 20` in one, screenshot while it runs.
+A note if it's ever reshot: the vanishing point sits at the centre of whatever
+is running, which means a window in the dead centre of the page covers it. The
+streaks still radiate correctly, but you only see their outer ends and the
+effect reads as a generic star field. Off-centre — or wide enough that the
+convergence clears the frame — is what makes it legible.
 
 ### `deck.png` — the idea nobody else has
 
-The Time Machine cascade: a window with several finished commands stacked
-behind it, their title bars peeking above. Run four or five short commands with
-visible output, then `Cmd [` once so the front card is a replayed one and the
-deck is clearly a deck.
+The Time Machine cascade on its own: a window with several finished commands
+stacked behind it, their title bars peeking above. Run four or five short
+commands with visible output, then `Cmd [` once so the front card is a replayed
+one and the deck is clearly a deck.
 
 ### `split.png` — the interaction
 

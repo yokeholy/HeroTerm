@@ -13,11 +13,9 @@ last dozen — each replayed from the original bytes, colours and cursor moves
 intact. The window border is yellow while it runs, green or red when it's
 done. Refresh the page and none of it is lost.
 
-<!-- Screenshots go here. Drop the three files into docs/ and delete these
-     comment markers — see docs/README.md for what each one should show.
+![A ping running in its own window, its border yellow, three finished commands stacked behind it, and the star field streaking away from the one that's working](docs/hero.png)
 
-![Hero Term](docs/hero.png)
-
+<!-- Two more to come — see docs/README.md for what each should show.
 <p align="center">
   <img src="docs/deck.png" width="49%" alt="Walking back through finished commands" />
   <img src="docs/split.png" width="49%" alt="Dropping one window onto another to split it" />
