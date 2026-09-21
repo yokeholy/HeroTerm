@@ -101,6 +101,20 @@ const wss = new WebSocketServer({ noServer: true });
 // container and keeps the list, so a refresh reattaches every one of them to
 // the shell it already had.
 const sessions = new Map();
+
+// Shells that ended on their own — `exit`, Ctrl-D, the shell dying — keyed by
+// container id. The window belonging to one should close, and if the tab was
+// away when it happened, it needs telling when it comes back rather than being
+// handed a fresh shell as if nothing had happened. A shell reaped for being
+// abandoned isn't recorded: its window comes back with a new one, as before.
+const exited = new Map();
+const MAX_EXITED = 64;
+
+function rememberExit(id, code) {
+  exited.delete(id);
+  exited.set(id, code);
+  if (exited.size > MAX_EXITED) exited.delete(exited.keys().next().value);
+}
 const MAX_SESSIONS = 8;
 
 const MARKER = /\x1b\](133|633);([^\x07\x1b]*?)(?:\x07|\x1b\\)/g;
@@ -275,8 +289,13 @@ function createSession(id) {
   });
 
   term.onExit(({ exitCode }) => {
-    if (s.ws && s.ws.readyState === s.ws.OPEN) s.ws.close(1000, `shell exited (${exitCode})`);
     sessions.delete(s.id);
+    if (s.reaped) return; // we ended it; see detach() and 'bye'
+    rememberExit(s.id, exitCode);
+    if (s.ws && s.ws.readyState === s.ws.OPEN) {
+      control(s.ws, { t: 'exit', code: exitCode });
+      s.ws.close(1000, `shell exited (${exitCode})`);
+    }
   });
 
   return s;
@@ -306,11 +325,15 @@ function detach(s, ws) {
     s.term.resume();
   }
   if (GRACE === 0) {
+    s.reaped = true;
     kill(s);
     return;
   }
   clearTimeout(s.reaper);
-  s.reaper = setTimeout(() => kill(s), GRACE);
+  s.reaper = setTimeout(() => {
+    s.reaped = true;
+    kill(s);
+  }, GRACE);
 }
 
 server.on('upgrade', (req, socket, head) => {
@@ -334,6 +357,17 @@ wss.on('connection', (ws, req) => {
   let s = sessions.get(id);
   const resumed = Boolean(s);
 
+  // This window's shell exited while nobody was watching. Say so, once, and
+  // let the page close the window.
+  if (!s && exited.has(id)) {
+    const code = exited.get(id);
+    exited.delete(id);
+    control(ws, { t: 'hello', protocol: 3, resumed: false, grace: GRACE });
+    control(ws, { t: 'exit', code, away: true });
+    ws.close(1000, `shell exited (${code})`);
+    return;
+  }
+
   if (!s) {
     if (sessions.size >= MAX_SESSIONS) {
       ws.close(1013, `at most ${MAX_SESSIONS} terminals at once`);
@@ -356,7 +390,8 @@ wss.on('connection', (ws, req) => {
   // contract changes.
   //   1  one session for the whole page
   //   2  a session per container, keyed by the id in the socket URL
-  control(ws, { t: 'hello', protocol: 2, resumed, grace: GRACE });
+  //   3  { t: 'exit' } when a shell ends on its own, so its window can close
+  control(ws, { t: 'hello', protocol: 3, resumed, grace: GRACE });
 
   if (resumed) {
     control(ws, {
@@ -392,7 +427,8 @@ wss.on('connection', (ws, req) => {
         }
         break;
 
-      case 'bye': // the tab is going away for good, not refreshing
+      case 'bye': // the window's × — its shell goes with it
+        s.reaped = true;
         kill(s);
         break;
     }

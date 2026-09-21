@@ -169,8 +169,22 @@
     };
 
     let replaying = false; // a restored screen is being written back; see below
+    let ended = false; // the shell exited; the window is on its way out
+
+    // The shell is gone for good — `exit`, Ctrl-D, or it died — so the window
+    // goes too. Once only: the exit message and the socket closing both say so.
+    function shellEnded(code) {
+      if (ended) return;
+      ended = true;
+      session.lost();
+      page.exited(self, code);
+    }
 
     function control(msg) {
+      if (msg.t === 'exit') {
+        shellEnded(msg.code);
+        return;
+      }
       if (msg.t === 'hello') {
         // A server older than the per-container sessions ignores the id in the
         // socket URL and hands every container the same shell — so every window
@@ -225,7 +239,19 @@
     // another tab taking the session over, or the cap on how many terminals
     // can be open at once. Reporting all of those as "Shell ended" turns a
     // plain answer into a mystery.
-    ws.onclose = (ev) => setState('no', ev.reason || 'Shell ended');
+    //
+    // Whatever the reason, nothing that was running here can report finishing
+    // now. A server from before protocol 3 doesn't send { t: 'exit' }, but its
+    // close reason says the same thing, so that closes the window too.
+    ws.onclose = (ev) => {
+      if (ended) return;
+      if (/^shell exited/.test(ev.reason || '')) {
+        shellEnded(null);
+        return;
+      }
+      session.lost();
+      setState('no', ev.reason || 'Shell ended');
+    };
     ws.onerror = () => setState('no', 'Could not reach the server');
 
     term.onData((d) => {
@@ -634,7 +660,7 @@
       // not, so this is the only place that ends a shell early.
       destroy() {
         try {
-          send({ t: 'bye' });
+          if (!ended) send({ t: 'bye' }); // an exited shell has nothing to kill
           ws.close();
         } catch {
           /* already gone */

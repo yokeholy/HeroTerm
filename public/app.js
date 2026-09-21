@@ -16,6 +16,8 @@ const els = {
   mode: document.getElementById('mode'),
   expand: document.getElementById('expand'),
   add: document.getElementById('add'),
+  empty: document.getElementById('empty'),
+  emptyNew: document.getElementById('empty-new'),
 };
 
 const audio = window.HEROTERM_AUDIO;
@@ -128,18 +130,15 @@ const page = {
     restack();
   },
 
+  // The window's ×. Its shell goes with it.
   close(c) {
-    if (containers.length === 1) return; // never leave the page with nothing in it
-    const i = containers.indexOf(c);
-    containers.splice(i, 1);
-    c.destroy();
-    if (focused === c) {
-      focused = null;
-      page.focus(containers[Math.min(i, containers.length - 1)]);
-      focused.focus();
-    }
-    applyMode();
-    page.save();
+    remove(c);
+  },
+
+  // Its shell ended by itself — `exit`, Ctrl-D — so the window goes too, the
+  // way a terminal tab closes when its shell does.
+  exited(c) {
+    remove(c);
   },
 
   // A container's deck moved, or its size changed, or its shell said something.
@@ -223,6 +222,43 @@ function paintStatus() {
 
 /* ---------- making and restoring containers ---------- */
 
+function remove(c) {
+  const i = containers.indexOf(c);
+  if (i < 0) return;
+  containers.splice(i, 1);
+  if (dragging === c) dragging = null;
+  c.destroy();
+  if (focused === c) {
+    focused = null;
+    const next = containers[Math.min(i, containers.length - 1)];
+    if (next) {
+      page.focus(next);
+      next.focus();
+    }
+  }
+  // It may have been the thing keeping the sky flying and the clock ticking —
+  // and a window that ran `exit` always is, since the shell never lives to
+  // say that command finished.
+  page.runStateChanged();
+  applyMode();
+  paintEmpty();
+  page.save();
+}
+
+// Every window closed. A tab can't close itself, so the sky stays, with a way
+// back. A refresh from here starts a fresh terminal: an empty layout is never
+// saved as something to restore.
+function paintEmpty() {
+  const none = containers.length === 0;
+  els.empty.hidden = !none;
+  if (!none) return;
+  els.state.dataset.live = 'no';
+  els.stateText.textContent = 'No terminals open';
+  els.size.textContent = '';
+  els.place.textContent = '';
+  els.emptyNew.focus();
+}
+
 function newId() {
   if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
   return `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
@@ -264,12 +300,14 @@ function spawn(id, box, name) {
 function add() {
   if (containers.length >= MAX_CONTAINERS) return;
   // More than one container only makes sense floating; full-bleed would stack
-  // them exactly on top of each other.
-  if (!windowed) setMode(true);
+  // them exactly on top of each other. The first one back on an empty page
+  // takes whichever mode you were in.
+  if (!windowed && containers.length > 0) setMode(true);
   const c = spawn(null, defaultBox(containers.length));
   page.focus(c);
   c.focus();
   applyMode();
+  paintEmpty();
   page.save();
 }
 
@@ -454,11 +492,12 @@ function applyMode() {
   document.body.dataset.mode = windowed ? 'windowed' : 'full';
   els.mode.setAttribute('aria-label', windowed ? 'Fill the tab' : 'Pop out into a window');
   // Only one container can have the whole page, so the button is off while
-  // there are several.
-  els.mode.disabled = containers.length > 1;
+  // there are several — and with none, there's nothing for it to act on.
+  els.mode.disabled = containers.length !== 1;
   els.mode.title = containers.length > 1 ? 'Close the others to fill the tab' : '';
   els.add.disabled = containers.length >= MAX_CONTAINERS;
-  sky.setActive(windowed);
+  // An empty page is all sky, whichever mode it was in.
+  sky.setActive(windowed || containers.length === 0);
   for (const c of containers) {
     c.applyBox();
     c.relayout();
@@ -523,6 +562,7 @@ window.HEROTERM_WINDOWS = {
 
 els.add.addEventListener('mousedown', (e) => e.preventDefault());
 els.add.addEventListener('click', add);
+els.emptyNew.addEventListener('click', add);
 
 els.mode.addEventListener('mousedown', (e) => e.preventDefault());
 els.mode.addEventListener('click', () => setMode(!windowed));
@@ -618,6 +658,21 @@ window.addEventListener(
   (e) => {
     // A name being renamed is a text field; Cmd-K there should not wipe a grid.
     if (document.activeElement && document.activeElement.isContentEditable) return;
+    // With nothing open, Enter opens something — wherever focus has wandered,
+    // as long as it isn't in a sheet that wants Enter for itself.
+    if (!containers.length && e.key === 'Enter' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      if (document.activeElement === document.body) {
+        add();
+        e.preventDefault();
+        return;
+      }
+    }
+    // Cmd-T needs no window to act on: it's how you get one back.
+    if (e.metaKey && !e.ctrlKey && !e.altKey && e.key === 't') {
+      add();
+      e.preventDefault();
+      return;
+    }
     if (!e.metaKey || e.ctrlKey || e.altKey || !focused) return;
     const term = focused.term;
 
@@ -633,11 +688,6 @@ window.addEventListener(
     }
     if (e.key === '[' || e.key === ']') {
       focused.stack.go(e.key === '[' ? 1 : -1); // older / newer
-      e.preventDefault();
-      return;
-    }
-    if (e.key === 't') {
-      add();
       e.preventDefault();
       return;
     }

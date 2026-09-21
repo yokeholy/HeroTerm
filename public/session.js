@@ -154,6 +154,17 @@ function createSession() {
       }
     },
 
+    // The shell, or the connection to it, is gone. Whatever was running can
+    // never report finishing — `exit` itself opens a command the shell doesn't
+    // live to close — so stop treating anything as running.
+    lost() {
+      cancelSettle();
+      depth = 0;
+      pasteRun = false;
+      agent = null;
+      if (running) quiet();
+    },
+
     // After a refresh, once the restored screen has been replayed: say where
     // the agent had got to, without dinging about it.
     settleAgent() {
