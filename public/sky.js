@@ -165,6 +165,14 @@
   });
 
   window.HEROTERM_SKY = {
+    // Where the sky is currently flying from, in page pixels. Exposed so the
+    // thing can be checked against the window it is supposed to be following
+    // rather than judged by eye — the vanishing point usually sits behind that
+    // very window, which makes looking a poor test.
+    get origin() {
+      return { x: cx, y: cy };
+    },
+
     // A function returning {x, y} in page pixels, or null for the middle of
     // the screen. Called once per frame.
     trackOrigin(fn) {

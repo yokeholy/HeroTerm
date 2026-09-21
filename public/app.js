@@ -292,7 +292,14 @@ function runningCentre() {
     y += r.y + r.h / 2;
     n += 1;
   }
-  return n ? { x: x / n, y: y / n } : null;
+  if (n) return { x: x / n, y: y / n };
+
+  // Nothing running: the middle of the work area, which is not the middle of
+  // the viewport — the status bar takes 30px off the bottom, and the windows
+  // already treat the smaller box as the screen. Falling back to the viewport
+  // centre put the idle sky 15px below where everything else calls centre.
+  const a = workArea();
+  return { x: a.x + a.w / 2, y: a.y + a.h / 2 };
 }
 
 sky.trackOrigin(runningCentre);
