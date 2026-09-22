@@ -64,6 +64,8 @@ function createSession() {
   // Inside a remote login: the local command stays open for the whole session,
   // so only remote commands — from bracketed paste — count as running.
   let remote = false;
+  let hush = false; // this command is one you've asked not to hear or watch
+  let named = ''; // the command line, which arrives just before the start marker
 
   const listeners = new Set();
 
@@ -81,14 +83,25 @@ function createSession() {
     }
   }
 
+  // Quiet commands (Settings → Behavior) are still commands — their own
+  // window, their own clock and border — they just don't ring, tick or fly
+  // the sky. So they never count as "running", which is what all three watch.
+  const hushed = (cmd) => {
+    try {
+      return Boolean(cmd && window.HEROTERM_SETTINGS && window.HEROTERM_SETTINGS.hushes(cmd));
+    } catch {
+      return false;
+    }
+  };
+
   function start() {
-    running = true;
-    emit({ type: 'start' });
+    running = !hush;
+    emit({ type: 'start', hush });
   }
 
   function end(ok, code) {
     running = false;
-    emit({ type: 'end', ok, code });
+    emit({ type: 'end', ok, code, hush });
   }
 
   function quiet() {
@@ -122,7 +135,22 @@ function createSession() {
       depth += 1;
       agent = null;
       remote = false;
+      hush = hushed(named);
+      named = '';
       start();
+    },
+
+    // The command line, from OSC 633;E. Our own shell sends it just before the
+    // start marker; a shell wired up before that sends it just after, so a
+    // match arriving late still quiets the rest of the command.
+    commandName(text) {
+      named = text;
+      if (depth === 0 || hush || !hushed(text)) return;
+      hush = true;
+      if (running) {
+        running = false;
+        emit({ type: 'quiet', hush: true });
+      }
     },
 
     markerEnd(code) {
@@ -133,6 +161,8 @@ function createSession() {
       agent = null;
       remote = false;
       end(code === 0, code);
+      hush = false;
+      named = '';
     },
 
     // The server says which program now has the terminal. Becoming a remote

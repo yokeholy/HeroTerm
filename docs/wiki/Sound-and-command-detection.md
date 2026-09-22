@@ -8,7 +8,9 @@ failed, terminal bell — and turning one on plays it, so you know which is
 which. The list comes from `public/audio.js`, so a sound added there shows up
 in it without any markup. Choices are remembered.
 
-Commands shorter than 300ms never tick; otherwise every `ls` would rattle.
+Commands shorter than 300ms never tick; otherwise every `ls` would rattle. And
+commands you've listed under Settings → Behavior → Quiet commands make no sound
+at all, however long they run.
 
 The terminal bell gets a sound too: a short, low knock whenever anything writes
 BEL — zsh when a completion has nothing to offer, vim on a bad motion, a script

@@ -10,7 +10,20 @@ runs the full height of the screen. It has five tabs — **Appearance**,
 **Sound**, **Effects**, **Behavior** and **System** — and opens on whichever
 you used last.
 
-Behavior holds **Keep shells after a tab closes** — how long a disconnected
+Behavior holds **Quiet commands**: a list, one pattern a line, of commands to
+neither hear nor watch. A command whose text contains one of them makes no
+sound and doesn't fly the sky — a dev server, a log you're tailing, anything
+that runs all day and means nothing while it does. It still gets its own
+window, its clock and its border, so you can see it running and how it ended.
+Matching is case-insensitive and by substring, so `npm run dev` catches
+`npm run dev -- --host`.
+
+It works because the shell sends the command text just *before* it says a
+command started; a shell that was already open when you updated sends it just
+after, so the first ding of the first such command still gets through until you
+open a new window.
+
+Behavior also holds **Keep shells after a tab closes** — how long a disconnected
 shell waits to be reattached, which is what makes a laptop waking from sleep
 find its session again; see
 [Sessions and refreshing](Sessions-and-refreshing.md). And **Confirm before

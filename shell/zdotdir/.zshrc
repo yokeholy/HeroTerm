@@ -34,15 +34,20 @@ __heroterm_running=''
 
 __heroterm_preexec() {
   __heroterm_running=1
-  printf '\033]133;C\007'
+
   # The command line itself, so each card in the stack can be labelled with
   # what it ran. OSC 633;E is what VS Code uses for this; anything that doesn't
   # understand it ignores it. Control characters are stripped because an OSC
   # payload can't contain them — a multi-line command would otherwise cut the
   # sequence short and spray the rest across the screen — and it's capped
   # because a pasted monster of a pipeline shouldn't travel twice.
+  #
+  # Sent *before* the start marker: the page decides from the command text
+  # whether this one should be seen and heard (Settings → Quiet commands),
+  # and after the marker the ding would already have gone.
   local line=${1//[[:cntrl:]]/ }
   printf '\033]633;E;%s\007' "${line[1,400]}"
+  printf '\033]133;C\007'
 
   # And again, visibly. The UI wipes the screen when it sees the start marker
   # above, so this lands at the top of the fresh window and every card in the

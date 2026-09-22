@@ -21,6 +21,14 @@
       fallback: () => 1,
       apply: (v) => window.HEROTERM_SKY.allowWarp(Boolean(v)),
     },
+    // Commands to neither hear nor watch: one pattern a line, matched against
+    // the command as typed. A dev server is the case it's for — it runs all
+    // day, and a sky that flies all day stops meaning anything.
+    hush: {
+      text: true,
+      fallback: () => '',
+      apply: () => {},
+    },
     // How long a shell outlives a closed tab, in seconds. Sent to the server
     // as each window connects; -1 leaves the server's own default alone.
     grace: {
@@ -71,6 +79,7 @@
   }
 
   function valueOf(key) {
+    if (OPTIONS[key].text) return typeof saved[key] === 'string' ? saved[key] : OPTIONS[key].fallback();
     const v = Number(saved[key]);
     return Number.isFinite(v) ? v : OPTIONS[key].fallback();
   }
@@ -853,5 +862,25 @@
   bindChoice('confirmClose', document.getElementById('set-confirm'));
   bindChoice('grace', document.getElementById('set-grace'));
 
-  window.HEROTERM_SETTINGS = { open, close, get: valueOf };
+  // Asked by session.js as each command starts. Substring, case-insensitive,
+  // so "npm run dev" catches "npm run dev -- --host"; blank lines are ignored.
+  function hushes(command) {
+    const cmd = String(command).toLowerCase();
+    return valueOf('hush')
+      .split('\n')
+      .map((line) => line.trim().toLowerCase())
+      .filter(Boolean)
+      .some((pattern) => cmd.includes(pattern));
+  }
+
+  const hushBox = document.getElementById('set-hush');
+  hushBox.value = valueOf('hush');
+  hushBox.addEventListener('input', () => {
+    const text = hushBox.value.replace(/^\s+$/, '');
+    if (text.trim()) saved.hush = text;
+    else delete saved.hush;
+    save();
+  });
+
+  window.HEROTERM_SETTINGS = { open, close, get: valueOf, hushes };
 })();

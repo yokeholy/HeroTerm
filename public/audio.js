@@ -154,7 +154,7 @@
   // whichever container produced it. A restored event is a command that was
   // already running before you refreshed — it shouldn't announce itself as new.
   window.HEROTERM_SESSION.any((e) => {
-    if (e.restored) return;
+    if (e.restored || e.hush) return; // a command you asked not to hear
     if (e.type === 'start') ding();
     else if (e.type === 'end') (e.ok ? success : failure)();
   });

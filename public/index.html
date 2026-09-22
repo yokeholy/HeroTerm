@@ -1004,6 +1004,28 @@
         color: var(--label, #6b7384);
       }
 
+      #settings .lines {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px 10px;
+        border: 1px solid var(--hairline, #252a35);
+        border-radius: 8px;
+        background: transparent;
+        color: var(--fg, #d6d9e0);
+        font: calc(12px * var(--ui-scale, 1))/1.5 var(--font, monospace);
+        resize: vertical;
+      }
+
+      #settings .lines:focus {
+        outline: none;
+        border-color: var(--cursor, #e9a13b);
+      }
+
+      #settings .lines::placeholder {
+        color: var(--label, #6b7384);
+      }
+
       /* ---- a row of named choices, one pressed ---- */
 
       #settings .choices {
@@ -2089,6 +2111,18 @@
               <button type="button" data-v="1">While running</button>
               <button type="button" data-v="2">Always</button>
             </div>
+          </div>
+
+          <div class="setting">
+            <label for="set-hush">Quiet commands</label>
+            <p class="hint">
+              Commands to neither hear nor watch — a dev server, a log you're
+              tailing, anything that runs all day. One a line; a command
+              containing any of them makes no sound and doesn't fly the stars.
+              It still gets its window, its clock and its border.
+            </p>
+            <textarea id="set-hush" class="lines" rows="4" spellcheck="false" autocomplete="off"
+              placeholder="npm run dev&#10;vite&#10;tail -f"></textarea>
           </div>
 
           <div class="setting">

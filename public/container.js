@@ -378,7 +378,11 @@
 
     // OSC 633;E carries the command line itself, so a card can be labelled.
     term.parser.registerOscHandler(633, (payload) => {
-      if (payload.startsWith('E;')) stack.name(payload.slice(2));
+      if (payload.startsWith('E;')) {
+        const line = payload.slice(2);
+        stack.name(line);
+        session.commandName(line); // before the start marker; see session.js
+      }
       return true;
     });
 
