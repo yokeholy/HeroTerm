@@ -166,13 +166,30 @@ function createSession() {
     },
 
     // After a refresh, once the restored screen has been replayed: say where
-    // the agent had got to, without dinging about it.
-    settleAgent() {
+    // things had got to, without dinging about it. `title` and `alt` are the
+    // server's own record, current even when the start of a long session has
+    // fallen off the replayed screen — without them, an agent sitting idle
+    // came back looking busy, because the command around it still is.
+    //
+    // Here a busy title is taken on its own. The idle one that would normally
+    // have to come first may be exactly what fell off, and this is only ever
+    // the title of a command that is known to be still running.
+    settleAgent(title, alt) {
+      if (typeof title === 'string') {
+        if (title.startsWith(AGENT_IDLE)) agent = 'idle';
+        else if (AGENT_BUSY.test(title)) agent = 'busy';
+      }
       if (agent === 'busy') {
         running = true;
         emit({ type: 'start', agent: true, restored: true });
       } else if (agent === 'idle') {
+        running = false;
         emit({ type: 'quiet', agent: true, restored: true });
+      } else if (alt && running) {
+        // A full-screen program — vim, less, top — whose switch into the
+        // alternate screen is older than the replay.
+        altScreen = true;
+        quiet();
       }
     },
 

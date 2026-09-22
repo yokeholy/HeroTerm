@@ -209,7 +209,7 @@
         stack.restore(msg);
         term.write('', () => {
           replaying = false;
-          session.settleAgent(); // an agent's state is only known from the replay
+          session.settleAgent(msg.title, msg.alt); // see session.js
         });
         session.adopt(msg.live);
       }

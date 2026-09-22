@@ -131,10 +131,21 @@ function newRecord() {
   };
 }
 
+// The window title and whether a full-screen program has the grid. The live
+// screen we keep is only the tail of the stream, and in a long session the
+// sequences that set these scroll off its front — so they're kept on their
+// own, and a returning tab is told directly. It's what lets it know whether
+// an agent inside a still-running command is working or waiting.
+const TITLE = /\x1b\][02];([^\x07\x1b]*)(?:\x07|\x1b\\)/g;
+const ALT = /\x1b\[\?(?:1049|1047|47)([hl])/g;
+
 // Text between markers, which belongs both to the live screen and to whichever
 // command is currently running.
 function absorb(s, text) {
   if (!text) return;
+
+  for (const m of text.matchAll(TITLE)) s.title = m[1];
+  for (const m of text.matchAll(ALT)) s.alt = m[1] === 'h';
 
   s.screen += text;
   if (s.screen.length > MAX_SCREEN) s.screen = s.screen.slice(-MAX_SCREEN);
@@ -161,6 +172,7 @@ function marker(s, code, payload) {
     }
     s.current = newRecord();
     s.screen = ''; // the browser wipes its screen here too, so we match it
+    s.title = null; // whatever set it before belongs to the last command
     return;
   }
 
@@ -271,6 +283,8 @@ function createSession(id) {
     paused: false,
     carry: '',
     screen: '',
+    title: null,
+    alt: false,
     records: [],
     current: null,
   };
@@ -399,6 +413,8 @@ wss.on('connection', (ws, req) => {
       cards: s.records,
       live: s.current,
       screen: s.screen,
+      title: s.title,
+      alt: s.alt,
     });
   }
 
