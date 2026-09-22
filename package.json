@@ -19,12 +19,29 @@
     "xterm",
     "zsh",
     "osc-133",
-    "web-terminal"
+    "web-terminal",
+    "claude-code",
+    "browser-terminal"
+  ],
+  "bin": {
+    "heroterm": "bin/heroterm.js"
+  },
+  "files": [
+    "bin/",
+    "scripts/",
+    "public/",
+    "server.js",
+    "history.js",
+    "fonts.js",
+    "shell/heroterm-remote.sh",
+    "shell/zdotdir/.zshenv",
+    "shell/zdotdir/.zprofile",
+    "shell/zdotdir/.zshrc"
   ],
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "postinstall": "chmod +x node_modules/node-pty/prebuilds/*/spawn-helper 2>/dev/null || true"
+    "postinstall": "node scripts/fix-spawn-helper.js"
   },
   "engines": {
     "node": ">=18"
@@ -39,7 +56,7 @@
     "@xterm/addon-webgl": "^0.18.0",
     "@xterm/xterm": "^5.5.0",
     "express": "^4.19.2",
-    "node-pty": "^1.0.0",
+    "node-pty": "^1.1.0",
     "ws": "^8.18.0"
   }
 }

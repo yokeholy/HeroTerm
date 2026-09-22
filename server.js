@@ -6,7 +6,9 @@ const crypto = require('crypto');
 const express = require('express');
 const { WebSocketServer } = require('ws');
 const pty = require('node-pty');
+const { spawn } = require('child_process');
 const history = require('./history');
+const fixSpawnHelper = require('./scripts/fix-spawn-helper');
 const fonts = require('./fonts');
 
 const PORT = Number(process.env.PORT || 7777);
@@ -482,9 +484,38 @@ wss.on('connection', (ws, req) => {
   ws.on('error', () => detach(s, ws));
 });
 
+// Before the first shell, so an install that lost spawn-helper's execute bit
+// doesn't surface as "posix_spawnp failed" the moment you open the page.
+fixSpawnHelper();
+
+// Most often it's HeroTerm itself, already running from another terminal.
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n  Port ${PORT} is already in use — HeroTerm may already be running.`);
+    console.error(`  Use that one, or pick another port: heroterm --port ${PORT + 1}\n`);
+    process.exit(1);
+  }
+  throw err;
+});
+
+// The `heroterm` command asks for this; `npm start` doesn't. The URL carries
+// the token, so it goes straight to the browser rather than via the clipboard.
+function openBrowser(url) {
+  const cmd = process.platform === 'darwin' ? 'open' : 'xdg-open';
+  try {
+    const child = spawn(cmd, [url], { stdio: 'ignore', detached: true });
+    child.on('error', () => {}); // no opener on this machine; the URL is printed anyway
+    child.unref();
+  } catch {
+    /* as above */
+  }
+}
+
 server.listen(PORT, HOST, () => {
+  const url = `http://localhost:${PORT}/?token=${TOKEN}`;
   console.log(`\n  ${path.basename(SHELL)} is ready at:\n`);
-  console.log(`  http://localhost:${PORT}/?token=${TOKEN}\n`);
+  console.log(`  ${url}\n`);
+  if (process.env.HEROTERM_OPEN === '1') openBrowser(url);
   if (GRACE === 0) {
     console.log('  Closing the tab ends the shell. Run tmux inside if you want it to survive.\n');
   } else {

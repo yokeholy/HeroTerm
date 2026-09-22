@@ -10,7 +10,7 @@
   <img alt="Node 18+" src="https://img.shields.io/badge/node-18%2B-339933?logo=node.js&logoColor=white">
 </p>
 
-![A ping running in its own window, its border yellow, three finished commands stacked behind it, and the star field streaking away from the one that's working](docs/hero.png)
+![A ping running in its own window, its border yellow, three finished commands stacked behind it, and the star field streaking away from the one that's working](https://raw.githubusercontent.com/yokeholy/heroterm/main/docs/hero.png)
 
 ## ✨ Why HeroTerm
 
@@ -25,18 +25,22 @@
 
 ## 🚀 Quick start
 
-You need macOS, zsh, [Node 18+](https://nodejs.org) and Xcode's command-line tools (`xcode-select --install`).
+You need macOS, zsh and [Node 18+](https://nodejs.org). Then:
 
 ```bash
-git clone https://github.com/yokeholy/heroterm.git
-cd heroterm
-npm install
-npm start
+npx heroterm
 ```
 
-Open the URL it prints. That's it.
+It opens in your browser. That's it.
 
-> 💡 The URL carries a new token each launch, so after a restart, copy the new one.
+To keep it around, install the `heroterm` command:
+
+```bash
+npm install -g heroterm
+heroterm
+```
+
+> 💡 `heroterm --help` for options, like `--port` or `--no-open`. More in [Installation](docs/wiki/Installation.md).
 
 ## 🧭 Find your way around
 
@@ -54,8 +58,8 @@ Open the URL it prints. That's it.
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/arrange.png" alt="Four windows arranged across the screen: one running ping, one git log, one ls, one failed cat"></td>
-    <td width="50%"><img src="docs/deck.png" alt="A window with the previous commands stacked behind it"></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/yokeholy/heroterm/main/docs/arrange.png" alt="Four windows arranged across the screen: one running ping, one git log, one ls, one failed cat"></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/yokeholy/heroterm/main/docs/deck.png" alt="A window with the previous commands stacked behind it"></td>
   </tr>
   <tr>
     <td align="center">▦ Arrange, and see every result at a glance</td>
@@ -75,7 +79,7 @@ Open the URL it prints. That's it.
 
 ## 🎨 Make it yours
 
-![Settings beside the window they apply to](docs/settings.png)
+![Settings beside the window they apply to](https://raw.githubusercontent.com/yokeholy/heroterm/main/docs/settings.png)
 
 - 🎨 **6 themes**, from deep-space blue to a paper light theme
 - 🔤 **Any installed font**, with terminal and interface sizes set separately
