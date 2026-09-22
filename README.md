@@ -277,9 +277,15 @@ each possible number of rows the windows are dealt out as evenly as the rows
 allow, and it keeps the layout whose windows are closest to a comfortable
 terminal shape and closest to one another in size — four become two by two,
 five become three over two, and nothing is left empty. Windows keep their
-reading order, so each moves as little as it can, and like a snap each
-remembers the size it had, for dragging back out. Full-tab mode already is
-one window filling everything, so the button is off there.
+reading order, so each moves as little as it can, with 8px between them and
+along the edges, and like a snap each remembers the size it had, for dragging
+back out. Full-tab mode already is one window filling everything, so the
+button is off there.
+
+Pressing it again puts every window back where it was — as long as nothing
+has changed in between. The button stays lit while that's true; move or
+resize a window, open or close one, and it goes dark and the next press
+arranges afresh instead. The undo survives a reload.
 
 ## Settings
 

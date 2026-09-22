@@ -624,12 +624,14 @@
       relayout,
 
       // Moved by the page rather than by hand — arranging — so it glides there.
-      // Like a snap, it remembers the size it had, for dragging back out of.
-      arrangeTo(r) {
+      // Like a snap, it remembers the size it had, for dragging back out of;
+      // putting it back where it was is the exception, and remembers nothing.
+      arrangeTo(r, { remember = true } = {}) {
         deck.classList.add('gliding');
         clearTimeout(glideTimer);
         glideTimer = setTimeout(() => deck.classList.remove('gliding'), GLIDE_MS);
-        snapTo(r);
+        if (remember) snapTo(r);
+        else setVisible(r);
       },
 
       // A visible rect to show the window at, or null to put it back where

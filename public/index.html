@@ -91,6 +91,12 @@
         opacity: 0.22;
       }
 
+      /* Pressed while the windows are still where it arranged them: pressing
+         again puts them back. */
+      #arrange[aria-pressed='true'] {
+        color: var(--cursor, #e9a13b);
+      }
+
       #expand[aria-pressed='true'] .out,
       #expand[aria-pressed='false'] .in {
         display: none;
@@ -1468,7 +1474,7 @@
         </svg>
       </button>
 
-      <button id="arrange" class="chip" type="button" aria-label="Arrange windows to fill the screen">
+      <button id="arrange" class="chip" type="button" aria-pressed="false" aria-label="Arrange windows to fill the screen">
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
           <g fill="none" stroke="currentColor" stroke-width="1.35">
             <rect x="2.2" y="2.2" width="5" height="5" rx="1" />

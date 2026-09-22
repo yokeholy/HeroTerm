@@ -109,7 +109,11 @@ const page = {
       windowed,
       focused: focused ? focused.id : null,
       containers: containers.map((c) => ({ ...c.box, id: c.id, name: c.name })),
+      arrangement,
     });
+    // Every move, resize, split and close ends up here, so this is where the
+    // arrange button finds out whether its undo still holds.
+    paintArrange();
   },
 
   focus(c) {
@@ -314,6 +318,12 @@ function add() {
 // arranging moves each one as little as it can. Tiled windows butt up against
 // one another with no gap, the same as a snap or a split.
 const IDEAL_ASPECT = 1.5; // wider than tall, like an 80×24 terminal
+const TILE_GAP = 8; // between windows, and along the sides and bottom
+
+// What the last arrange did: where each window was before, and where it put
+// them. Pressing the button again puts them back — but only if nothing has
+// moved since, so it never undoes a layout you've gone on to work with.
+let arrangement = null; // { before: {id: rect}, after: {id: rect} }
 
 // The top strip belongs to the page's own buttons — ? on the left, the rest
 // on the right — and a title bar tiled underneath them would lose its × to
@@ -342,10 +352,49 @@ function plan(n, area) {
   return best.counts;
 }
 
+const sameRect = (p, q) => p && q && p.x === q.x && p.y === q.y && p.w === q.w && p.h === q.h;
+
+// Is every window still exactly where the last arrange put it, with none
+// added or closed since?
+function untouched() {
+  if (!arrangement) return false;
+  const ids = Object.keys(arrangement.after);
+  if (ids.length !== containers.length) return false;
+  return containers.every((c) => sameRect(c.visibleRect(), arrangement.after[c.id]));
+}
+
+function paintArrange() {
+  const undo = windowed && untouched();
+  els.arrange.setAttribute('aria-pressed', String(undo));
+  els.arrange.setAttribute(
+    'aria-label',
+    undo ? 'Put the windows back where they were' : 'Arrange windows to fill the screen'
+  );
+}
+
 function arrange() {
   if (!windowed || !containers.length) return;
+
+  if (untouched()) {
+    for (const c of containers) c.arrangeTo(arrangement.before[c.id], { remember: false });
+    arrangement = null;
+    page.save();
+    if (focused) focused.focus();
+    return;
+  }
+
+  const before = {};
+  for (const c of containers) before[c.id] = c.visibleRect();
+
+  // Inside the work area less the controls strip, with a margin on the other
+  // three sides; the strip is already clear space along the top.
   const w = workArea();
-  const a = { x: w.x, y: w.y + CONTROLS_H, w: w.w, h: w.h - CONTROLS_H };
+  const a = {
+    x: w.x + TILE_GAP,
+    y: w.y + CONTROLS_H,
+    w: w.w - 2 * TILE_GAP,
+    h: w.h - CONTROLS_H - TILE_GAP,
+  };
   const centre = (c) => {
     const r = c.visibleRect();
     return { x: r.x + r.w / 2, y: r.y + r.h / 2 };
@@ -358,15 +407,31 @@ function arrange() {
   counts.forEach((k, row) => {
     const inRow = byY.slice(next, next + k).sort((p, q) => centre(p).x - centre(q).x);
     next += k;
-    // Edges from rounded running totals, so neighbours meet exactly.
+    // Cells from rounded running totals, so the gaps come out even; each
+    // window then gives up half a gap on every side it shares.
     const top = Math.round(a.y + (a.h * row) / counts.length);
     const bottom = Math.round(a.y + (a.h * (row + 1)) / counts.length);
+    const padTop = row === 0 ? 0 : TILE_GAP / 2;
+    const padBottom = row === counts.length - 1 ? 0 : TILE_GAP / 2;
     inRow.forEach((c, i) => {
       const left = Math.round(a.x + (a.w * i) / k);
       const right = Math.round(a.x + (a.w * (i + 1)) / k);
-      c.arrangeTo({ x: left, y: top, w: right - left, h: bottom - top });
+      const padLeft = i === 0 ? 0 : TILE_GAP / 2;
+      const padRight = i === k - 1 ? 0 : TILE_GAP / 2;
+      c.arrangeTo({
+        x: left + padLeft,
+        y: top + padTop,
+        w: right - left - padLeft - padRight,
+        h: bottom - top - padTop - padBottom,
+      });
     });
   });
+
+  // Recorded as they actually landed: a window can refuse a size below its
+  // minimum, and comparing against what was asked for would then never match.
+  const after = {};
+  for (const c of containers) after[c.id] = c.visibleRect();
+  arrangement = { before, after };
   page.save();
   if (focused) focused.focus();
 }
@@ -577,6 +642,7 @@ function setMode(next) {
 
 const saved = readLayout();
 windowed = saved ? Boolean(saved.windowed) : false;
+arrangement = (saved && saved.arrangement) || null; // so undo survives a reload
 
 if (saved) {
   for (const box of saved.containers.slice(0, MAX_CONTAINERS)) spawn(box.id, box, box.name);
