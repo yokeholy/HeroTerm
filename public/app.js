@@ -16,8 +16,6 @@ const els = {
   mode: document.getElementById('mode'),
   expand: document.getElementById('expand'),
   add: document.getElementById('add'),
-  empty: document.getElementById('empty'),
-  emptyNew: document.getElementById('empty-new'),
 };
 
 const audio = window.HEROTERM_AUDIO;
@@ -228,6 +226,14 @@ function remove(c) {
   containers.splice(i, 1);
   if (dragging === c) dragging = null;
   c.destroy();
+  // The last one went: a tab can't close itself, so start over with a fresh
+  // terminal, the way the page first opened, rather than leave it empty.
+  if (!containers.length) {
+    focused = null;
+    add();
+    page.runStateChanged();
+    return;
+  }
   if (focused === c) {
     focused = null;
     const next = containers[Math.min(i, containers.length - 1)];
@@ -241,22 +247,7 @@ function remove(c) {
   // say that command finished.
   page.runStateChanged();
   applyMode();
-  paintEmpty();
   page.save();
-}
-
-// Every window closed. A tab can't close itself, so the sky stays, with a way
-// back. A refresh from here starts a fresh terminal: an empty layout is never
-// saved as something to restore.
-function paintEmpty() {
-  const none = containers.length === 0;
-  els.empty.hidden = !none;
-  if (!none) return;
-  els.state.dataset.live = 'no';
-  els.stateText.textContent = 'No terminals open';
-  els.size.textContent = '';
-  els.place.textContent = '';
-  els.emptyNew.focus();
 }
 
 function newId() {
@@ -300,14 +291,13 @@ function spawn(id, box, name) {
 function add() {
   if (containers.length >= MAX_CONTAINERS) return;
   // More than one container only makes sense floating; full-bleed would stack
-  // them exactly on top of each other. The first one back on an empty page
+  // them exactly on top of each other. The one that replaces the last window
   // takes whichever mode you were in.
   if (!windowed && containers.length > 0) setMode(true);
   const c = spawn(null, defaultBox(containers.length));
   page.focus(c);
   c.focus();
   applyMode();
-  paintEmpty();
   page.save();
 }
 
@@ -492,12 +482,11 @@ function applyMode() {
   document.body.dataset.mode = windowed ? 'windowed' : 'full';
   els.mode.setAttribute('aria-label', windowed ? 'Fill the tab' : 'Pop out into a window');
   // Only one container can have the whole page, so the button is off while
-  // there are several — and with none, there's nothing for it to act on.
-  els.mode.disabled = containers.length !== 1;
+  // there are several.
+  els.mode.disabled = containers.length > 1;
   els.mode.title = containers.length > 1 ? 'Close the others to fill the tab' : '';
   els.add.disabled = containers.length >= MAX_CONTAINERS;
-  // An empty page is all sky, whichever mode it was in.
-  sky.setActive(windowed || containers.length === 0);
+  sky.setActive(windowed);
   for (const c of containers) {
     c.applyBox();
     c.relayout();
@@ -562,7 +551,6 @@ window.HEROTERM_WINDOWS = {
 
 els.add.addEventListener('mousedown', (e) => e.preventDefault());
 els.add.addEventListener('click', add);
-els.emptyNew.addEventListener('click', add);
 
 els.mode.addEventListener('mousedown', (e) => e.preventDefault());
 els.mode.addEventListener('click', () => setMode(!windowed));
@@ -658,16 +646,7 @@ window.addEventListener(
   (e) => {
     // A name being renamed is a text field; Cmd-K there should not wipe a grid.
     if (document.activeElement && document.activeElement.isContentEditable) return;
-    // With nothing open, Enter opens something — wherever focus has wandered,
-    // as long as it isn't in a sheet that wants Enter for itself.
-    if (!containers.length && e.key === 'Enter' && !e.metaKey && !e.ctrlKey && !e.altKey) {
-      if (document.activeElement === document.body) {
-        add();
-        e.preventDefault();
-        return;
-      }
-    }
-    // Cmd-T needs no window to act on: it's how you get one back.
+    // Cmd-T opens a window whether or not one has focus.
     if (e.metaKey && !e.ctrlKey && !e.altKey && e.key === 't') {
       add();
       e.preventDefault();

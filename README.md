@@ -378,9 +378,9 @@ running job. So the session lives on the server and outlives the socket:
   closes when you come back rather than quietly getting a new shell. A shell
   the grace period reaped is different: that wasn't your doing, so its window
   comes back with a fresh one.
-- Close the last window and the page is left with the sky and a **New
-  terminal** button (Enter or ⌘T also work). A tab can't close itself, and a
-  refresh from there starts a fresh terminal.
+- Close the last window — with its `×`, or by exiting its shell — and a fresh
+  one opens in its place. A tab can't close itself, and an empty page is
+  nothing you'd want.
 
 Terminal output travels as WebSocket **text** frames and anything structural as
 **binary** ones, which is how the browser tells them apart without having to

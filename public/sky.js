@@ -192,8 +192,7 @@
   let demoing = false; // a demo has borrowed the sky
 
   // Paint, and show the canvas, if either wants it. The canvas's visibility is
-  // on the body rather than tied to a mode, so the page can want the sky for
-  // its own reasons — an empty page shows it in any mode.
+  // on the body rather than tied to a mode, so a demo can show it in any mode.
   function sync() {
     const on = wanted || demoing;
     document.body.toggleAttribute('data-sky', on);

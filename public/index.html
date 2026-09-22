@@ -19,7 +19,7 @@
       }
 
       /* Only shown where there is something to see: sky.js sets data-sky —
-         windowed mode, an empty page, or a moment's demo. */
+         windowed mode, or a moment's demo. */
       #sky {
         position: fixed;
         inset: 0;
@@ -177,47 +177,6 @@
 
       #size {
         font-variant-numeric: tabular-nums;
-      }
-
-      /* ---- nothing open ---- */
-
-      #empty {
-        position: fixed;
-        inset: 0 0 30px 0;
-        z-index: 12;
-        display: grid;
-        place-content: center;
-        justify-items: center;
-        gap: 10px;
-        pointer-events: none;
-      }
-
-      #empty[hidden] {
-        display: none;
-      }
-
-      #empty button {
-        pointer-events: auto;
-        padding: 10px 18px;
-        border: 1px solid var(--hairline, #252a35);
-        border-radius: 9px;
-        background: var(--bg, #171b24);
-        color: var(--fg, #d6d9e0);
-        font: calc(13px * var(--ui-scale, 1))/1 var(--font, monospace);
-        cursor: pointer;
-        transition: border-color 120ms;
-      }
-
-      #empty button:hover,
-      #empty button:focus-visible {
-        outline: none;
-        border-color: var(--cursor, #e9a13b);
-      }
-
-      #empty p {
-        margin: 0;
-        color: var(--label, #6b7384);
-        font: calc(11px * var(--ui-scale, 1))/1 var(--font, monospace);
       }
 
       /* ---- the deck: the windows themselves ---- */
@@ -1516,12 +1475,6 @@
         </svg>
       </button>
 
-    </div>
-
-    <!-- Shown only when every window has been closed. -->
-    <div id="empty" hidden>
-      <button id="empty-new" type="button">New terminal</button>
-      <p>Enter, or ⌘T</p>
     </div>
 
     <template id="container-tpl">
