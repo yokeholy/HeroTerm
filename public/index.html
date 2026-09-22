@@ -190,20 +190,21 @@
         opacity: 0.8;
       }
 
-      /* A development copy: a red frame round the whole page, over everything
-         and in the way of nothing. */
-      body[data-dev]::after {
-        content: '';
-        position: fixed;
-        inset: 0;
-        z-index: 1000;
-        border: 3px solid #e5484d;
-        pointer-events: none;
+      /* A development copy — one run from a git checkout — says so, beside the
+         version, so it's never mistaken for the installed one. */
+      #devchip {
+        flex: none;
+        margin-left: -8px;
+        padding: 2px 8px;
+        border-radius: 9px;
+        background: #e5484d;
+        color: #fff;
+        font-weight: 600;
+        letter-spacing: 0.03em;
       }
 
-      body[data-dev] #brand {
-        color: #e5484d;
-        opacity: 1;
+      #devchip[hidden] {
+        display: none;
       }
 
       /* ---- the deck: the windows themselves ---- */
@@ -1851,6 +1852,7 @@
 
       <span id="size"></span>
       <span id="brand">HeroTerm <span id="version"></span></span>
+      <span id="devchip" hidden>development</span>
     </footer>
 
     <script src="/vendor/xterm/lib/xterm.js"></script>

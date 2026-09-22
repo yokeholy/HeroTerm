@@ -46,9 +46,9 @@ npm start
 `npm start` prints a URL with a token rather than opening it; `node
 bin/heroterm.js` does what the installed command does.
 
-A copy run from a git checkout marks itself: a red frame round the whole page,
-and `· dev` after the version in the status bar, so it's never mistaken for the
-installed one you work in. Running both at once is the point of it — install
+A copy run from a git checkout marks itself with a red **development** chip
+after the version in the status bar, so it's never mistaken for the installed
+one you work in. Running both at once is the point of it — install
 the published package for everyday use on the default port, and run the
 checkout alongside on another:
 
