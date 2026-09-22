@@ -149,12 +149,13 @@ and the two things that surprise people. Escape or a click outside closes it.
 Its text lives in the markup in `public/index.html`, so editing it is editing
 the page.
 
-Five buttons, top-right corner of the page. They belong to the page rather
+Six buttons, top-right corner of the page. They belong to the page rather
 than to any window, so they stay put whatever the deck is doing:
 
 | | |
 |---|---|
 | plus | another terminal, in a container of its own |
+| grid | arrange every window to fill the screen, all about the same size |
 | bars | what you actually type — see below |
 | sliders | settings |
 | expand | the browser's own full screen — the whole display, tab strip gone |
@@ -267,6 +268,18 @@ forever, so you can look over long after the fact and still see how it went.
 None of this is painted in full screen, where the terminal covers every pixel
 of it — the animation loop stops rather than running behind an opaque window.
 Star count and colours are in `public/theme.js`.
+
+### Arranging
+
+The grid button tiles every window across the screen, below the strip the
+page's own buttons live in, at about the same size. The grid isn't fixed: for
+each possible number of rows the windows are dealt out as evenly as the rows
+allow, and it keeps the layout whose windows are closest to a comfortable
+terminal shape and closest to one another in size — four become two by two,
+five become three over two, and nothing is left empty. Windows keep their
+reading order, so each moves as little as it can, and like a snap each
+remembers the size it had, for dragging back out. Full-tab mode already is
+one window filling everything, so the button is off there.
 
 ## Settings
 

@@ -16,6 +16,7 @@ const els = {
   mode: document.getElementById('mode'),
   expand: document.getElementById('expand'),
   add: document.getElementById('add'),
+  arrange: document.getElementById('arrange'),
 };
 
 const audio = window.HEROTERM_AUDIO;
@@ -301,6 +302,75 @@ function add() {
   page.save();
 }
 
+/* ---------- arranging ---------- */
+
+// Every window, tiled over the whole work area at about the same size. The
+// grid is chosen, not fixed: for each possible number of rows the windows are
+// dealt out as evenly as rows allow, and the layout kept is the one whose
+// windows are nearest a comfortable terminal shape and nearest one another in
+// size. Nothing is left empty — a row with one window fewer has wider ones.
+//
+// Windows keep their reading order (top to bottom, then left to right), so
+// arranging moves each one as little as it can. Tiled windows butt up against
+// one another with no gap, the same as a snap or a split.
+const IDEAL_ASPECT = 1.5; // wider than tall, like an 80×24 terminal
+
+// The top strip belongs to the page's own buttons — ? on the left, the rest
+// on the right — and a title bar tiled underneath them would lose its × to
+// them. Full-tab mode starts its window at the same line for the same reason.
+const CONTROLS_H = 36;
+
+function plan(n, area) {
+  let best = null;
+  for (let rows = 1; rows <= n; rows += 1) {
+    const base = Math.floor(n / rows);
+    const extra = n % rows; // this many rows get one more
+    const counts = Array.from({ length: rows }, (_, i) => base + (i < extra ? 1 : 0));
+    const h = area.h / rows;
+    let shape = 0;
+    let smallest = Infinity;
+    let largest = 0;
+    for (const k of counts) {
+      const w = area.w / k;
+      shape += k * Math.abs(Math.log(w / h / IDEAL_ASPECT));
+      smallest = Math.min(smallest, w * h);
+      largest = Math.max(largest, w * h);
+    }
+    const score = shape / n + Math.log(largest / smallest);
+    if (!best || score < best.score) best = { counts, score };
+  }
+  return best.counts;
+}
+
+function arrange() {
+  if (!windowed || !containers.length) return;
+  const w = workArea();
+  const a = { x: w.x, y: w.y + CONTROLS_H, w: w.w, h: w.h - CONTROLS_H };
+  const centre = (c) => {
+    const r = c.visibleRect();
+    return { x: r.x + r.w / 2, y: r.y + r.h / 2 };
+  };
+  const counts = plan(containers.length, a);
+  // Reading order: sort by height on the screen, then deal into rows and sort
+  // each row by position across it.
+  const byY = [...containers].sort((p, q) => centre(p).y - centre(q).y);
+  let next = 0;
+  counts.forEach((k, row) => {
+    const inRow = byY.slice(next, next + k).sort((p, q) => centre(p).x - centre(q).x);
+    next += k;
+    // Edges from rounded running totals, so neighbours meet exactly.
+    const top = Math.round(a.y + (a.h * row) / counts.length);
+    const bottom = Math.round(a.y + (a.h * (row + 1)) / counts.length);
+    inRow.forEach((c, i) => {
+      const left = Math.round(a.x + (a.w * i) / k);
+      const right = Math.round(a.x + (a.w * (i + 1)) / k);
+      c.arrangeTo({ x: left, y: top, w: right - left, h: bottom - top });
+    });
+  });
+  page.save();
+  if (focused) focused.focus();
+}
+
 /* ---------- where the sky flies from ---------- */
 
 // The vanishing point is the middle of whatever is working: one window's
@@ -486,6 +556,9 @@ function applyMode() {
   els.mode.disabled = containers.length > 1;
   els.mode.title = containers.length > 1 ? 'Close the others to fill the tab' : '';
   els.add.disabled = containers.length >= MAX_CONTAINERS;
+  // Full-tab mode is already the one window filling everything.
+  els.arrange.disabled = !windowed;
+  els.arrange.title = windowed ? '' : 'Pop out into windows to arrange them';
   sky.setActive(windowed);
   for (const c of containers) {
     c.applyBox();
@@ -553,6 +626,9 @@ window.HEROTERM_WINDOWS = {
 
 els.add.addEventListener('mousedown', (e) => e.preventDefault());
 els.add.addEventListener('click', add);
+
+els.arrange.addEventListener('mousedown', (e) => e.preventDefault());
+els.arrange.addEventListener('click', arrange);
 
 els.mode.addEventListener('mousedown', (e) => e.preventDefault());
 els.mode.addEventListener('click', () => setMode(!windowed));
