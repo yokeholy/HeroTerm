@@ -12,11 +12,12 @@
 // come out exactly as they did the first time, which no amount of scraping the
 // text would give you.
 
+const MAX_CARDS = 12; // how far back you can walk
+const MAX_BYTES = 1 << 18; // 256 KB of output kept per command — the tail, which is the part you want
+const REPLAY_SCROLLBACK = 2000; // lines each replayed card can scroll back
+
 function createStack(opts) {
   const T = window.HEROTERM_THEME;
-
-  const MAX_CARDS = 12; // how far back you can walk
-  const MAX_BYTES = 1 << 18; // 256 KB of output kept per command — the tail, which is the part you want
   const DEPTH = 6; // cards drawn behind the front one
 
   const deckEl = opts.deck;
@@ -106,7 +107,7 @@ function createStack(opts) {
       letterSpacing: T.letterSpacing,
       cols: live ? live.cols : 80,
       rows: live ? live.rows : 24,
-      scrollback: 2000,
+      scrollback: REPLAY_SCROLLBACK,
       cursorStyle: 'bar',
       cursorInactiveStyle: 'none',
       disableStdin: true,
@@ -384,4 +385,8 @@ function createStack(opts) {
   return api;
 }
 
-window.HEROTERM_STACK = { create: createStack };
+window.HEROTERM_STACK = {
+  create: createStack,
+  // For settings' System tab: the constants the deck itself uses.
+  limits: { cards: MAX_CARDS, bytes: MAX_BYTES, scrollback: REPLAY_SCROLLBACK },
+};

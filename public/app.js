@@ -524,6 +524,8 @@ paintStatus();
 let previewed = null;
 
 window.HEROTERM_WINDOWS = {
+  limits: { windows: MAX_CONTAINERS }, // for settings' System tab
+
   // The focused window where it lives, not where it's being shown: its own
   // box when windowed, the whole work area under the deck band when it fills
   // the tab.

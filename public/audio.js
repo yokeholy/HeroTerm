@@ -184,6 +184,8 @@
       if (enabled) ready();
     },
 
+    tickDelay: TICK_DELAY, // for settings' System tab
+
     // The sounds there are, for settings to list, and a switch for each.
     sounds: SOUNDS.map((x) => ({ ...x })),
 

@@ -747,6 +747,49 @@
         opacity: 0.45;
       }
 
+      /* ---- the System tab: read-only values ---- */
+
+      #settings .system .group {
+        margin: 18px 0 8px;
+        color: var(--label, #6b7384);
+        font-size: calc(10px * var(--ui-scale, 1));
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      #settings .system .group:first-child {
+        margin-top: 4px;
+      }
+
+      #settings .system .item {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        column-gap: 16px;
+        padding: 7px 0;
+        border-top: 1px solid var(--hairline, #252a35);
+      }
+
+      #settings .system .name {
+        color: var(--fg, #d6d9e0);
+      }
+
+      #settings .system .value {
+        color: var(--fg, #d6d9e0);
+        text-align: right;
+        overflow-wrap: anywhere;
+      }
+
+      #settings .system .where {
+        grid-column: 1 / -1;
+        margin-top: 2px;
+        color: var(--label, #6b7384);
+        font-size: calc(10px * var(--ui-scale, 1));
+      }
+
+      #settings .system .empty {
+        color: var(--label, #6b7384);
+      }
+
       /* ---- pages inside the sheet ---- */
 
       /* Tabs on the three top-level pages; a back arrow instead on the pages
@@ -1658,6 +1701,7 @@
           <button id="tab-appearance" class="tab" type="button" role="tab" data-tab="appearance" aria-controls="page-appearance">Appearance</button>
           <button id="tab-sound" class="tab" type="button" role="tab" data-tab="sound" aria-controls="page-sound">Sound</button>
           <button id="tab-effects" class="tab" type="button" role="tab" data-tab="effects" aria-controls="page-effects">Effects</button>
+          <button id="tab-system" class="tab" type="button" role="tab" data-tab="system" aria-controls="page-system">System</button>
         </div>
 
         <div class="body">
@@ -1745,6 +1789,15 @@
             </div>
             <input id="set-warp" class="switch" type="checkbox" />
           </div>
+        </div>
+
+        <div id="page-system" class="page" data-page="system" role="tabpanel" aria-labelledby="tab-system" hidden>
+          <p class="hint">
+            What Hero Term is running with. Read-only here: each says where
+            it's set. Server values take effect when the server restarts; the
+            page's, when you reload.
+          </p>
+          <div id="set-system" class="system"></div>
         </div>
 
         <div class="page" data-page="theme" hidden>

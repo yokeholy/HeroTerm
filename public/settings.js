@@ -534,6 +534,105 @@
     }
   );
 
+  /* ---------- the System tab ---------- */
+
+  // Read-only: what's running, and where each value comes from. The server's
+  // numbers are asked for each time the tab opens, so they're the ones it's
+  // actually using, overrides included; the page's are read from the modules
+  // that own them rather than copied here.
+  const sysBox = document.getElementById('set-system');
+
+  const kb = (n) => (n >= 1 << 20 ? `${n / (1 << 20)} MB` : `${n / 1024} KB`);
+  const seconds = (n) => {
+    if (n === 0) return 'none — ends when the tab closes';
+    if (n % 3600 === 0) return `${n / 3600} h`;
+    if (n % 60 === 0) return `${n / 60} min`;
+    return `${n} s`;
+  };
+
+  function renderSystem(cfg, error) {
+    const W = window.HEROTERM_WINDOWS?.limits || {};
+    const C = window.HEROTERM_CONTAINER?.limits || {};
+    const K = window.HEROTERM_STACK?.limits || {};
+    const env = (name) => `env ${name}`;
+    const src = (file, name) => `${file} · ${name}`;
+    const S = cfg || {};
+    const unknown = error ? '—' : '…';
+
+    const groups = [
+      ['Server', [
+        ['Shell', S.shell, env('HEROTERM_SHELL') + ', else $SHELL'],
+        ['Address', S.host && `${S.host}:${S.port}`, env('PORT') + ' · the host is loopback, always'],
+        ['Shells survive a closed tab for', S.grace != null && seconds(S.grace), env('HEROTERM_GRACE') + ' (seconds)'],
+        ['Terminals at once', S.maxSessions, src('server.js', 'MAX_SESSIONS')],
+        ['Node', S.node, 'the node that ran npm start'],
+        ['Wire protocol', S.protocol, src('server.js', 'PROTOCOL')],
+      ]],
+      ['History', [
+        ['Commands kept per window', K.cards, src('public/stack.js', 'MAX_CARDS')],
+        ['… kept across a refresh', S.cards, src('server.js', 'MAX_CARDS')],
+        ['Output kept per command', K.bytes && kb(K.bytes), src('public/stack.js', 'MAX_BYTES')],
+        ['… kept across a refresh', S.cardBytes && kb(S.cardBytes), src('server.js', 'MAX_CARD_BYTES')],
+        ['Screen kept across a refresh', S.screenBytes && kb(S.screenBytes), src('server.js', 'MAX_SCREEN')],
+        ['Scrollback, live terminal', C.scrollback && `${C.scrollback.toLocaleString()} lines`, src('public/container.js', 'SCROLLBACK')],
+        ['Scrollback, older commands', K.scrollback && `${K.scrollback.toLocaleString()} lines`, src('public/stack.js', 'REPLAY_SCROLLBACK')],
+        ['Shell history (for stats)', cfg ? S.historyFile || 'none found' : null, env('HEROTERM_HISTFILE') + ', else $HISTFILE, ~/.zsh_history…'],
+      ]],
+      ['Flow control', [
+        ['Output pauses at', S.highWater && `${kb(S.highWater)} unacknowledged`, src('server.js', 'HIGH_WATER')],
+        ['… resumes at', S.lowWater && kb(S.lowWater), src('server.js', 'LOW_WATER')],
+      ]],
+      ['Page', [
+        ['Windows at once', W.windows, src('public/app.js', 'MAX_CONTAINERS')],
+        ['Ticking starts after', window.HEROTERM_AUDIO?.tickDelay != null && `${window.HEROTERM_AUDIO.tickDelay} ms`, src('public/audio.js', 'TICK_DELAY')],
+      ]],
+    ];
+
+    const out = [];
+    if (error) {
+      const e = document.createElement('p');
+      e.className = 'empty';
+      e.textContent = error;
+      out.push(e);
+    }
+    for (const [heading, items] of groups) {
+      const g = document.createElement('div');
+      g.className = 'group';
+      g.textContent = heading;
+      out.push(g);
+      for (const [name, value, where] of items) {
+        const row = document.createElement('div');
+        row.className = 'item';
+        const n = document.createElement('span');
+        n.className = 'name';
+        n.textContent = name;
+        const v = document.createElement('span');
+        v.className = 'value';
+        v.textContent = value == null || value === false ? unknown : String(value);
+        const w = document.createElement('span');
+        w.className = 'where';
+        w.textContent = where;
+        row.append(n, v, w);
+        out.push(row);
+      }
+    }
+    sysBox.replaceChildren(...out);
+  }
+
+  async function loadSystem() {
+    renderSystem(null);
+    try {
+      const token = new URLSearchParams(location.search).get('token') || '';
+      const res = await fetch(`/config?token=${encodeURIComponent(token)}`, { cache: 'no-store' });
+      if (!res.ok) {
+        throw new Error(res.status === 404 ? 'Server is running an older build — restart it' : `HTTP ${res.status}`);
+      }
+      renderSystem(await res.json());
+    } catch (err) {
+      renderSystem(null, `Couldn't ask the server: ${err.message}. The page's own values are below.`);
+    }
+  }
+
   /* ---------- pages ---------- */
 
   const sheet = panel.querySelector('.sheet');
@@ -541,7 +640,7 @@
   const backBtn = panel.querySelector('[data-back]');
   // Three tabs, and the two pages you reach from Appearance. A sub-page shows
   // a back arrow instead of the tabs, and goes back to the tab it came from.
-  const TABS = ['appearance', 'sound', 'effects'];
+  const TABS = ['appearance', 'sound', 'effects', 'system'];
   const SUB = { theme: { title: 'Theme', parent: 'appearance' }, font: { title: 'Font', parent: 'appearance' } };
   const TAB_KEY = 'heroterm.settingsTab';
   const tabs = [...panel.querySelectorAll('.tab')];
@@ -578,6 +677,7 @@
       }
       if (opener) opener.focus();
       opener = null;
+      if (page === 'system') loadSystem();
     } else {
       opener = from || null;
       if (page === 'font') {

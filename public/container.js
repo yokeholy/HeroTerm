@@ -25,6 +25,7 @@
   // are converted through this whenever they leave this file.
   const CARD_TOP = 36;
   const GLIDE_MS = 360; // keep in step with .deck.gliding in index.html
+  const SCROLLBACK = 20000; // lines the live terminal keeps
 
   function createContainer(opts) {
     const { id, page } = opts;
@@ -49,7 +50,7 @@
       cursorBlink: true,
       cursorStyle: 'block',
       cursorInactiveStyle: 'outline',
-      scrollback: 20000,
+      scrollback: SCROLLBACK,
       macOptionIsMeta: true, // Option+f / Option+b move by word, as in iTerm
       allowProposedApi: true,
     });
@@ -692,5 +693,6 @@
     // The smallest a *visible* window can be, which is what the page needs in
     // order to refuse a split that would produce two of them below it.
     minVisible: { w: MIN_W, h: MIN_H - CARD_TOP },
+    limits: { scrollback: SCROLLBACK }, // for settings' System tab
   };
 })();

@@ -276,8 +276,15 @@ unfocused windows fade, whether the stars fly, and whether any of it makes a
 sound. Beside the window it's previewing, it shares that window's top and
 bottom edges (never shorter than 420px — a shorter window is shown taller to
 match, and gets its real size back on close); with no room for a preview it
-runs the full height of the screen. It has three tabs — **Appearance**,
-**Sound** and **Effects** — and opens on whichever you used last. Theme and
+runs the full height of the screen. It has four tabs — **Appearance**,
+**Sound**, **Effects** and **System** — and opens on whichever you used last.
+
+System is read-only: the limits Hero Term is running with — shell, grace
+period, commands and bytes kept per window and across a refresh, scrollback,
+flow control, which history file the stats read — each with where it's set.
+The server's come from `/config` (token-gated like the rest), so they're the
+values after any environment overrides; the page's are read from the modules
+that own them, not copied. Theme and
 font each open a page of their own from Appearance.
 
 The two text sizes are separate on purpose. **Terminal text size** (px) is the

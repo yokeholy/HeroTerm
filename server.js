@@ -84,6 +84,33 @@ app.get('/fonts', (req, res) => {
   }
 });
 
+// What this server is running with, for the settings sheet's System tab —
+// the values after environment overrides, so it shows what's true now rather
+// than what the source says by default.
+app.get('/config', (req, res) => {
+  if (req.query.token !== TOKEN) {
+    res.sendStatus(403);
+    return;
+  }
+  res.set('Cache-Control', 'no-store');
+  res.json({
+    ok: true,
+    shell: SHELL,
+    host: HOST,
+    port: PORT,
+    grace: GRACE / 1000,
+    maxSessions: MAX_SESSIONS,
+    cards: MAX_CARDS,
+    cardBytes: MAX_CARD_BYTES,
+    screenBytes: MAX_SCREEN,
+    highWater: HIGH_WATER,
+    lowWater: LOW_WATER,
+    historyFile: history.file() || null,
+    node: process.version,
+    protocol: PROTOCOL,
+  });
+});
+
 const server = http.createServer(app);
 const wss = new WebSocketServer({ noServer: true });
 
@@ -116,6 +143,7 @@ function rememberExit(id, code) {
   if (exited.size > MAX_EXITED) exited.delete(exited.keys().next().value);
 }
 const MAX_SESSIONS = 8;
+const PROTOCOL = 3; // the wire contract's version; see the 'hello' below
 
 const MARKER = /\x1b\](133|633);([^\x07\x1b]*?)(?:\x07|\x1b\\)/g;
 
@@ -376,7 +404,7 @@ wss.on('connection', (ws, req) => {
   if (!s && exited.has(id)) {
     const code = exited.get(id);
     exited.delete(id);
-    control(ws, { t: 'hello', protocol: 3, resumed: false, grace: GRACE });
+    control(ws, { t: 'hello', protocol: PROTOCOL, resumed: false, grace: GRACE });
     control(ws, { t: 'exit', code, away: true });
     ws.close(1000, `shell exited (${code})`);
     return;
@@ -405,7 +433,7 @@ wss.on('connection', (ws, req) => {
   //   1  one session for the whole page
   //   2  a session per container, keyed by the id in the socket URL
   //   3  { t: 'exit' } when a shell ends on its own, so its window can close
-  control(ws, { t: 'hello', protocol: 3, resumed, grace: GRACE });
+  control(ws, { t: 'hello', protocol: PROTOCOL, resumed, grace: GRACE });
 
   if (resumed) {
     control(ws, {

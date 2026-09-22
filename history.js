@@ -170,4 +170,4 @@ function stats() {
   };
 }
 
-module.exports = { stats, parse, programOf };
+module.exports = { stats, parse, programOf, file: findFile };
