@@ -303,9 +303,10 @@ rather than replacing it, so glyphs it lacks — the icons in a Nerd Font prompt
 say — still come from the default.
 
 A font being installed doesn't mean the browser will draw it, so the page
-checks each one itself and greys out any it can't reach. Brave is the usual
-culprit: its fingerprinting protection hides every font it didn't ship with.
-Allowing fingerprinting for `localhost` in Shields brings them back.
+checks each one itself and lists only the ones it can reach, with a line saying
+how many it left out. Brave is the usual culprit: its fingerprinting protection
+hides every font it didn't ship with. Allowing fingerprinting for `localhost`
+in Shields brings them back.
 
 Two things make live switching work. `window.HEROTERM_THEME` is mutated in place
 rather than replaced, because every module holds a reference to it and

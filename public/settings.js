@@ -215,14 +215,10 @@
     fontName.style.fontFamily = window.HEROTERM_THEME.font;
   }
 
-  function fontOption(family, label, face, sample, missing) {
+  function fontOption(family, label, face, sample) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'font';
-    if (missing) {
-      b.disabled = true;
-      b.title = "Installed, but this browser can't draw it by that name";
-    }
     b.setAttribute('role', 'option');
     b.dataset.family = family || '';
     b.setAttribute('aria-selected', String(b.dataset.family === (themes.font || '')));
@@ -275,34 +271,34 @@
       out.push(e);
     } else {
       const match = (f) => !q || f.family.toLowerCase().includes(q);
-      // The rest of the stack follows each name, so a face the browser can't
-      // actually reach shows up as the default rather than as a stranger.
+      // The rest of the stack follows each name, as it will in the terminal.
       const face = (f) => `"${f.family.replace(/["\\]/g, '\\$&')}", ${themes.defaultFont}`;
-      const mono = fonts.filter((f) => f.mono && match(f));
-      const prop = fontAll.checked ? fonts.filter((f) => !f.mono && match(f)) : [];
+      const shown = (f) => match(f) && (f.mono || fontAll.checked);
+      // Only what this browser can actually draw: picking anything else would
+      // change nothing on screen.
+      const hidden = fonts.filter((f) => shown(f) && !reachable(f.family)).length;
+      const mono = fonts.filter((f) => f.mono && shown(f) && reachable(f.family));
+      const prop = fonts.filter((f) => !f.mono && shown(f) && reachable(f.family));
 
       if (mono.length) out.push(group('Monospaced'));
-      const option = (f) => {
-        const missing = !reachable(f.family);
-        return fontOption(f.family, f.family, face(f), missing ? 'not available here' : SAMPLE, missing);
-      };
-      for (const f of mono) out.push(option(f));
+      for (const f of mono) out.push(fontOption(f.family, f.family, face(f), SAMPLE));
       if (prop.length) out.push(group('Proportional — squeezed onto the grid'));
-      for (const f of prop) out.push(option(f));
+      for (const f of prop) out.push(fontOption(f.family, f.family, face(f), SAMPLE));
 
-      // Say why, once, rather than leaving greyed-out names to be puzzled at.
-      // Brave is the usual cause: its fingerprinting protection hides every
-      // font it didn't ship with from pages.
-      if ([...mono, ...prop].some((f) => !reachable(f.family))) {
+      // A font that's installed but missing from the list looks like a bug,
+      // so say how many were left out, and why. Brave is the usual cause: its
+      // fingerprinting protection hides every font it didn't ship with.
+      if (hidden) {
         const note = document.createElement('p');
         note.className = 'empty';
+        const them = hidden === 1 ? 'it' : 'them';
         note.textContent =
-          "Greyed out: installed, but this browser won't draw it. In Brave, that's " +
-          'fingerprinting protection — allow fingerprinting for this site in Shields to use them.';
+          `${hidden} more installed, but this browser won't draw ${them}. ` +
+          `In Brave, allowing fingerprinting for this site in Shields brings ${them} back.`;
         out.push(note);
       }
 
-      if (!mono.length && !prop.length) {
+      if (!mono.length && !prop.length && !hidden) {
         const e = document.createElement('p');
         e.className = 'empty';
         e.textContent = q ? `Nothing installed matches “${fontQuery.value.trim()}”.` : 'No fonts found.';

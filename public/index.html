@@ -899,15 +899,6 @@
         border-color: var(--cursor, #e9a13b);
       }
 
-      #settings .font:disabled {
-        opacity: 0.45;
-        cursor: default;
-      }
-
-      #settings .font:disabled:hover {
-        border-color: transparent;
-      }
-
       #settings .font:focus-visible {
         outline: 1px solid var(--cursor, #e9a13b);
         outline-offset: 1px;
@@ -1639,9 +1630,10 @@
 
         <div class="page" data-page="font" hidden>
           <p class="hint">
-            The fonts installed on this machine. A terminal draws on a grid, so
-            only monospaced ones are listed unless you ask; anything the one you
-            pick is missing — prompt icons, say — still comes from the default.
+            The fonts installed on this machine that this browser can draw. A
+            terminal draws on a grid, so only monospaced ones are listed unless
+            you ask; anything the one you pick is missing — prompt icons, say —
+            still comes from the default.
           </p>
           <div class="row">
             <input id="set-font-q" class="search" type="search" placeholder="Filter" autocomplete="off" spellcheck="false" aria-label="Filter fonts" />
