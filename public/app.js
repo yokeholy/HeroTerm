@@ -122,6 +122,7 @@ const page = {
     for (const other of containers) other.el.toggleAttribute('data-focused', other === c);
     restack();
     paintStatus();
+    paintTitle();
     page.save();
   },
 
@@ -146,7 +147,9 @@ const page = {
 
   // A container's deck moved, or its size changed, or its shell said something.
   deckMoved(c, pos) {
-    if (c === focused) paintPlace(pos);
+    if (c !== focused) return;
+    paintPlace(pos);
+    paintTitle();
   },
 
   sized(c) {
@@ -211,6 +214,21 @@ function paintPlace(pos) {
   els.place.textContent = lastPos.cursor === 0 ? 'live' : `${lastPos.cursor} back`;
   els.prev.disabled = lastPos.cursor >= lastPos.depth - 1;
   els.next.disabled = lastPos.cursor === 0;
+}
+
+// The tab title follows the window you're in: its command, then the app. A
+// window that hasn't run anything yet leaves just the name.
+const APP_NAME = 'Hero Term';
+const TITLE_MAX = 60; // a tab shows a fraction of this; the rest is for the tooltip
+
+function paintTitle() {
+  let cmd = focused && focused.stack.command;
+  if (cmd) {
+    cmd = cmd.replace(/\s+/g, ' ').trim();
+    if (cmd.length > TITLE_MAX) cmd = `${cmd.slice(0, TITLE_MAX - 1)}…`;
+  }
+  const next = cmd ? `${cmd} | ${APP_NAME}` : APP_NAME;
+  if (document.title !== next) document.title = next;
 }
 
 function paintStatus() {
