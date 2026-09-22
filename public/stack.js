@@ -33,14 +33,26 @@ function createStack(opts) {
   // sharing a chunk with the start marker would be dropped, and the next prompt
   // sharing one with the end marker would be kept. So the boundaries are cut
   // against the markers themselves rather than against chunk edges.
-  const START = /\x1b\]133;C(?:;[^\x07\x1b]*)?(?:\x07|\x1b\\)/;
+  //
+  // The start is the subtle one. The marker is only *acted on* once xterm
+  // parses it, and by then more chunks may have arrived — for a quick command,
+  // its whole output, the end marker and the next prompt can all come in the
+  // chunk with the start marker, or in the next one. So the start isn't looked
+  // for when the command begins; it's noticed in feed(), as the bytes arrive,
+  // and everything after it is kept until begin() collects it.
+  const START = /\x1b\]133;C(?:;[^\x07\x1b]*)?(?:\x07|\x1b\\)/g;
   const END = /\x1b\]133;D(?:;[^\x07\x1b]*)?(?:\x07|\x1b\\)/;
 
   let live = null; // the live Terminal, handed over by the container
   let cards = []; // finished commands, newest first
   let cursor = 0; // 0 = the live card, 1.. = further back
   let current = null; // the command the live terminal is showing
-  let lastChunk = ''; // the chunk the start marker probably arrived in
+  // What followed each start marker the stream has carried but begin() hasn't
+  // collected yet, oldest first. Usually one, briefly. Several when commands
+  // arrive together — a pasted block, a fast shell — and then each holds all
+  // that came after its own marker, which finish() trims at that command's end.
+  let openings = [];
+  const MAX_OPENINGS = 8; // a queue nothing is collecting from is a bug, not a backlog
 
   const now = () => performance.now();
 
@@ -205,7 +217,18 @@ function createStack(opts) {
 
     // Every byte the pty sends, while a command is running.
     feed(data) {
-      lastChunk = data;
+      // Bytes for commands whose start has streamed past but not yet begun.
+      for (let i = 0; i < openings.length; i += 1) {
+        openings[i] += data;
+        if (openings[i].length > MAX_BYTES) openings[i] = openings[i].slice(-MAX_BYTES);
+      }
+      START.lastIndex = 0;
+      let m;
+      while ((m = START.exec(data)) !== null) {
+        openings.push(data.slice(m.index + m[0].length));
+      }
+      if (openings.length > MAX_OPENINGS) openings = openings.slice(-MAX_OPENINGS);
+
       if (!current || !current.running) return;
       current.bytes += data;
       if (current.bytes.length > MAX_BYTES) {
@@ -231,12 +254,12 @@ function createStack(opts) {
     begin() {
       promote();
       cursor = 0; // a new command always brings you back to the present
-      // Anything that shared a chunk with the start marker is this command's
-      // output, and feed() has already passed it by.
-      const opened = lastChunk.match(START);
+      // Everything since this command's start marker, which feed() set aside
+      // as it streamed past. A start with no marker — one worked out from
+      // bracketed paste, inside ssh — has nothing set aside, and starts empty.
       current = {
         cmd: api._pendingName || '',
-        bytes: opened ? lastChunk.slice(opened.index + opened[0].length) : '',
+        bytes: openings.length ? openings.shift() : '',
         started: now(),
         ended: null,
         running: true,
@@ -292,6 +315,7 @@ function createStack(opts) {
     // here is measured against performance.now(); they're rebased so the
     // durations on restored cards stay right.
     restore(payload) {
+      openings = []; // the stream starts over from what the server sends
       const skew = Date.now() - now();
       const rebase = (rec) => ({
         ...rec,
