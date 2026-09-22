@@ -269,6 +269,7 @@
   const listeners = new Set();
   let active = DEFAULT;
   let chosenFont = null; // a family name, or null for BASE.font as written
+  let size = BASE.fontSize; // settings.js sets this before any terminal exists
 
   try {
     const stored = localStorage.getItem(KEY);
@@ -299,7 +300,7 @@
     const t = THEMES[key];
     return {
       font: fontStack(),
-      fontSize: BASE.fontSize,
+      fontSize: size,
       lineHeight: BASE.lineHeight,
       letterSpacing: BASE.letterSpacing,
       chrome: { gutter: BASE.gutter, dimmed: BASE.dimmed, breath: BASE.breath, ...t.chrome },
@@ -349,6 +350,19 @@
 
     // What the default stack is, for saying so in the picker.
     defaultFont: BASE.font,
+
+    // The terminal text size, in px. Kept here rather than only in settings
+    // because a theme switch rebuilds HEROTERM_THEME, and would otherwise put
+    // the size back to the default under you.
+    defaultFontSize: BASE.fontSize,
+
+    setFontSize(px) {
+      const next = Number(px);
+      if (!Number.isFinite(next) || next === size) return;
+      size = next;
+      window.HEROTERM_THEME.fontSize = next;
+      notify();
+    },
 
     // A terminal measures its character cell the moment its font changes, and
     // a face that hasn't loaded yet measures as the fallback. An installed

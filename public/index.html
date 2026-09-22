@@ -121,7 +121,7 @@
         background: var(--bg, #171b24);
         border-top: 1px solid var(--hairline, #252a35);
         color: var(--label, #6b7384);
-        font: 11px/1 var(--font, monospace);
+        font: calc(11px * var(--ui-scale, 1))/1 var(--font, monospace);
         letter-spacing: 0.02em;
         user-select: none;
       }
@@ -202,7 +202,7 @@
         border-radius: 9px;
         background: var(--bg, #171b24);
         color: var(--fg, #d6d9e0);
-        font: 13px/1 var(--font, monospace);
+        font: calc(13px * var(--ui-scale, 1))/1 var(--font, monospace);
         cursor: pointer;
         transition: border-color 120ms;
       }
@@ -216,7 +216,7 @@
       #empty p {
         margin: 0;
         color: var(--label, #6b7384);
-        font: 11px/1 var(--font, monospace);
+        font: calc(11px * var(--ui-scale, 1))/1 var(--font, monospace);
       }
 
       /* ---- the deck: the windows themselves ---- */
@@ -339,7 +339,7 @@
         background: var(--bg, #171b24);
         border-bottom: 1px solid var(--hairline, #252a35);
         color: var(--label, #6b7384);
-        font: 10px/1 var(--font, monospace);
+        font: calc(10px * var(--ui-scale, 1))/1 var(--font, monospace);
         white-space: nowrap;
         overflow: hidden;
         user-select: none;
@@ -492,7 +492,7 @@
            a peeking title bar or open sky depending on the moment. */
         background: var(--backdrop, rgba(8, 10, 16, 0.55));
         backdrop-filter: blur(6px);
-        font: 600 13px/1 var(--font, monospace);
+        font: 600 calc(13px * var(--ui-scale, 1))/1 var(--font, monospace);
       }
 
       #helpbtn:hover {
@@ -523,18 +523,18 @@
         background: var(--bg, #171b24);
         box-shadow: 0 24px 70px var(--shadow, rgba(0, 0, 0, 0.75));
         color: var(--fg, #d6d9e0);
-        font: 12px/1.6 var(--font, monospace);
+        font: calc(12px * var(--ui-scale, 1))/1.6 var(--font, monospace);
       }
 
       #help h1 {
         margin: 0 0 4px;
-        font-size: 13px;
+        font-size: calc(13px * var(--ui-scale, 1));
         font-weight: 600;
       }
 
       #help h2 {
         margin: 18px 0 6px;
-        font-size: 10px;
+        font-size: calc(10px * var(--ui-scale, 1));
         font-weight: 500;
         letter-spacing: 0.06em;
         text-transform: uppercase;
@@ -607,7 +607,7 @@
         background: var(--bg, #171b24);
         box-shadow: 0 30px 90px var(--shadow, rgba(0, 0, 0, 0.75));
         color: var(--fg, #d6d9e0);
-        font: 12px/1.5 var(--font, monospace);
+        font: calc(12px * var(--ui-scale, 1))/1.5 var(--font, monospace);
       }
 
       #settings header {
@@ -620,14 +620,14 @@
       #settings h1 {
         flex: 1;
         margin: 0;
-        font-size: 14px;
+        font-size: calc(14px * var(--ui-scale, 1));
         font-weight: 600;
         letter-spacing: 0.02em;
       }
 
       #settings label {
         display: block;
-        font-size: 12px;
+        font-size: calc(12px * var(--ui-scale, 1));
         color: var(--fg, #d6d9e0);
       }
 
@@ -650,7 +650,7 @@
       #settings .src {
         margin: 22px 0 0;
         color: var(--label, #6b7384);
-        font-size: 10px;
+        font-size: calc(10px * var(--ui-scale, 1));
       }
 
       #settings .setting + .setting {
@@ -720,7 +720,7 @@
         border-radius: 8px;
         background: transparent;
         color: var(--fg, #d6d9e0);
-        font: 11px/1.4 var(--font, monospace);
+        font: calc(11px * var(--ui-scale, 1))/1.4 var(--font, monospace);
         text-align: left;
         cursor: pointer;
         transition: border-color 120ms;
@@ -756,14 +756,14 @@
 
       #settings .tname {
         display: block;
-        font-size: 12px;
+        font-size: calc(12px * var(--ui-scale, 1));
       }
 
       #settings .tnote {
         display: block;
         margin-top: 3px;
         color: var(--label, #6b7384);
-        font-size: 10px;
+        font-size: calc(10px * var(--ui-scale, 1));
       }
 
       /* ---- pages inside the sheet ---- */
@@ -788,7 +788,7 @@
         border-radius: 8px;
         background: transparent;
         color: var(--fg, #d6d9e0);
-        font: 12px/1.4 var(--font, monospace);
+        font: calc(12px * var(--ui-scale, 1))/1.4 var(--font, monospace);
         text-align: left;
         cursor: pointer;
         transition: border-color 120ms;
@@ -823,7 +823,7 @@
 
       #settings .nav .more {
         color: var(--label, #6b7384);
-        font-size: 16px;
+        font-size: calc(16px * var(--ui-scale, 1));
         line-height: 1;
       }
 
@@ -840,7 +840,7 @@
         border-radius: 7px;
         background: transparent;
         color: var(--fg, #d6d9e0);
-        font: 12px/1.4 var(--font, monospace);
+        font: calc(12px * var(--ui-scale, 1))/1.4 var(--font, monospace);
       }
 
       #settings .search:focus {
@@ -872,7 +872,7 @@
       #settings .fonts .group {
         margin: 14px 0 6px;
         color: var(--label, #6b7384);
-        font-size: 10px;
+        font-size: calc(10px * var(--ui-scale, 1));
         letter-spacing: 0.08em;
         text-transform: uppercase;
       }
@@ -897,7 +897,7 @@
         border-radius: 7px;
         background: transparent;
         color: var(--fg, #d6d9e0);
-        font-size: 14px;
+        font-size: calc(14px * var(--ui-scale, 1));
         line-height: 1.4;
         text-align: left;
         cursor: pointer;
@@ -927,7 +927,7 @@
       #settings .font .sample {
         flex: none;
         color: var(--label, #6b7384);
-        font-size: 12px;
+        font-size: calc(12px * var(--ui-scale, 1));
       }
 
       /* ---- the window beside the sheet ---- */
@@ -999,7 +999,7 @@
         border-radius: 5px;
         background: var(--surface, #12151c);
         color: var(--fg, #d6d9e0);
-        font: 12px var(--font, monospace);
+        font: calc(12px * var(--ui-scale, 1)) var(--font, monospace);
         text-align: right;
       }
 
@@ -1014,7 +1014,7 @@
         border-radius: 5px;
         background: transparent;
         color: var(--label, #6b7384);
-        font: 11px var(--font, monospace);
+        font: calc(11px * var(--ui-scale, 1)) var(--font, monospace);
         cursor: pointer;
       }
 
@@ -1049,7 +1049,7 @@
         background: var(--bg, #171b24);
         box-shadow: 0 30px 90px var(--shadow, rgba(0, 0, 0, 0.75));
         color: var(--fg, #d6d9e0);
-        font: 12px/1.5 var(--font, monospace);
+        font: calc(12px * var(--ui-scale, 1))/1.5 var(--font, monospace);
       }
 
       #stats header {
@@ -1062,14 +1062,14 @@
       #stats h1 {
         flex: 1;
         margin: 0;
-        font-size: 14px;
+        font-size: calc(14px * var(--ui-scale, 1));
         font-weight: 600;
         letter-spacing: 0.02em;
       }
 
       #stats h2 {
         margin: 0 0 10px;
-        font-size: 11px;
+        font-size: calc(11px * var(--ui-scale, 1));
         font-weight: 500;
         letter-spacing: 0.06em;
         text-transform: uppercase;
@@ -1099,7 +1099,7 @@
 
       #stats .summary b {
         display: block;
-        font-size: 17px;
+        font-size: calc(17px * var(--ui-scale, 1));
         font-weight: 600;
         font-variant-numeric: tabular-nums;
         color: var(--fg, #d6d9e0);
@@ -1107,7 +1107,7 @@
 
       #stats .summary span {
         color: var(--label, #6b7384);
-        font-size: 10px;
+        font-size: calc(10px * var(--ui-scale, 1));
         letter-spacing: 0.05em;
         text-transform: uppercase;
       }
@@ -1186,14 +1186,14 @@
 
       #stats .hour .hl {
         text-align: center;
-        font-size: 9px;
+        font-size: calc(9px * var(--ui-scale, 1));
         color: var(--label, #6b7384);
       }
 
       #stats .src {
         margin: 22px 0 0;
         color: var(--label, #6b7384);
-        font-size: 10px;
+        font-size: calc(10px * var(--ui-scale, 1));
         word-break: break-all;
       }
 
@@ -1506,7 +1506,7 @@
           <dt>bars</dt>
           <dd>what you type most, from your whole shell history</dd>
           <dt>sliders</dt>
-          <dd>settings — theme, font, sound, flying stars, window fade</dd>
+          <dd>settings — theme, font, text sizes, sound, flying stars, window fade</dd>
           <dt>expand</dt>
           <dd>browser full screen</dd>
           <dt>square</dt>
@@ -1588,6 +1588,34 @@
               <span class="val" id="set-font-name"></span>
               <span class="more" aria-hidden="true">›</span>
             </button>
+          </div>
+
+          <div class="setting">
+            <label for="set-tsize">Terminal text size</label>
+            <p class="hint">
+              The text in every terminal. ⌘+ and ⌘− still size one window for a
+              while; ⌘0 comes back to this.
+            </p>
+            <div class="row">
+              <input id="set-tsize" type="range" min="8" max="32" step="1" />
+              <input id="set-tsize-num" type="number" min="8" max="32" step="1" aria-label="Terminal text size, px" />
+              <span class="unit">px</span>
+              <button id="set-tsize-reset" class="reset" type="button">Reset</button>
+            </div>
+          </div>
+
+          <div class="setting">
+            <label for="set-ui">Interface text size</label>
+            <p class="hint">
+              Everything else with words on it: title bars, the status bar,
+              buttons, and these sheets.
+            </p>
+            <div class="row">
+              <input id="set-ui" type="range" min="80" max="150" step="5" />
+              <input id="set-ui-num" type="number" min="80" max="150" step="5" aria-label="Interface text size, percent" />
+              <span class="unit">%</span>
+              <button id="set-ui-reset" class="reset" type="button">Reset</button>
+            </div>
           </div>
 
           <div class="setting">

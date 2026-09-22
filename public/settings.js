@@ -21,6 +21,18 @@
       fallback: () => 1,
       apply: (v) => window.HEROTERM_SKY.allowWarp(Boolean(v)),
     },
+    // Terminal text, in px. The registry holds it, so a theme switch keeps it.
+    termSize: {
+      fallback: () => window.HEROTERM_THEMES.defaultFontSize,
+      apply: (v) => window.HEROTERM_THEMES.setFontSize(v),
+    },
+    // Everything else with words on it — title bars, status bar, buttons, these
+    // sheets — as a percentage. Every UI text size in index.html is written as
+    // a multiple of --ui-scale; the terminal grid isn't, it has its own.
+    ui: {
+      fallback: () => 100,
+      apply: (v) => document.documentElement.style.setProperty('--ui-scale', String(v / 100)),
+    },
   };
 
   let saved = {};
@@ -103,6 +115,20 @@
     document.getElementById('set-dim'),
     document.getElementById('set-dim-num'),
     document.getElementById('set-dim-reset')
+  );
+
+  bind(
+    'termSize',
+    document.getElementById('set-tsize'),
+    document.getElementById('set-tsize-num'),
+    document.getElementById('set-tsize-reset')
+  );
+
+  bind(
+    'ui',
+    document.getElementById('set-ui'),
+    document.getElementById('set-ui-num'),
+    document.getElementById('set-ui-reset')
   );
 
   // The window shown beside the sheet is the focused one, and a focused window

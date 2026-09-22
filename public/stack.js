@@ -334,6 +334,10 @@ function createStack(opts) {
         if (!c.term) continue;
         c.term.options.theme = T.xterm;
         if (c.term.options.fontFamily !== T.font) c.term.options.fontFamily = T.font;
+        // Replayed cards follow the live terminal's size, whatever set it.
+        if (live && c.term.options.fontSize !== live.options.fontSize) {
+          c.term.options.fontSize = live.options.fontSize;
+        }
       }
     },
 

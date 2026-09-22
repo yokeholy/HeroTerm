@@ -271,9 +271,16 @@ Star count and colours are in `public/theme.js`.
 ## Settings
 
 The sliders button opens a sheet for the things that are taste rather than
-correctness: the theme, the font, how far unfocused windows fade, whether the
-stars fly, and whether any of it makes a sound. Theme and font each open a page
-of their own.
+correctness: the theme, the font, the terminal and interface text sizes, how far
+unfocused windows fade, whether the stars fly, and whether any of it makes a
+sound. Theme and font each open a page of their own.
+
+The two text sizes are separate on purpose. **Terminal text size** (px) is the
+grid in every window, replayed cards included; ⌘+ and ⌘− still size one window
+for a while, and ⌘0 returns to the setting rather than to 14. **Interface text
+size** (%) is everything else with words on it — every UI font size in
+`public/index.html` is written as a multiple of `--ui-scale`, so they move
+together while spacing and window geometry stay put.
 
 While the sheet is open, the window you were working in moves to its left,
 above the dimmed background, so every change lands on something you can see.

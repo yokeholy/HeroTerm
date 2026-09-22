@@ -100,9 +100,10 @@
       onChange: (pos) => page.deckMoved(self, pos),
     });
 
+    let settingSize = T.fontSize;
+
     window.HEROTERM_THEMES.on(() => {
       term.options.theme = T.xterm;
-      stack.retheme();
       // A new face means a new character cell, and so a different number of
       // columns in the same box. The box didn't change size, so nothing else
       // is going to notice.
@@ -110,6 +111,14 @@
         term.options.fontFamily = T.font;
         relayout();
       }
+      // Only when the setting itself moved: ⌘+ and ⌘− size one window for a
+      // while, and switching themes shouldn't quietly undo that.
+      if (T.fontSize !== settingSize) {
+        settingSize = T.fontSize;
+        term.options.fontSize = T.fontSize;
+        relayout();
+      }
+      stack.retheme(); // last: the replayed cards copy the live terminal
     });
 
     /* ---------- sizing ---------- */
