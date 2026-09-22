@@ -2090,6 +2090,23 @@
               <button type="button" data-v="2">Always</button>
             </div>
           </div>
+
+          <div class="setting">
+            <label id="set-grace-label">Keep shells after a tab closes</label>
+            <p class="hint">
+              How long a shell waits to be reattached — a refresh, a reopened
+              tab, a laptop coming back from sleep. Whatever was running keeps
+              running for that long. "Server default" leaves it to whoever
+              started HeroTerm (HEROTERM_GRACE, 10 minutes if unset).
+            </p>
+            <div id="set-grace" class="choices" role="group" aria-labelledby="set-grace-label">
+              <button type="button" data-v="-1">Server default</button>
+              <button type="button" data-v="0">Don't</button>
+              <button type="button" data-v="600">10 min</button>
+              <button type="button" data-v="3600">1 hour</button>
+              <button type="button" data-v="28800">8 hours</button>
+            </div>
+          </div>
         </div>
 
         <div id="page-system" class="page" data-page="system" role="tabpanel" aria-labelledby="tab-system" hidden>

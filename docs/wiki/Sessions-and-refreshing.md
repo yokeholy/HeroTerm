@@ -32,6 +32,23 @@ running job. So the session lives on the server and outlives the socket:
   one opens in its place. A tab can't close itself, and an empty page is
   nothing you'd want.
 
+The page reconnects by itself. A socket that drops for any reason but the
+shell ending — a laptop that slept, a server restarted, a moment of nothing —
+is retried, quickly at first and then backing off to every five seconds, and at
+once when the tab is shown again or the network returns. Reattaching is the
+same path a refresh takes, so the screen, the deck and whatever is running come
+back; the status line says "Reconnecting…" while it tries and "Reattached" when
+it lands. If the shell is gone by then, the window says so and starts a fresh
+one rather than looking connected to something that isn't there.
+
+How long a shell waits to be reattached is **Settings → Behavior → Keep shells
+after a tab closes**: the server's own default (`HEROTERM_GRACE`, ten minutes
+if unset), or don't keep them at all, or 10 minutes, an hour, or 8 hours. The
+page asks for it as each window connects, so it's per browser rather than per
+server, and the server caps it at a day. Eight hours covers a night's sleep;
+the cost of a long one is that genuinely abandoned shells linger, still holding
+whatever they were running.
+
 Terminal output travels as WebSocket **text** frames and anything structural as
 **binary** ones, which is how the browser tells them apart without having to
 frame every byte of ordinary output.

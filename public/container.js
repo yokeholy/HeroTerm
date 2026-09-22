@@ -153,17 +153,16 @@
     /* ---------- socket ---------- */
 
     const token = new URLSearchParams(location.search).get('token') || '';
-    const ws = new WebSocket(
-      `ws://${location.host}/pty?token=${encodeURIComponent(token)}&id=${encodeURIComponent(id)}`
-    );
-    // Terminal output arrives as text frames, anything structural as binary.
-    ws.binaryType = 'arraybuffer';
+    const SOCKET = `ws://${location.host}/pty?token=${encodeURIComponent(token)}&id=${encodeURIComponent(
+      id
+    )}`;
 
+    let ws = null;
     let state = 'pending';
     let stateText = 'Connecting';
 
     function send(msg) {
-      if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
+      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
     }
 
     function setState(live, text) {
@@ -176,18 +175,26 @@
     const ACK_EVERY = 1 << 16;
     let sincePaint = 0;
 
-    ws.onopen = async () => {
-      setState('yes', 'Connected');
+    async function onopen() {
+      attempt = 0;
+      setState('yes', connected ? 'Reconnected' : 'Connected');
+      connected = true;
+      // The shell outlives a closed tab for as long as this says; the page
+      // owns the choice, so it's sent on every connection.
+      const grace = window.HEROTERM_SETTINGS && window.HEROTERM_SETTINGS.get('grace');
+      if (Number.isFinite(grace) && grace >= 0) send({ t: 'g', s: grace });
       if (document.fonts && document.fonts.ready) await document.fonts.ready;
       fit.fit();
       cols = term.cols;
       rows = term.rows;
       send({ t: 'r', c: cols, r: rows });
       page.sized(self);
-    };
+    }
 
     let replaying = false; // a restored screen is being written back; see below
     let ended = false; // the shell exited; the window is on its way out
+    let closed = false; // the window was closed here; stop reconnecting
+    let hadShell = false; // a shell has answered here before, so a new one is a change
 
     // The shell is gone for good — `exit`, Ctrl-D, or it died — so the window
     // goes too. Once only: the exit message and the socket closing both say so.
@@ -217,7 +224,17 @@
           setState('no', 'Server is running an older build — restart it');
           return;
         }
-        if (msg.resumed) setState('yes', 'Reattached');
+        if (msg.resumed) {
+          setState('yes', 'Reattached');
+        } else if (hadShell) {
+          // We had a shell here, and the server has no record of it: it ended
+          // while we were away — past its grace period, most likely, after a
+          // long sleep. This is a new one, on a clean screen.
+          term.clear();
+          session.lost();
+          setState('yes', 'That shell had ended — this one is new');
+        }
+        hadShell = true;
         return;
       }
       if (msg.t === 'restore') {
@@ -238,7 +255,7 @@
       }
     }
 
-    ws.onmessage = (ev) => {
+    function onmessage(ev) {
       if (typeof ev.data !== 'string') {
         try {
           control(JSON.parse(new TextDecoder().decode(ev.data)));
@@ -256,7 +273,7 @@
         send({ t: 'a', n: sincePaint });
         sincePaint = 0;
       }
-    };
+    }
 
     // The server closes with a reason worth reading — the shell's exit code,
     // another tab taking the session over, or the cap on how many terminals
@@ -266,16 +283,66 @@
     // Whatever the reason, nothing that was running here can report finishing
     // now. A server from before protocol 3 doesn't send { t: 'exit' }, but its
     // close reason says the same thing, so that closes the window too.
-    ws.onclose = (ev) => {
-      if (ended) return;
+    function onclose(ev) {
+      if (ended || closed) return;
       if (/^shell exited/.test(ev.reason || '')) {
         shellEnded(null);
         return;
       }
       session.lost();
-      setState('no', ev.reason || 'Shell ended');
+      // Taken over by another tab, or more terminals than the server allows:
+      // reconnecting would only take it back, or be refused again.
+      if (/took over|at most/.test(ev.reason || '')) {
+        setState('no', ev.reason);
+        return;
+      }
+      // Anything else is the connection, not the shell: a sleeping laptop, a
+      // restarted server, a moment of nothing. Keep trying, and say so.
+      setState('no', connected ? 'Reconnecting…' : ev.reason || 'Connecting…');
+      retry();
+    }
+
+    // Quickly at first, then backing off, so a server that has gone for good
+    // isn't hammered; waking the tab or the network resets it (see below).
+    const RETRY_MIN = 400;
+    const RETRY_MAX = 5000;
+    let attempt = 0;
+    let retryTimer = null;
+    let connected = false; // ...at least once, so a drop is a *re*connection
+
+    function retry(now) {
+      clearTimeout(retryTimer);
+      if (ended || closed) return;
+      const wait = now ? 0 : Math.min(RETRY_MAX, RETRY_MIN * 2 ** attempt);
+      attempt += 1;
+      retryTimer = setTimeout(connect, wait);
+    }
+
+    function connect() {
+      if (ended || closed) return;
+      clearTimeout(retryTimer);
+      ws = new WebSocket(SOCKET);
+      // Terminal output arrives as text frames, anything structural as binary.
+      ws.binaryType = 'arraybuffer';
+      ws.onopen = onopen;
+      ws.onmessage = onmessage;
+      ws.onclose = onclose;
+      ws.onerror = () => {}; // a failure closes too; onclose does the deciding
+    }
+
+    // A laptop coming out of sleep gives both of these, and the socket it had
+    // is long dead: try at once rather than waiting out the backoff.
+    const wake = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+      attempt = 0;
+      retry(true);
     };
-    ws.onerror = () => setState('no', 'Could not reach the server');
+    document.addEventListener('visibilitychange', wake);
+    window.addEventListener('online', wake);
+    window.addEventListener('focus', wake);
+
+    connect();
 
     term.onData((d) => {
       window.HEROTERM_AUDIO.unlock(); // the keystroke is the gesture that lets audio play
@@ -792,10 +859,15 @@
       // Closing a container is unambiguous in a way that the tab going away is
       // not, so this is the only place that ends a shell early.
       destroy() {
+        closed = true;
+        clearTimeout(retryTimer);
+        document.removeEventListener('visibilitychange', wake);
+        window.removeEventListener('online', wake);
+        window.removeEventListener('focus', wake);
         if (cancelAsk) cancelAsk(); // its key listener is on the document
         try {
           if (!ended) send({ t: 'bye' }); // an exited shell has nothing to kill
-          ws.close();
+          if (ws) ws.close();
         } catch {
           /* already gone */
         }

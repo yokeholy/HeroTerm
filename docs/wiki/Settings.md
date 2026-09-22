@@ -10,7 +10,11 @@ runs the full height of the screen. It has five tabs — **Appearance**,
 **Sound**, **Effects**, **Behavior** and **System** — and opens on whichever
 you used last.
 
-Behavior holds **Confirm before closing a window**: *Never* (the default),
+Behavior holds **Keep shells after a tab closes** — how long a disconnected
+shell waits to be reattached, which is what makes a laptop waking from sleep
+find its session again; see
+[Sessions and refreshing](Sessions-and-refreshing.md). And **Confirm before
+closing a window**: *Never* (the default),
 *While running*, or *Always*. When it asks, the question sits over the window
 itself — "Close Vega? `npm test` is still running." — with Close focused, so
 Enter confirms and Escape keeps the window. "Running" means the command in that

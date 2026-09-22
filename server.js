@@ -158,6 +158,7 @@ function rememberExit(id, code) {
 const MAX_SESSIONS = 8;
 const PROTOCOL = 3; // the wire contract's version; see the 'hello' below
 const FG_POLL = 1000; // ms between looks at which program has the terminal
+const MAX_GRACE = 24 * 60 * 60; // seconds; the longest a page may ask to keep a shell
 
 const MARKER = /\x1b\](133|633);([^\x07\x1b]*?)(?:\x07|\x1b\\)/g;
 
@@ -328,6 +329,7 @@ function createSession(id) {
     title: null,
     alt: false,
     fg: null, // the foreground program's name; see the poll below
+    grace: GRACE, // the page may ask for a different one; see the 'g' message
     records: [],
     current: null,
   };
@@ -400,7 +402,7 @@ function detach(s, ws) {
     s.paused = false;
     s.term.resume();
   }
-  if (GRACE === 0) {
+  if (s.grace === 0) {
     s.reaped = true;
     kill(s);
     return;
@@ -409,7 +411,7 @@ function detach(s, ws) {
   s.reaper = setTimeout(() => {
     s.reaped = true;
     kill(s);
-  }, GRACE);
+  }, s.grace);
 }
 
 server.on('upgrade', (req, socket, head) => {
@@ -506,6 +508,10 @@ wss.on('connection', (ws, req) => {
           s.paused = false;
           s.term.resume();
         }
+        break;
+
+      case 'g': // how long this shell should outlive a closed tab
+        if (Number.isFinite(msg.s)) s.grace = Math.max(0, Math.min(MAX_GRACE, msg.s)) * 1000;
         break;
 
       case 'bye': // the window's × — its shell goes with it

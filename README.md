@@ -18,7 +18,7 @@
 - 🚦 **See how it went at a glance.** The border is yellow while it runs, green when it succeeds, red when it fails.
 - 🌌 **A star field that flies** from whatever is working, and settles when it's done.
 - 🔔 **Sounds you can live with:** a ding, a tick-tock, a chime. Each can be switched off.
-- 🔄 **Refresh loses nothing.** Same shell, same folder, same running job.
+- 🔄 **Refresh loses nothing.** Same shell, same folder, same running job — and it reconnects by itself after your laptop sleeps.
 - 🧱 **Several terminals.** Snap, split, or arrange them all with one click.
 - 🤖 **Knows when Claude Code is working**, and treats each turn like a command.
 - 🛠 **Your shell, untouched.** zsh, your dotfiles, your prompt and aliases, exactly as they are.

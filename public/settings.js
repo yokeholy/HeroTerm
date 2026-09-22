@@ -21,6 +21,12 @@
       fallback: () => 1,
       apply: (v) => window.HEROTERM_SKY.allowWarp(Boolean(v)),
     },
+    // How long a shell outlives a closed tab, in seconds. Sent to the server
+    // as each window connects; -1 leaves the server's own default alone.
+    grace: {
+      fallback: () => -1,
+      apply: () => {},
+    },
     // Ask before the red button closes a window: 0 never, 1 while a command is
     // running in it, 2 always. Read by the page when you close one.
     confirmClose: {
@@ -845,6 +851,7 @@
   }
 
   bindChoice('confirmClose', document.getElementById('set-confirm'));
+  bindChoice('grace', document.getElementById('set-grace'));
 
   window.HEROTERM_SETTINGS = { open, close, get: valueOf };
 })();
