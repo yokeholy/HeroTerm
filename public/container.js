@@ -128,9 +128,15 @@
     let cols = 0;
     let rows = 0;
 
+    // Minimized, the window is hidden, and a hidden terminal measures as
+    // nothing: fitting it then would shrink the shell to a sliver. Its size
+    // waits until it's shown again.
+    let minimized = false;
+
     function relayout() {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
+        if (minimized) return;
         fit.fit();
         cols = term.cols;
         rows = term.rows;
@@ -533,9 +539,12 @@
     );
 
     // Delegated, because the front card changes as you walk the deck — each
-    // card has its own close button and its own name.
+    // card has its own three buttons and its own name.
     deck.addEventListener('click', (e) => {
-      if (e.target.closest('.close')) page.close(self);
+      const act = e.target.closest('[data-act]')?.dataset.act;
+      if (act === 'close') page.close(self);
+      else if (act === 'min') page.minimize(self);
+      else if (act === 'max') page.maximize(self);
     });
 
     deck.addEventListener('dblclick', (e) => {
@@ -544,6 +553,16 @@
       // that is easy to reintroduce with one stray user-select rule.
       const under = document.elementFromPoint(e.clientX, e.clientY);
       const field = e.target.closest?.('.name') || under?.closest?.('.name');
+      // Anywhere else on the title bar, as on a Mac: maximize, or back. The
+      // point is hit-tested here too — the first click of the pair starts a
+      // drag, which captures the pointer, and the double-click then arrives
+      // addressed to the deck rather than to the bar under it.
+      const head = e.target.closest?.('.card-head') || under?.closest?.('.card-head');
+      const onButton = e.target.closest?.('[data-act]') || under?.closest?.('[data-act]');
+      if (!field && head && !onButton) {
+        page.maximize(self);
+        return;
+      }
       if (!field || field.isContentEditable) return;
 
       field.contentEditable = 'true';
@@ -610,6 +629,20 @@
       visibleRect,
       setVisible,
       snapTo,
+
+      get minimized() {
+        return minimized;
+      },
+
+      setMinimized(on) {
+        minimized = Boolean(on);
+        deck.hidden = minimized;
+        if (!minimized) relayout();
+      },
+
+      // What maximizing did: the rect it was, and the rect it became. Owned by
+      // the page (see page.maximize); kept here so it travels with the window.
+      zoom: opts.zoom || null,
 
       get state() {
         return { live: state, text: stateText, cols, rows };

@@ -17,7 +17,7 @@ running job. So the session lives on the server and outlives the socket:
   full-screen program is up, since in a long session the sequences that set
   those scroll off the front of the kept screen. On reconnect it sends all of
   that back and the deck is rebuilt.
-- Closing a container with its `×` ends that shell immediately. Closing the
+- Closing a window with its red button ends that shell immediately. Closing the
   *tab* doesn't: `pagehide` and `beforeunload` fire on a refresh exactly as
   they do on a close and the browser won't tell you which is which, so ending
   the shells there would kill the thing reattaching exists to preserve. A tab
@@ -28,7 +28,7 @@ running job. So the session lives on the server and outlives the socket:
   closes when you come back rather than quietly getting a new shell. A shell
   the grace period reaped is different: that wasn't your doing, so its window
   comes back with a fresh one.
-- Close the last window — with its `×`, or by exiting its shell — and a fresh
+- Close the last window — with its red button, or by exiting its shell — and a fresh
   one opens in its place. A tab can't close itself, and an empty page is
   nothing you'd want.
 

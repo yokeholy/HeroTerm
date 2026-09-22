@@ -40,7 +40,7 @@ windows are numbered.
 
 The `+` gives you another container: its own shell, its own deck, its own
 position, up to eight of them. Click one to bring it forward — that's the one
-keys go to — and close it with the `×` in its title bar, or by exiting its
+keys go to — and close it with the red button in its title bar, or by exiting its
 shell; close the last one and a fresh one takes its place. More than one only
 makes sense floating, so adding a second switches to windowed and the fill-the-
 tab button greys out until you're back to one.
@@ -131,6 +131,32 @@ of it — the animation loop stops rather than running behind an opaque window.
 The one exception is turning Flying stars on in settings, which borrows the sky
 for two seconds so you can see what you turned on. Star count and colours are
 in `public/theme.js`.
+
+## The three buttons
+
+Each window's title bar carries the three a Mac window has, on the left:
+
+- **Red** closes it, and ends its shell.
+- **Yellow** minimizes it. The shell keeps running — a build finishes, a server
+  keeps serving — and the window becomes a chip in the status bar, with its
+  name and a dot in its current colour (yellow running, green or red when
+  done). Click the chip and the window comes back where it was, focused.
+- **Green** fills the screen, inside the same margins arranging uses; press it
+  again, or double-click the title bar, to put it back. If you move or resize
+  it in between, the next press fills the screen again instead — the full-size
+  window was the start of a new layout, not something to undo.
+
+As on a Mac, they're grey on a window you're not in, and show their symbols
+(× − +) when you're over them. Minimized windows are left out of arranging,
+snapping, splitting and where the star field flies from; which ones are
+minimized, and what a maximized window was before, survive a reload. In
+full-tab mode there's only the one window, filling the tab already, so yellow
+and green are off, and switching to full-tab brings every minimized window
+back.
+
+A window's container is taller than the window, by the band the older
+commands cascade into. That band is click-through, so it never covers the
+title bar of a window behind it.
 
 ## Arranging
 

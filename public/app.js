@@ -16,6 +16,7 @@ const els = {
   mode: document.getElementById('mode'),
   expand: document.getElementById('expand'),
   add: document.getElementById('add'),
+  tray: document.getElementById('tray'),
   arrange: document.getElementById('arrange'),
 };
 
@@ -108,9 +109,16 @@ const page = {
     writeLayout({
       windowed,
       focused: focused ? focused.id : null,
-      containers: containers.map((c) => ({ ...c.box, id: c.id, name: c.name })),
+      containers: containers.map((c) => ({
+        ...c.box,
+        id: c.id,
+        name: c.name,
+        min: c.minimized || undefined,
+        zoom: c.zoom || undefined,
+      })),
       arrangement,
     });
+    paintTray(); // names and minimized windows both end up here
     // Every move, resize, split and close ends up here, so this is where the
     // arrange button finds out whether its undo still holds.
     paintArrange();
@@ -134,9 +142,57 @@ const page = {
     restack();
   },
 
-  // The window's ×. Its shell goes with it.
+  // The window's red button. Its shell goes with it.
   close(c) {
     remove(c);
+  },
+
+  // Yellow: out of the way, still running, back from its chip in the tray.
+  minimize(c) {
+    if (!windowed || c.minimized) return;
+    c.setMinimized(true);
+    if (focused === c) {
+      focused = null;
+      const next = visible().slice(-1)[0];
+      if (next) {
+        page.focus(next);
+        next.focus();
+      } else {
+        for (const other of containers) other.el.removeAttribute('data-focused');
+        paintStatus();
+        paintTitle();
+      }
+    }
+    page.runStateChanged(); // it no longer sets where the sky flies from
+    page.save();
+  },
+
+  restore(c) {
+    if (!c.minimized) return;
+    c.setMinimized(false);
+    page.focus(c);
+    c.focus();
+    page.runStateChanged();
+    page.save();
+  },
+
+  // Green: fill the screen, inside the same margins arranging uses. Again
+  // puts it back — as long as it hasn't been moved or resized since, which
+  // would mean the full-screen size was the start of something else.
+  maximize(c) {
+    if (!windowed) return;
+    const z = c.zoom;
+    if (z && sameRect(c.visibleRect(), z.after)) {
+      c.arrangeTo(z.before, { remember: false });
+      c.zoom = null;
+    } else {
+      const before = c.visibleRect();
+      c.arrangeTo(tileArea());
+      c.zoom = { before, after: c.visibleRect() };
+    }
+    page.focus(c);
+    c.focus();
+    page.save();
   },
 
   // Its shell ended by itself — `exit`, Ctrl-D — so the window goes too, the
@@ -202,6 +258,7 @@ const page = {
     document.body.dataset.run = busy ? 'busy' : 'idle';
     sky.setWarp(busy);
     audio.setBusy(busy);
+    paintTray(); // a minimized window's chip carries its verdict
   },
 };
 
@@ -232,7 +289,13 @@ function paintTitle() {
 }
 
 function paintStatus() {
-  if (!focused) return;
+  if (!focused) {
+    const n = containers.filter((c) => c.minimized).length;
+    els.state.dataset.live = 'no';
+    els.stateText.textContent = n ? `${n} minimized — click one to bring it back` : '';
+    els.size.textContent = '';
+    return;
+  }
   const s = focused.state;
   els.state.dataset.live = s.live;
   els.stateText.textContent =
@@ -242,6 +305,31 @@ function paintStatus() {
 }
 
 /* ---------- making and restoring containers ---------- */
+
+// The windows on screen: everything but the minimized ones. Snapping,
+// splitting, arranging and the sky only ever deal with these.
+const visible = () => containers.filter((c) => !c.minimized);
+
+function paintTray() {
+  const chips = containers
+    .filter((c) => c.minimized)
+    .map((c) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.dataset.run = c.el.dataset.run || 'idle';
+      b.title = `Restore ${c.name}`;
+      const dot = document.createElement('span');
+      dot.className = 'tdot';
+      const name = document.createElement('span');
+      name.className = 'tname';
+      name.textContent = c.name;
+      b.append(dot, name);
+      b.addEventListener('mousedown', (e) => e.preventDefault());
+      b.addEventListener('click', () => page.restore(c));
+      return b;
+    });
+  els.tray.replaceChildren(...chips);
+}
 
 function remove(c) {
   const i = containers.indexOf(c);
@@ -259,10 +347,14 @@ function remove(c) {
   }
   if (focused === c) {
     focused = null;
-    const next = containers[Math.min(i, containers.length - 1)];
+    const shown = visible();
+    const next = shown[Math.min(i, shown.length - 1)];
     if (next) {
       page.focus(next);
       next.focus();
+    } else {
+      paintStatus();
+      paintTitle();
     }
   }
   // It may have been the thing keeping the sky flying and the clock ticking —
@@ -304,6 +396,7 @@ function spawn(id, box, name) {
   const c = window.HEROTERM_CONTAINER.create({
     id: id || newId(),
     name: name || freshName(),
+    zoom: box && box.zoom,
     page,
   });
   containers.push(c);
@@ -376,9 +469,23 @@ const sameRect = (p, q) => p && q && p.x === q.x && p.y === q.y && p.w === q.w &
 // added or closed since?
 function untouched() {
   if (!arrangement) return false;
+  const shown = visible();
   const ids = Object.keys(arrangement.after);
-  if (ids.length !== containers.length) return false;
-  return containers.every((c) => sameRect(c.visibleRect(), arrangement.after[c.id]));
+  if (ids.length !== shown.length) return false;
+  return shown.every((c) => sameRect(c.visibleRect(), arrangement.after[c.id]));
+}
+
+// Where arranging tiles windows, and what maximizing fills: the work area less
+// the controls strip, with a margin on the other three sides (the strip is
+// already clear space along the top).
+function tileArea() {
+  const w = workArea();
+  return {
+    x: w.x + TILE_GAP,
+    y: w.y + CONTROLS_H,
+    w: w.w - 2 * TILE_GAP,
+    h: w.h - CONTROLS_H - TILE_GAP,
+  };
 }
 
 function paintArrange() {
@@ -391,10 +498,11 @@ function paintArrange() {
 }
 
 function arrange() {
-  if (!windowed || !containers.length) return;
+  const shown = visible();
+  if (!windowed || !shown.length) return;
 
   if (untouched()) {
-    for (const c of containers) c.arrangeTo(arrangement.before[c.id], { remember: false });
+    for (const c of shown) c.arrangeTo(arrangement.before[c.id], { remember: false });
     arrangement = null;
     page.save();
     if (focused) focused.focus();
@@ -402,25 +510,16 @@ function arrange() {
   }
 
   const before = {};
-  for (const c of containers) before[c.id] = c.visibleRect();
-
-  // Inside the work area less the controls strip, with a margin on the other
-  // three sides; the strip is already clear space along the top.
-  const w = workArea();
-  const a = {
-    x: w.x + TILE_GAP,
-    y: w.y + CONTROLS_H,
-    w: w.w - 2 * TILE_GAP,
-    h: w.h - CONTROLS_H - TILE_GAP,
-  };
+  for (const c of shown) before[c.id] = c.visibleRect();
+  const a = tileArea();
   const centre = (c) => {
     const r = c.visibleRect();
     return { x: r.x + r.w / 2, y: r.y + r.h / 2 };
   };
-  const counts = plan(containers.length, a);
+  const counts = plan(shown.length, a);
   // Reading order: sort by height on the screen, then deal into rows and sort
   // each row by position across it.
-  const byY = [...containers].sort((p, q) => centre(p).y - centre(q).y);
+  const byY = [...shown].sort((p, q) => centre(p).y - centre(q).y);
   let next = 0;
   counts.forEach((k, row) => {
     const inRow = byY.slice(next, next + k).sort((p, q) => centre(p).x - centre(q).x);
@@ -448,7 +547,7 @@ function arrange() {
   // Recorded as they actually landed: a window can refuse a size below its
   // minimum, and comparing against what was asked for would then never match.
   const after = {};
-  for (const c of containers) after[c.id] = c.visibleRect();
+  for (const c of shown) after[c.id] = c.visibleRect();
   arrangement = { before, after };
   page.save();
   if (focused) focused.focus();
@@ -467,7 +566,7 @@ function runningCentre() {
   let x = 0;
   let y = 0;
   let n = 0;
-  for (const c of containers) {
+  for (const c of visible()) {
     if (!c.session.running) continue;
     const r = c.visibleRect();
     x += r.x + r.w / 2;
@@ -566,7 +665,7 @@ function splitAt(px, py, except) {
 
   for (let i = containers.length - 1; i >= 0; i -= 1) {
     const c = containers[i];
-    if (c === except) continue;
+    if (c === except || c.minimized) continue;
 
     const r = c.visibleRect();
     if (px < r.x || px > r.x + r.w || py < r.y || py > r.y + r.h) continue;
@@ -607,7 +706,7 @@ function guides(except) {
   const a = workArea();
   const xs = [a.x, a.w / 2, a.w];
   const ys = [a.y, a.h / 2, a.h];
-  for (const c of containers) {
+  for (const c of visible()) {
     if (c === except) continue;
     const r = c.visibleRect();
     xs.push(r.x, r.x + r.w);
@@ -650,6 +749,9 @@ function applyMode() {
 }
 
 function setMode(next) {
+  if (!next) {
+    for (const c of containers) if (c.minimized) c.setMinimized(false);
+  }
   windowed = next;
   applyMode();
   page.save();
@@ -663,14 +765,22 @@ windowed = saved ? Boolean(saved.windowed) : false;
 arrangement = (saved && saved.arrangement) || null; // so undo survives a reload
 
 if (saved) {
-  for (const box of saved.containers.slice(0, MAX_CONTAINERS)) spawn(box.id, box, box.name);
+  for (const box of saved.containers.slice(0, MAX_CONTAINERS)) {
+    const c = spawn(box.id, box, box.name);
+    if (box.min && windowed) c.setMinimized(true);
+  }
 } else {
   spawn(null, defaultBox(0));
 }
 
-page.focus(containers.find((c) => saved && c.id === saved.focused) || containers[0]);
+{
+  const shown = visible();
+  const want = shown.find((c) => saved && c.id === saved.focused) || shown[0];
+  if (want) page.focus(want);
+}
 applyMode();
-focused.focus();
+if (focused) focused.focus();
+paintTray();
 paintStatus();
 
 /* ---------- shown beside the settings sheet ---------- */

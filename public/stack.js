@@ -173,19 +173,15 @@ function createStack(opts) {
   function addCard(rec) {
     const el = document.createElement('div');
     el.className = 'card';
-    // Same shape as the live card in the template: a replayed command becomes
-    // the front window when you walk back to it, and it has to carry the same
-    // name and the same close button when it does.
-    el.innerHTML =
-      '<div class="card-head">' +
-      '<span class="lead"><span class="dot"></span><span class="cmd"></span></span>' +
-      '<span class="name" title="Double-click to rename"></span>' +
-      '<span class="tail"><span class="meta"></span>' +
-      '<button class="close" type="button" aria-label="Close this terminal">' +
-      '<svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true" focusable="false">' +
-      '<path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>' +
-      '</svg></button></span>' +
-      '</div><div class="body"></div>';
+    // Same title bar as the live card: a replayed command becomes the front
+    // window when you walk back to it, and it needs the same name and the same
+    // three buttons when it does. Cloned from the template, so there's only
+    // the one copy of that markup to keep right.
+    const tpl = document.getElementById('container-tpl').content;
+    el.appendChild(tpl.querySelector('.card-head').cloneNode(true));
+    const body = document.createElement('div');
+    body.className = 'body';
+    el.appendChild(body);
     // windowName, not name: api.name() below is the *command* on a card, which
     // is a different thing entirely.
     el.querySelector('.name').textContent = opts.windowName();

@@ -401,32 +401,153 @@
         cursor: text;
       }
 
-      .card-head .close {
-        flex: none;
-        width: 18px;
-        height: 18px;
-        margin-right: -4px;
+      /* The window's three buttons, macOS style: close, minimize, maximize. Only
+         the front card has them — the ones behind are records, not windows —
+         and like macOS they're grey on a window you're not in, and show their
+         symbols only when you're over them. */
+      .card-head .lights {
         display: none;
+        align-items: center;
+        gap: 7px;
+        margin-right: 6px;
+      }
+
+      .card[data-front] .card-head .lights {
+        display: inline-flex;
+      }
+
+      .card-head .light {
+        flex: none;
+        width: 12px;
+        height: 12px;
+        display: grid;
         place-items: center;
         padding: 0;
         border: 0;
-        border-radius: 4px;
-        background: transparent;
-        color: var(--label, #6b7384);
-        opacity: 0.6;
+        border-radius: 50%;
+        background: var(--hairline, #252a35);
+        cursor: default;
+      }
+
+      .card-head .light[data-act='close'] {
+        background: #ff5f57;
+      }
+
+      .card-head .light[data-act='min'] {
+        background: #febc2e;
+      }
+
+      .card-head .light[data-act='max'] {
+        background: #28c840;
+      }
+
+      .deck:not([data-focused]) .lights:not(:hover) .light,
+      body[data-mode='full'] .card-head .light[data-act='min'],
+      body[data-mode='full'] .card-head .light[data-act='max'] {
+        background: var(--hairline, #252a35);
+      }
+
+      /* One window filling the tab has nothing to minimize into or grow to. */
+      body[data-mode='full'] .card-head .light[data-act='min'],
+      body[data-mode='full'] .card-head .light[data-act='max'] {
+        pointer-events: none;
+      }
+
+      .card-head .light svg {
+        width: 8px;
+        height: 8px;
+        fill: none;
+        stroke: rgba(0, 0, 0, 0.55);
+        stroke-width: 1.6;
+        stroke-linecap: round;
+        opacity: 0;
+      }
+
+      .card-head .lights:hover .light svg,
+      .card-head .light:focus-visible svg {
+        opacity: 1;
+      }
+
+      body[data-mode='full'] .card-head .lights:hover .light:not([data-act='close']) svg {
+        opacity: 0;
+      }
+
+      .card-head .light:focus-visible {
+        outline: 1px solid var(--cursor, #e9a13b);
+        outline-offset: 2px;
+      }
+
+      .deck[hidden] {
+        display: none;
+      }
+
+      /* A deck is taller than its window by the band the older commands
+         cascade into. That band is see-through, and it has to be click-through
+         too, or it sits over the title bar of whichever window is behind —
+         buttons and all. Only the window itself and its resize edges take the
+         pointer; the cards behind it are switched off one by one in stack.js. */
+      .deck {
+        pointer-events: none;
+      }
+
+      .deck .card[data-front],
+      .deck .edge {
+        pointer-events: auto;
+      }
+
+      /* ---- the tray: minimized windows, in the status bar ---- */
+
+      #tray {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      #tray button {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        max-width: 160px;
+        padding: 3px 9px;
+        border: 1px solid var(--hairline, #252a35);
+        border-radius: 10px;
+        background: var(--bg, #171b24);
+        color: var(--fg, #d6d9e0);
+        font: inherit;
+        white-space: nowrap;
         cursor: pointer;
       }
 
-      /* Only the front window of a deck can be closed — the ones behind it are
-         previous commands, not terminals. */
-      .card[data-front] .card-head .close {
-        display: grid;
+      #tray button:hover {
+        border-color: var(--label, #6b7384);
       }
 
-      .card-head .close:hover {
-        opacity: 1;
-        color: var(--red, #d4736b);
-        background: var(--hairline, #252a35);
+      #tray .tname {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* The window's own verdict, so a minimized build still says how it went. */
+      #tray .tdot {
+        flex: none;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--label, #6b7384);
+      }
+
+      #tray [data-run='busy'] .tdot {
+        background: var(--yellow, #d9a86c);
+      }
+
+      #tray [data-run='ok'] .tdot {
+        background: var(--green, #93b07a);
+      }
+
+      #tray [data-run='err'] .tdot {
+        background: var(--red, #d4736b);
       }
 
       .card .body {
@@ -1543,17 +1664,22 @@
       <div class="deck" data-status="idle" data-run="idle">
         <div class="card" data-status="idle" data-front>
           <div class="card-head">
-            <span class="lead"><span class="dot"></span><span class="cmd">live</span></span>
-            <span class="name" title="Double-click to rename"></span>
-            <span class="tail">
-              <span class="meta"></span>
-              <button class="close" type="button" aria-label="Close this terminal">
-                <svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true" focusable="false">
-                  <path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor"
-                        stroke-width="1.8" stroke-linecap="round" />
-                </svg>
-              </button>
+            <span class="lead">
+              <span class="lights">
+                <button class="light" type="button" data-act="close" aria-label="Close this terminal">
+                  <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M3.5 3.5l5 5M8.5 3.5l-5 5" /></svg>
+                </button>
+                <button class="light" type="button" data-act="min" aria-label="Minimize">
+                  <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M3 6h6" /></svg>
+                </button>
+                <button class="light" type="button" data-act="max" aria-label="Maximize">
+                  <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M6 3v6M3 6h6" /></svg>
+                </button>
+              </span>
+              <span class="dot"></span><span class="cmd">live</span>
             </span>
+            <span class="name" title="Double-click to rename"></span>
+            <span class="tail"><span class="meta"></span></span>
           </div>
           <div class="body"></div>
         </div>
@@ -1574,6 +1700,9 @@
 
     <footer id="status">
       <span id="state" data-live="pending"><span id="dot"></span><span id="state-text">Connecting</span></span>
+
+      <!-- Minimized windows, one chip each; click one to bring it back. -->
+      <span id="tray" aria-label="Minimized windows"></span>
 
       <span id="nav">
         <button id="prev" class="chip" type="button" aria-label="Older command">
@@ -1661,8 +1790,12 @@
           <dd>drag to a screen edge for a half, a corner for a quarter, the top to fill</dd>
           <dt>split</dt>
           <dd>drop a window on another one's edge and they share its space</dd>
-          <dt>close</dt>
-          <dd>× in its bar, or exit its shell; the last one is replaced by a fresh one</dd>
+          <dt>red</dt>
+          <dd>close — or exit its shell; the last one is replaced by a fresh one</dd>
+          <dt>yellow</dt>
+          <dd>minimize — it keeps running; click its chip in the status bar to bring it back</dd>
+          <dt>green</dt>
+          <dd>fill the screen, and again to put it back — or double-click the bar</dd>
         </dl>
         <h2>Keys</h2>
         <dl>

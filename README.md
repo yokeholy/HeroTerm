@@ -54,7 +54,7 @@ heroterm
 | **▢** | float the terminal over the star field |
 | **⚙︎** | settings |
 
-**Windows:** drag by the title bar · resize from any edge · drag to a screen edge to snap · drop onto another window to split · double-click the name to rename.
+**Windows:** 🔴 close · 🟡 minimize to the status bar · 🟢 fill the screen · drag by the title bar · resize from any edge · drag to a screen edge to snap · drop onto another window to split · double-click the name to rename.
 
 <table>
   <tr>
