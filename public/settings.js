@@ -105,6 +105,27 @@
     document.getElementById('set-dim-reset')
   );
 
+  // The window shown beside the sheet is the focused one, and a focused window
+  // is always solid — so on its own, moving this slider shows nothing. While
+  // you're on it, the window wears the unfocused opacity instead, and the veil
+  // lifts so what shows through is what really would: the sky and the windows
+  // behind. See body[data-tuning] in index.html.
+  const dimRow = document.getElementById('set-dim').closest('.setting');
+
+  function tuning(on) {
+    document.body.toggleAttribute('data-tuning', on);
+  }
+
+  dimRow.addEventListener('focusin', () => tuning(true));
+  dimRow.addEventListener('pointerdown', () => tuning(true)); // Safari won't focus a range on click
+  dimRow.addEventListener('input', () => tuning(true));
+  dimRow.addEventListener('focusout', (e) => {
+    if (!dimRow.contains(e.relatedTarget)) tuning(false);
+  });
+  document.addEventListener('pointerdown', (e) => {
+    if (!dimRow.contains(e.target)) tuning(false);
+  });
+
   /* ---------- themes ---------- */
 
   // Built from the registry rather than written out here, so adding a palette
@@ -462,6 +483,7 @@
   }
 
   function close() {
+    tuning(false);
     panel.hidden = true;
     panel.removeAttribute('data-preview');
     openBtn.setAttribute('aria-expanded', 'false');

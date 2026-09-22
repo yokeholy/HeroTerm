@@ -581,6 +581,18 @@
         overflow: auto;
         background: var(--veil, rgba(5, 7, 12, 0.88));
         backdrop-filter: blur(10px);
+        transition: background 220ms ease, backdrop-filter 220ms ease;
+      }
+
+      /* Adjusting the unfocused-window opacity: the veil lifts, and the window
+         beside the sheet shows itself as an unfocused one would look. */
+      body[data-tuning] #settings {
+        background: transparent;
+        backdrop-filter: none;
+      }
+
+      body[data-tuning] .deck[data-preview] {
+        opacity: var(--dim, 0.2);
       }
 
       #settings[hidden] {
