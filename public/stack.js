@@ -238,9 +238,6 @@ function createStack(opts) {
       if (current && current.running) {
         current.cmd = text;
         paintHead(liveEl, current);
-        // The name lands just after the command starts, so whatever shows
-        // the front card's command — the page title — needs telling again.
-        onChange({ cursor, depth: cards.length + 1 });
       } else {
         // Arrives a beat before the start marker; hold it for that.
         api._pendingName = text;
@@ -355,13 +352,6 @@ function createStack(opts) {
     // with no name to give (over ssh), since it's running all the same.
     get running() {
       return current && current.running ? current.cmd || true : null;
-    },
-
-    // The command on the front card — the one you're looking at, which is an
-    // older one while you walk back — or null if it has none to show.
-    get command() {
-      const rec = cursor === 0 ? current : cards[cursor - 1] && cards[cursor - 1].rec;
-      return rec && rec.cmd ? rec.cmd : null;
     },
 
     // Terminals keep the theme and face they were built with, so the replayed

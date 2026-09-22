@@ -28,9 +28,10 @@ puts it back to the default. It's kept in this browser, not on the server, and
 `public/theme.js` holds the defaults: `dimmed` for the fade and `breath` for
 the length of one breath. The breathing stops under `prefers-reduced-motion`.
 
-The browser tab is titled after the window you're in — `npm test | HeroTerm` —
-following whichever card it's showing, so walking back through the deck
-changes it too. A window that hasn't run anything yet leaves just `HeroTerm`.
+The browser tab is titled after the window you're in — `Vega | HeroTerm` —
+and follows you as you move between windows or rename one. With every window
+minimized it's just `HeroTerm`. The status bar's bottom-right corner shows
+which version is running, as the server reports it.
 
 Each window is named when it's made — stars, given what's behind them — and the
 name sits in the middle of its title bar. Double-click it to rename; Enter or

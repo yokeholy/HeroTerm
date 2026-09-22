@@ -571,6 +571,7 @@
         ['Address', S.host && `${S.host}:${S.port}`, env('PORT') + ' · the host is loopback, always'],
         ['Shells survive a closed tab for', S.grace != null && seconds(S.grace), env('HEROTERM_GRACE') + ' (seconds)'],
         ['Terminals at once', S.maxSessions, src('server.js', 'MAX_SESSIONS')],
+        ['HeroTerm', S.version, 'package.json · version'],
         ['Node', S.node, 'the node that ran npm start'],
         ['Wire protocol', S.protocol, src('server.js', 'PROTOCOL')],
       ]],

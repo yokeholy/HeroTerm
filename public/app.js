@@ -119,6 +119,7 @@ const page = {
       arrangement,
     });
     paintTray(); // names and minimized windows both end up here
+    paintTitle(); // ...and a rename is one of those
     // Every move, resize, split and close ends up here, so this is where the
     // arrange button finds out whether its undo still holds.
     paintArrange();
@@ -216,9 +217,7 @@ const page = {
 
   // A container's deck moved, or its size changed, or its shell said something.
   deckMoved(c, pos) {
-    if (c !== focused) return;
-    paintPlace(pos);
-    paintTitle();
+    if (c === focused) paintPlace(pos);
   },
 
   sized(c) {
@@ -286,18 +285,12 @@ function paintPlace(pos) {
   els.next.disabled = lastPos.cursor === 0;
 }
 
-// The tab title follows the window you're in: its command, then the app. A
-// window that hasn't run anything yet leaves just the name.
+// The tab title is the window you're in, then the app — "Vega | HeroTerm" —
+// or just the app when no window has focus (all of them minimized).
 const APP_NAME = 'HeroTerm';
-const TITLE_MAX = 60; // a tab shows a fraction of this; the rest is for the tooltip
 
 function paintTitle() {
-  let cmd = focused && focused.stack.command;
-  if (cmd) {
-    cmd = cmd.replace(/\s+/g, ' ').trim();
-    if (cmd.length > TITLE_MAX) cmd = `${cmd.slice(0, TITLE_MAX - 1)}…`;
-  }
-  const next = cmd ? `${cmd} | ${APP_NAME}` : APP_NAME;
+  const next = focused ? `${focused.name} | ${APP_NAME}` : APP_NAME;
   if (document.title !== next) document.title = next;
 }
 
@@ -830,6 +823,21 @@ window.HEROTERM_WINDOWS = {
 };
 
 /* ---------- page furniture ---------- */
+
+// The version in the footer is the server's — it's the server that serves
+// these files, from the same package. Left blank against a server too old to
+// say (its /config had no version before 0.2.0), rather than guessed.
+(async () => {
+  try {
+    const token = new URLSearchParams(location.search).get('token') || '';
+    const res = await fetch(`/config?token=${encodeURIComponent(token)}`, { cache: 'no-store' });
+    if (!res.ok) return;
+    const { version } = await res.json();
+    if (version) document.getElementById('version').textContent = version;
+  } catch {
+    /* no version to show; the name stands on its own */
+  }
+})();
 
 els.add.addEventListener('mousedown', (e) => e.preventDefault());
 els.add.addEventListener('click', add);

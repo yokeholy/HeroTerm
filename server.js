@@ -108,6 +108,7 @@ app.get('/config', (req, res) => {
     highWater: HIGH_WATER,
     lowWater: LOW_WATER,
     historyFile: history.file() || null,
+    version: require('./package.json').version,
     node: process.version,
     protocol: PROTOCOL,
   });
