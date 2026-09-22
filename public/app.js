@@ -808,8 +808,10 @@ window.addEventListener(
   (e) => {
     // A name being renamed is a text field; Cmd-K there should not wipe a grid.
     if (document.activeElement && document.activeElement.isContentEditable) return;
-    // Cmd-T opens a window whether or not one has focus.
-    if (e.metaKey && !e.ctrlKey && !e.altKey && e.key === 't') {
+    // Cmd-D opens a window, whether or not one has focus — as + does. Cmd-T
+    // does too, where the browser lets it through; most keep Cmd-T for a new
+    // tab of their own, while Cmd-D (bookmark this page) a page may claim.
+    if (e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey && (e.key === 'd' || e.key === 't')) {
       add();
       e.preventDefault();
       return;

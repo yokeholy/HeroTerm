@@ -71,7 +71,7 @@ heroterm
 
 | Keys | Action |
 |---|---|
-| `⌘T` | new terminal |
+| `⌘D` | new terminal |
 | `⌘[` / `⌘]` | older / newer command |
 | `⌘K` | clear |
 | `⌘+` / `⌘−` / `⌘0` | this window's text size |
