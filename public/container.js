@@ -783,6 +783,12 @@
         term.focus();
       },
 
+      // Straight to the shell, as if typed. The shell decides what it means,
+      // so it works the same on the far side of an ssh.
+      input(data) {
+        send({ t: 'i', d: data });
+      },
+
       // Closing a container is unambiguous in a way that the tab going away is
       // not, so this is the only place that ends a shell early.
       destroy() {

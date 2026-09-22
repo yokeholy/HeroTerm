@@ -952,6 +952,14 @@ window.addEventListener(
     if (!e.metaKey || e.ctrlKey || e.altKey || !focused) return;
     const term = focused.term;
 
+    // ⌘⌫ clears the line, the way it does in a Mac terminal: ^U, which zsh
+    // and readline both take as "kill the line" — including a shell at the
+    // other end of an ssh.
+    if (e.key === 'Backspace') {
+      focused.input('\x15');
+      e.preventDefault();
+      return;
+    }
     if (e.key === 'c' && term.hasSelection()) {
       navigator.clipboard.writeText(term.getSelection());
       e.preventDefault();

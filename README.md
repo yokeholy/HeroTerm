@@ -73,6 +73,7 @@ heroterm
 |---|---|
 | `⌘D` | new terminal |
 | `⌘[` / `⌘]` | older / newer command |
+| `⌘⌫` | clear the line |
 | `⌘K` | clear |
 | `⌘+` / `⌘−` / `⌘0` | this window's text size |
 | `⌘C` / `⌘V` | copy / paste |
