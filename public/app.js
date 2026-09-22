@@ -218,7 +218,7 @@ function paintPlace(pos) {
 
 // The tab title follows the window you're in: its command, then the app. A
 // window that hasn't run anything yet leaves just the name.
-const APP_NAME = 'Hero Term';
+const APP_NAME = 'HeroTerm';
 const TITLE_MAX = 60; // a tab shows a fraction of this; the rest is for the tooltip
 
 function paintTitle() {

@@ -1,4 +1,4 @@
-# Hero Term shell integration.
+# HeroTerm shell integration.
 #
 # server.js points ZDOTDIR at this directory so that our .zshrc can install
 # command hooks *after* yours have run. USER_ZDOTDIR is where your real files

@@ -1,4 +1,4 @@
-# Hero Term remote shell integration — optional.
+# HeroTerm remote shell integration — optional.
 #
 # You do NOT need this to hear commands you run over ssh. The browser already
 # picks those up from bracketed-paste transitions, which travel back down the

@@ -1,4 +1,4 @@
-# Hero Term
+# HeroTerm
 
 **A terminal where every command gets its own window.**
 
@@ -135,7 +135,7 @@ named in the theme — the browser can only use what the system has:
 brew install --cask font-meslo-lg-nerd-font
 ```
 
-Then run `p10k configure` once while inside Hero Term so the prompt is measured
+Then run `p10k configure` once while inside HeroTerm so the prompt is measured
 against this renderer.
 
 Anything in `public/index.html` is yours too. The grid is one element, so you
@@ -298,7 +298,7 @@ match, and gets its real size back on close); with no room for a preview it
 runs the full height of the screen. It has four tabs — **Appearance**,
 **Sound**, **Effects** and **System** — and opens on whichever you used last.
 
-System is read-only: the limits Hero Term is running with — shell, grace
+System is read-only: the limits HeroTerm is running with — shell, grace
 period, commands and bytes kept per window and across a refresh, scrollback,
 flow control, which history file the stats read — each with where it's set.
 The server's come from `/config` (token-gated like the rest), so they're the
@@ -550,7 +550,7 @@ full-screen with bracketed paste on, so by both rules above it's a program
 waiting for you — no stars, no ticking, a window stuck on yellow for as long as
 it's open. But its turns are exactly the thing you'd want the sky for.
 
-So Hero Term reads one more signal: the window title. Claude Code titles itself
+So HeroTerm reads one more signal: the window title. Claude Code titles itself
 `✳ <task>` while it waits and leads with a spinner, `◐` / `◑`, while it works.
 Once a program has announced itself with `✳`, each turn is treated as a command
 of its own: a ding when it starts, the stars and the ticking while it works,
