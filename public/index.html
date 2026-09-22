@@ -480,8 +480,10 @@
         position: absolute;
         top: 40px;
         left: 8px;
+        box-sizing: border-box; /* so the height limit includes the padding */
         width: min(430px, calc(100vw - 16px));
         max-height: calc(100vh - 56px);
+        max-height: calc(100dvh - 56px);
         overflow: auto;
         padding: 16px 18px 18px;
         border: 1px solid var(--hairline, #252a35);
@@ -1635,9 +1637,22 @@
         <h2>Buttons, top right</h2>
         <dl>
           <dt>plus</dt>
-          <dd>another terminal — click one to bring it forward, × to close it</dd>
+          <dd>another terminal</dd>
           <dt>grid</dt>
-          <dd>arrange every window to fill the screen, all about the same size</dd>
+          <dd>arrange every window to fill the screen; press again to put them back</dd>
+          <dt>bars</dt>
+          <dd>what you type most, from your whole shell history</dd>
+          <dt>expand</dt>
+          <dd>browser full screen</dd>
+          <dt>square</dt>
+          <dd>float the terminal over a star field</dd>
+          <dt>sliders</dt>
+          <dd>settings — appearance, sound, effects, and what it's running with</dd>
+        </dl>
+        <h2>Windows</h2>
+        <dl>
+          <dt>click</dt>
+          <dd>bring one forward — keys go to that one</dd>
           <dt>name</dt>
           <dd>double-click the name in a window's bar to rename it</dd>
           <dt>resize</dt>
@@ -1646,17 +1661,9 @@
           <dd>drag to a screen edge for a half, a corner for a quarter, the top to fill</dd>
           <dt>split</dt>
           <dd>drop a window on another one's edge and they share its space</dd>
-          <dt>bars</dt>
-          <dd>what you type most, from your whole shell history</dd>
-          <dt>sliders</dt>
-          <dd>settings — theme, font, text sizes, sound, flying stars, window fade</dd>
-          <dt>expand</dt>
-          <dd>browser full screen</dd>
-          <dt>square</dt>
-          <dd>float the terminal over a star field</dd>
-
+          <dt>close</dt>
+          <dd>× in its bar, or exit its shell; the last one is replaced by a fresh one</dd>
         </dl>
-
         <h2>Keys</h2>
         <dl>
           <dt>Cmd T</dt>
@@ -1668,7 +1675,7 @@
           <dt>Cmd K</dt>
           <dd>clear</dd>
           <dt>Cmd + &nbsp;− &nbsp;0</dt>
-          <dd>font size</dd>
+          <dd>this window's text size; 0 goes back to your setting</dd>
           <dt>Esc</dt>
           <dd>close this</dd>
         </dl>
@@ -1680,7 +1687,9 @@
           <dt>Scrolling</dt>
           <dd>won't go above the current command; use Cmd [</dd>
           <dt>Closing the tab</dt>
-          <dd>ends the shell. Run tmux first if you'd rather it didn't</dd>
+          <dd>keeps the shells a while (10 minutes by default) in case you come back; run tmux to outlast the server</dd>
+          <dt>Claude Code</dt>
+          <dd>each turn counts as a command: stars while it works, a chime when it's done</dd>
         </dl>
       </div>
     </section>
@@ -1714,7 +1723,7 @@
           </button>
         </header>
 
-        <!-- Three tabs, and two pages reached from the first. data-page on
+        <!-- Four tabs, and two pages reached from the first. data-page on
              #settings says which is showing. -->
         <div class="tabs" role="tablist" aria-label="Settings sections">
           <button id="tab-appearance" class="tab" type="button" role="tab" data-tab="appearance" aria-controls="page-appearance">Appearance</button>
@@ -1803,7 +1812,8 @@
               <label for="set-warp">Flying stars</label>
               <p class="hint">
                 The rush outward while a command runs, from the middle of whatever
-                is working. Off leaves the sky where it is, still breathing.
+                is working. Off leaves the sky where it is, still breathing;
+                turning it on shows you for two seconds.
               </p>
             </div>
             <input id="set-warp" class="switch" type="checkbox" />

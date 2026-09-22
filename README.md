@@ -53,8 +53,9 @@ It runs a shell, so the question is a fair one. The short version:
   protected by CORS**, so without it any page you happened to visit could open
   a socket to your shell. Loopback is not an access boundary — every process
   and every user on the machine can reach that port.
-- The stats page reads your shell history file. It's gated on the same token,
-  counted server-side, and only the aggregate is sent.
+- Everything else the server hands out is gated on the same token: your shell
+  history for the stats page (counted server-side, only the aggregate sent),
+  the list of installed fonts, and the configuration it's running with.
 
 Longer version, including what it deliberately does *not* protect against, in
 [Security](#security) below.
@@ -118,14 +119,17 @@ browser                          node                    macOS
 hands one end to zsh. Your shell can't tell the difference. xterm.js parses the
 ANSI escape sequences coming back and paints them.
 
-The one other thing the server will hand out is your shell history, counted up
-for the stats sheet. The same token gates it — see "What you actually type".
+Beyond the terminal itself the server hands out three things, all behind the
+same token: your shell history counted up for the stats sheet (`/stats`, see
+"What you actually type"), the installed fonts for the font picker (`/fonts`),
+and the limits it's running with for the System tab (`/config`).
 
 ## Make it yours
 
-Everything visual is in `public/theme.js`: the typeface, size, line height, the
-sixteen ANSI colors, the cursor, the star field. Everything audible is in
-`public/audio.js`. Edit and reload.
+The defaults for everything visual are in `public/theme.js`: the typeface, size,
+line height, the sixteen ANSI colors, the cursor, the star field. Everything
+audible is in `public/audio.js`. Edit and reload. Settings changes the theme,
+font, text sizes and the rest on top of those, for this browser.
 
 Any installed font can be picked from settings. For a Powerlevel10k or
 Starship prompt you need a Nerd Font **installed on the machine**, not just
@@ -165,12 +169,16 @@ The window you're working in breathes: its glow swells and settles on a slow
 cycle, in whatever colour its last command left behind — grey when nothing has
 run, yellow while something is, green or red once it's done. The others fade to
 a fifth of their opacity and the star field shows through them, so there is
-never a question which one your keys are going to. How faded is under the sliders button, with a
-slider and a number box that drive each other — drag one and the windows fade
-as you go. Reset puts it back to the default. It's kept in this browser, not on
-the server, and `public/theme.js` holds the defaults: `dimmed` for the fade and
-`breath` for the length of one breath. The breathing stops under
-`prefers-reduced-motion`.
+never a question which one your keys are going to. How faded is in Settings →
+Appearance, as a slider and a number box that drive each other; while you're
+adjusting it, the window beside the sheet shows itself faded that much. Reset
+puts it back to the default. It's kept in this browser, not on the server, and
+`public/theme.js` holds the defaults: `dimmed` for the fade and `breath` for
+the length of one breath. The breathing stops under `prefers-reduced-motion`.
+
+The browser tab is titled after the window you're in — `npm test | HeroTerm` —
+following whichever card it's showing, so walking back through the deck
+changes it too. A window that hasn't run anything yet leaves just `HeroTerm`.
 
 Each window is named when it's made — stars, given what's behind them — and the
 name sits in the middle of its title bar. Double-click it to rename; Enter or
@@ -180,7 +188,8 @@ windows are numbered.
 
 The `+` gives you another container: its own shell, its own deck, its own
 position, up to eight of them. Click one to bring it forward — that's the one
-keys go to — and close it with the `×` in its title bar. More than one only
+keys go to — and close it with the `×` in its title bar, or by exiting its
+shell; close the last one and a fresh one takes its place. More than one only
 makes sense floating, so adding a second switches to windowed and the fill-the-
 tab button greys out until you're back to one.
 
@@ -267,7 +276,9 @@ forever, so you can look over long after the fact and still see how it went.
 
 None of this is painted in full screen, where the terminal covers every pixel
 of it — the animation loop stops rather than running behind an opaque window.
-Star count and colours are in `public/theme.js`.
+The one exception is turning Flying stars on in settings, which borrows the sky
+for two seconds so you can see what you turned on. Star count and colours are
+in `public/theme.js`.
 
 ### Arranging
 
@@ -297,14 +308,16 @@ bottom edges (never shorter than 420px — a shorter window is shown taller to
 match, and gets its real size back on close); with no room for a preview it
 runs the full height of the screen. It has four tabs — **Appearance**,
 **Sound**, **Effects** and **System** — and opens on whichever you used last.
+Theme and font each open a page of their own from Appearance, with a back
+arrow in place of the tabs; Escape steps back one level at a time.
 
 System is read-only: the limits HeroTerm is running with — shell, grace
 period, commands and bytes kept per window and across a refresh, scrollback,
 flow control, which history file the stats read — each with where it's set.
 The server's come from `/config` (token-gated like the rest), so they're the
 values after any environment overrides; the page's are read from the modules
-that own them, not copied. Theme and
-font each open a page of their own from Appearance.
+that own them, not copied. When the server predates `/config`, the tab says so
+and lists only the page's own values.
 
 The two text sizes are separate on purpose. **Terminal text size** (px) is the
 grid in every window, replayed cards included; ⌘+ and ⌘− still size one window
@@ -319,6 +332,9 @@ above the dimmed background, so every change lands on something you can see.
 It keeps its size where that fits and shrinks only where it doesn't. Closing
 settings puts it back exactly where it was — its real position is never
 touched in between, so a refresh with the sheet open loses nothing either.
+While you're adjusting the unfocused-window opacity, the dimming lifts and that
+window wears the opacity you're choosing, since a focused window is otherwise
+always solid; letting go of the slider puts both back.
 
 Six themes ship — **Deep Field** (blue-grey), **Ember** (coal and firelight),
 **Fathom** (deep water), **Amethyst** (violet), **Moss** (forest), and
@@ -353,10 +369,10 @@ reassigning the global would leave them all pointing at the old one. And
 anything that can't simply read it again — terminals already built, stars
 already coloured — subscribes to `HEROTERM_THEMES.on()` and is told.
 
-Both
-a slider and a number box are wired to the same value and each updates the
-other, since neither is the right control on its own: one is for finding a
-number by eye, the other for saying exactly which number you meant.
+The terminal text size and the window fade each have a slider and a number box
+wired to the same value, each updating the other, since neither is the right
+control on its own: one is for finding a number by eye, the other for saying
+exactly which number you meant.
 
 Whichever you are using is left alone while you use it. Writing a clamped value
 back into the box you are typing in moves the caret out from under you, and
@@ -364,9 +380,9 @@ makes `10` impossible to type on the way to `100`.
 
 Defaults live in `public/theme.js` and settings only record where you have
 moved away from them, so `Reset` is a delete rather than a second copy of the
-default. Sound is the exception: `public/audio.js` has owned whether it is
-muted since before this sheet existed, and the switch drives that rather than
-keeping a second copy — two stores for one fact is how they come to disagree.
+default. Sound is the exception: `public/audio.js` owns whether it is muted,
+and which sounds are on, and the switches drive that rather than keeping a
+second copy — two stores for one fact is how they come to disagree.
 
 Turning the flying stars off leaves the sky where it is, still breathing.
 Turning them on flies them for two seconds — the dimming behind the sheet
@@ -392,7 +408,10 @@ running job. So the session lives on the server and outlives the socket:
   kill-on-disconnect behaviour.
 - The server parses the same OSC 133 markers the browser does, which splits the
   stream into per-command records, and keeps the last 12 of them plus the
-  current screen. On reconnect it sends those back and the deck is rebuilt.
+  current screen — and, separately, the last window title and whether a
+  full-screen program is up, since in a long session the sequences that set
+  those scroll off the front of the kept screen. On reconnect it sends all of
+  that back and the deck is rebuilt.
 - Closing a container with its `×` ends that shell immediately. Closing the
   *tab* doesn't: `pagehide` and `beforeunload` fire on a refresh exactly as
   they do on a close and the browser won't tell you which is which, so ending
@@ -468,8 +487,9 @@ into a terminal of their own the first time you walk back far enough to see it.
 Replaying the real bytes through the real renderer means colour, cursor moves
 and overwrites all come out exactly as they did the first time, which no amount
 of scraping the text off the screen would give you. It also means the cost is
-bounded: 12 commands of history, 256 KB of output each, and no terminal built
-for a card you never look at.
+bounded: 12 commands of history, 256 KB of output each in the page (the server
+keeps the last 128 KB of each for a refresh), and no terminal built for a card
+you never look at. Settings → System lists these limits and where they're set.
 
 Boundaries are cut against the OSC 133 markers rather than against whatever the
 pty happened to hand over in one read — `term.write()` parses on its own
@@ -502,6 +522,10 @@ BEL — zsh when a completion has nothing to offer, vim on a bad motion, a scrip
 that echoes `\a`. It's deliberately unlike the failure phrase: one is a
 complaint about a keystroke, the other a verdict on a command. If you never
 hear it, check for `setopt NO_BEEP` in your `.zshrc`.
+
+The sounds are synthesised in `public/audio.js`, not sampled, so there are no
+asset files. Pitches, envelopes and the tick interval are all constants at the
+top of the functions that use them.
 
 Working out *when* a command starts and stops is `public/session.js`, which is
 also what drives the border and the star field — so muting the sound never
@@ -543,6 +567,16 @@ it to the remote `~/.zshrc` or `~/.bashrc` and real exit codes come back too.
 Full-screen programs are handled separately — entering the alternate screen
 (vim, less, top, tmux) stops the ticking on its own.
 
+Two consequences worth knowing. An empty Enter and a remote command that
+finishes in under 120ms look identical over bracketed paste, so both are
+silent. And a REPL that uses readline — python, irb, node — marks every
+statement you run as its own command, because as far as the wire is concerned
+that is exactly what it is.
+
+Only zsh is wired up for markers. Under bash or fish you still get sound, just
+driven entirely by bracketed paste, which means no exit codes and so no failure
+chime.
+
 ### Coding agents
 
 Claude Code is one long command as far as the shell knows, and it's
@@ -567,22 +601,9 @@ is a UI detail rather than a contract, so if a future version changes its
 spinner, this is the place to look: `AGENT_IDLE` and `AGENT_BUSY` at the top of
 `public/session.js`.
 
-After a refresh mid-turn the stars pick up again without a ding, but the turn's
-clock starts blank: the server doesn't know when it began.
-
-Two consequences worth knowing. An empty Enter and a remote command that
-finishes in under 120ms look identical over bracketed paste, so both are
-silent. And a REPL that uses readline — python, irb, node — marks every
-statement you run as its own command, because as far as the wire is concerned
-that is exactly what it is.
-
-Only zsh is wired up for markers. Under bash or fish you still get sound, just
-driven entirely by bracketed paste, which means no exit codes and so no failure
-chime.
-
-The sounds are synthesised in `public/audio.js`, not sampled, so there are no
-asset files. Pitches, envelopes and the tick interval are all constants at the
-top of the functions that use them.
+After a refresh the state comes back as it was — mid-turn, the stars pick up
+again without a ding; idle, they stay still — though a restored turn's clock
+starts blank, since the server doesn't know when it began.
 
 ## Keys
 
@@ -592,7 +613,7 @@ top of the functions that use them.
 | `Cmd T` | another terminal |
 | `Cmd [` / `Cmd ]` | older / newer command in the deck |
 | `Cmd K` | clear |
-| `Cmd +` / `Cmd -` / `Cmd 0` | font size |
+| `Cmd +` / `Cmd -` / `Cmd 0` | this window's text size; `0` returns to the size in settings |
 | `Option F` / `Option B` | move by word |
 
 ## Security
