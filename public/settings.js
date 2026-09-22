@@ -107,24 +107,53 @@
 
   // The window shown beside the sheet is the focused one, and a focused window
   // is always solid — so on its own, moving this slider shows nothing. While
-  // you're on it, the window wears the unfocused opacity instead, and the veil
-  // lifts so what shows through is what really would: the sky and the windows
-  // behind. See body[data-tuning] in index.html.
-  const dimRow = document.getElementById('set-dim').closest('.setting');
+  // you're changing the value, the window wears the unfocused opacity instead,
+  // and the veil lifts so what shows through is what really would: the sky and
+  // the windows behind. See body[data-tuning] in index.html.
+  //
+  // Only while you're changing it, though: holding the slider, typing in the
+  // box, or briefly after a key or Reset. Let go and the window is itself
+  // again, so the sheet never sits over a half-vanished window.
+  const dimSlider = document.getElementById('set-dim');
+  const dimNumber = document.getElementById('set-dim-num');
+  const dimReset = document.getElementById('set-dim-reset');
+  const LINGER = 450; // after a key press, long enough to see; short enough to not notice
+  const GLIMPSE = 900; // after Reset, which is one click with nothing to hold
+  let tuneTimer = null;
 
   function tuning(on) {
+    clearTimeout(tuneTimer);
     document.body.toggleAttribute('data-tuning', on);
   }
 
-  dimRow.addEventListener('focusin', () => tuning(true));
-  dimRow.addEventListener('pointerdown', () => tuning(true)); // Safari won't focus a range on click
-  dimRow.addEventListener('input', () => tuning(true));
-  dimRow.addEventListener('focusout', (e) => {
-    if (!dimRow.contains(e.relatedTarget)) tuning(false);
+  function glimpse(ms) {
+    tuning(true);
+    tuneTimer = setTimeout(() => tuning(false), ms);
+  }
+
+  dimSlider.addEventListener('pointerdown', () => tuning(true));
+  // On the document, because the pointer is often somewhere else by the time
+  // you let go.
+  for (const type of ['pointerup', 'pointercancel']) {
+    document.addEventListener(type, () => {
+      if (document.body.hasAttribute('data-tuning') && document.activeElement !== dimNumber) {
+        tuning(false);
+      }
+    });
+  }
+  window.addEventListener('blur', () => tuning(false)); // released outside the browser
+
+  dimSlider.addEventListener('keydown', (e) => {
+    if (/^(Arrow|Page|Home|End)/.test(e.key)) tuning(true);
   });
-  document.addEventListener('pointerdown', (e) => {
-    if (!dimRow.contains(e.target)) tuning(false);
+  dimSlider.addEventListener('keyup', (e) => {
+    if (/^(Arrow|Page|Home|End)/.test(e.key)) glimpse(LINGER);
   });
+
+  dimNumber.addEventListener('focus', () => tuning(true));
+  dimNumber.addEventListener('blur', () => tuning(false));
+
+  dimReset.addEventListener('click', () => glimpse(GLIMPSE));
 
   /* ---------- themes ---------- */
 
