@@ -46,6 +46,19 @@ npm start
 `npm start` prints a URL with a token rather than opening it; `node
 bin/heroterm.js` does what the installed command does.
 
+A copy run from a git checkout marks itself: a red frame round the whole page,
+and `· dev` after the version in the status bar, so it's never mistaken for the
+installed one you work in. Running both at once is the point of it — install
+the published package for everyday use on the default port, and run the
+checkout alongside on another:
+
+```bash
+node bin/heroterm.js --port 7778
+```
+
+The two keep separate shells, and separate settings and layouts too, since
+each address has its own. `HEROTERM_DEV=1` or `=0` overrides the detection.
+
 ## The token
 
 The URL carries a random token, regenerated every launch. It's what stops other

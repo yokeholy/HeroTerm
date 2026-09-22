@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('fs');
 const http = require('http');
 const path = require('path');
 const crypto = require('crypto');
@@ -12,6 +13,14 @@ const fixSpawnHelper = require('./scripts/fix-spawn-helper');
 const fonts = require('./fonts');
 
 const PORT = Number(process.env.PORT || 7777);
+
+// Running from a git checkout — the copy being worked on — rather than an
+// installed package, which never ships a .git. The page marks itself so the
+// two can't be mistaken for each other. HEROTERM_DEV=1 or 0 overrides.
+const DEV =
+  process.env.HEROTERM_DEV !== undefined
+    ? process.env.HEROTERM_DEV === '1'
+    : fs.existsSync(path.join(__dirname, '.git'));
 const HOST = '127.0.0.1'; // loopback only, never 0.0.0.0
 const SHELL = process.env.HEROTERM_SHELL || process.env.SHELL || '/bin/zsh';
 
@@ -109,6 +118,7 @@ app.get('/config', (req, res) => {
     lowWater: LOW_WATER,
     historyFile: history.file() || null,
     version: require('./package.json').version,
+    dev: DEV,
     node: process.version,
     protocol: PROTOCOL,
   });
@@ -514,7 +524,7 @@ function openBrowser(url) {
 
 server.listen(PORT, HOST, () => {
   const url = `http://localhost:${PORT}/?token=${TOKEN}`;
-  console.log(`\n  ${path.basename(SHELL)} is ready at:\n`);
+  console.log(`\n  ${path.basename(SHELL)} is ready at${DEV ? ' (development copy)' : ''}:\n`);
   console.log(`  ${url}\n`);
   if (process.env.HEROTERM_OPEN === '1') openBrowser(url);
   if (GRACE === 0) {

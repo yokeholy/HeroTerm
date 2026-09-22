@@ -190,6 +190,22 @@
         opacity: 0.8;
       }
 
+      /* A development copy: a red frame round the whole page, over everything
+         and in the way of nothing. */
+      body[data-dev]::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        border: 3px solid #e5484d;
+        pointer-events: none;
+      }
+
+      body[data-dev] #brand {
+        color: #e5484d;
+        opacity: 1;
+      }
+
       /* ---- the deck: the windows themselves ---- */
 
       .deck {

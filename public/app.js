@@ -832,8 +832,10 @@ window.HEROTERM_WINDOWS = {
     const token = new URLSearchParams(location.search).get('token') || '';
     const res = await fetch(`/config?token=${encodeURIComponent(token)}`, { cache: 'no-store' });
     if (!res.ok) return;
-    const { version } = await res.json();
-    if (version) document.getElementById('version').textContent = version;
+    const { version, dev } = await res.json();
+    if (version) document.getElementById('version').textContent = dev ? `${version} · dev` : version;
+    // A development copy, so it's never mistaken for the one you work in.
+    document.body.toggleAttribute('data-dev', Boolean(dev));
   } catch {
     /* no version to show; the name stands on its own */
   }

@@ -572,6 +572,7 @@
         ['Shells survive a closed tab for', S.grace != null && seconds(S.grace), env('HEROTERM_GRACE') + ' (seconds)'],
         ['Terminals at once', S.maxSessions, src('server.js', 'MAX_SESSIONS')],
         ['HeroTerm', S.version, 'package.json · version'],
+        ['Running from', S.dev == null ? null : S.dev ? 'a git checkout (development copy)' : 'an installed package', 'a .git folder beside server.js · env HEROTERM_DEV overrides'],
         ['Node', S.node, 'the node that ran npm start'],
         ['Wire protocol', S.protocol, src('server.js', 'PROTOCOL')],
       ]],
