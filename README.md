@@ -86,6 +86,7 @@ heroterm
 - 👻 **Fade** the windows you're not using
 - 🔊 **Sound** on/off, per sound
 - ✨ **Flying stars** on/off
+- 🛑 **Confirm before closing** a window: never, while something runs, or always
 - ⚙️ **System** tab showing what HeroTerm is running with
 
 Changes preview live on the window beside the panel.

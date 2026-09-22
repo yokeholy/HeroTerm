@@ -351,6 +351,12 @@ function createStack(opts) {
       return cursor;
     },
 
+    // The command still running in the live terminal, if any — true for one
+    // with no name to give (over ssh), since it's running all the same.
+    get running() {
+      return current && current.running ? current.cmd || true : null;
+    },
+
     // The command on the front card — the one you're looking at, which is an
     // older one while you walk back — or null if it has none to show.
     get command() {

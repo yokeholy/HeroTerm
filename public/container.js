@@ -132,6 +132,8 @@
     // nothing: fitting it then would shrink the shell to a sliver. Its size
     // waits until it's shown again.
     let minimized = false;
+    let asking = null; // an open "close this window?" question
+    let cancelAsk = null; // ...and how to withdraw it, if the window goes first
 
     function relayout() {
       clearTimeout(resizeTimer);
@@ -530,8 +532,9 @@
       'mousedown',
       (e) => {
         page.focus(self);
-        // A name being edited is a text field: leave the caret alone.
-        if (e.target.closest('.xterm') || e.target.isContentEditable) return;
+        // A name being edited is a text field: leave the caret alone. And the
+        // close question keeps focus on its own buttons.
+        if (e.target.closest('.xterm') || e.target.isContentEditable || e.target.closest('.ask')) return;
         e.preventDefault();
         term.focus();
       },
@@ -656,6 +659,71 @@
       applyBox,
       relayout,
 
+      // "Close this window?", over the window itself. Resolves true to close.
+      // Enter closes, Escape keeps it; asking twice reuses the open question.
+      askClose(why) {
+        if (asking) return asking;
+        asking = new Promise((resolve) => {
+          const ask = document.createElement('div');
+          ask.className = 'ask';
+          ask.setAttribute('role', 'alertdialog');
+          ask.setAttribute('aria-label', `Close ${name}?`);
+          const box = document.createElement('div');
+          box.className = 'box';
+          const q = document.createElement('p');
+          q.textContent = `Close ${name}?`;
+          box.append(q);
+          if (why) {
+            const w = document.createElement('p');
+            w.className = 'why';
+            w.textContent = why;
+            box.append(w);
+          }
+          const row = document.createElement('div');
+          row.className = 'row';
+          const keep = document.createElement('button');
+          keep.type = 'button';
+          keep.textContent = 'Cancel';
+          const ok = document.createElement('button');
+          ok.type = 'button';
+          ok.dataset.ok = '';
+          ok.textContent = 'Close';
+          row.append(keep, ok);
+          box.append(row);
+          ask.append(box);
+
+          const done = (answer) => {
+            document.removeEventListener('keydown', onKey, true);
+            ask.remove();
+            asking = null;
+            cancelAsk = null;
+            if (!answer) term.focus();
+            resolve(answer);
+          };
+          // Capture, so the keys answer the question instead of reaching the shell.
+          const onKey = (e) => {
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              e.stopPropagation();
+              done(false);
+            } else if (e.key === 'Enter' && !e.isComposing) {
+              e.preventDefault();
+              e.stopPropagation();
+              done(document.activeElement !== keep);
+            }
+          };
+          document.addEventListener('keydown', onKey, true);
+          cancelAsk = () => done(false);
+          keep.addEventListener('click', () => done(false));
+          ok.addEventListener('click', () => done(true));
+          // Clicks here aren't for the terminal underneath.
+          ask.addEventListener('mousedown', (e) => e.stopPropagation(), true);
+          deck.append(ask);
+          ok.focus();
+        });
+        return asking;
+      },
+
       // Moved by the page rather than by hand — arranging — so it glides there.
       // Like a snap, it remembers the size it had, for dragging back out of;
       // putting it back where it was is the exception, and remembers nothing.
@@ -713,6 +781,7 @@
       // Closing a container is unambiguous in a way that the tab going away is
       // not, so this is the only place that ends a shell early.
       destroy() {
+        if (cancelAsk) cancelAsk(); // its key listener is on the document
         try {
           if (!ended) send({ t: 'bye' }); // an exited shell has nothing to kill
           ws.close();

@@ -142,9 +142,22 @@ const page = {
     restack();
   },
 
-  // The window's red button. Its shell goes with it.
-  close(c) {
-    remove(c);
+  // The window's red button. Its shell goes with it — after asking, if
+  // Settings → Behavior says to.
+  async close(c) {
+    const mode = window.HEROTERM_SETTINGS ? window.HEROTERM_SETTINGS.get('confirmClose') : 0;
+    const running = c.stack.running;
+    if (mode === 2 || (mode === 1 && running)) {
+      const why = running
+        ? typeof running === 'string'
+          ? `${running.length > 80 ? `${running.slice(0, 79)}…` : running} is still running.`
+          : 'A command is still running.'
+        : '';
+      if (c.minimized) page.restore(c);
+      else page.focus(c);
+      if (!(await c.askClose(why))) return;
+    }
+    if (containers.includes(c)) remove(c); // it may have ended by itself meanwhile
   },
 
   // Yellow: out of the way, still running, back from its chip in the tray.

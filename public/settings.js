@@ -21,6 +21,12 @@
       fallback: () => 1,
       apply: (v) => window.HEROTERM_SKY.allowWarp(Boolean(v)),
     },
+    // Ask before the red button closes a window: 0 never, 1 while a command is
+    // running in it, 2 always. Read by the page when you close one.
+    confirmClose: {
+      fallback: () => 0,
+      apply: () => {},
+    },
     // Terminal text, in px. The registry holds it, so a theme switch keeps it.
     termSize: {
       fallback: () => window.HEROTERM_THEMES.defaultFontSize,
@@ -645,7 +651,7 @@
   const backBtn = panel.querySelector('[data-back]');
   // Three tabs, and the two pages you reach from Appearance. A sub-page shows
   // a back arrow instead of the tabs, and goes back to the tab it came from.
-  const TABS = ['appearance', 'sound', 'effects', 'system'];
+  const TABS = ['appearance', 'sound', 'effects', 'behavior', 'system'];
   const SUB = { theme: { title: 'Theme', parent: 'appearance' }, font: { title: 'Font', parent: 'appearance' } };
   const TAB_KEY = 'heroterm.settingsTab';
   const tabs = [...panel.querySelectorAll('.tab')];
@@ -813,6 +819,30 @@
     },
     true
   );
+
+  // A small set of named choices, one pressed. Written for Confirm-on-close,
+  // but nothing in it is specific to that.
+  function bindChoice(key, box) {
+    const paint = () => {
+      for (const b of box.querySelectorAll('button')) {
+        b.setAttribute('aria-pressed', String(Number(b.dataset.v) === valueOf(key)));
+      }
+    };
+    for (const b of box.querySelectorAll('button')) {
+      b.addEventListener('mousedown', (e) => e.preventDefault());
+      b.addEventListener('click', () => {
+        const v = Number(b.dataset.v);
+        if (v === OPTIONS[key].fallback()) delete saved[key];
+        else saved[key] = v;
+        save();
+        OPTIONS[key].apply(v);
+        paint();
+      });
+    }
+    paint();
+  }
+
+  bindChoice('confirmClose', document.getElementById('set-confirm'));
 
   window.HEROTERM_SETTINGS = { open, close, get: valueOf };
 })();

@@ -6,8 +6,17 @@ unfocused windows fade, whether the stars fly, and whether any of it makes a
 sound. Beside the window it's previewing, it shares that window's top and
 bottom edges (never shorter than 420px — a shorter window is shown taller to
 match, and gets its real size back on close); with no room for a preview it
-runs the full height of the screen. It has four tabs — **Appearance**,
-**Sound**, **Effects** and **System** — and opens on whichever you used last.
+runs the full height of the screen. It has five tabs — **Appearance**,
+**Sound**, **Effects**, **Behavior** and **System** — and opens on whichever
+you used last.
+
+Behavior holds **Confirm before closing a window**: *Never* (the default),
+*While running*, or *Always*. When it asks, the question sits over the window
+itself — "Close Vega? `npm test` is still running." — with Close focused, so
+Enter confirms and Escape keeps the window. "Running" means the command in that
+window hasn't finished, which includes an ssh session or Claude Code sitting at
+its prompt. Only the red button asks: a shell that exits by itself has already
+made up its mind.
 Theme and font each open a page of their own from Appearance, with a back
 arrow in place of the tabs; Escape steps back one level at a time.
 
