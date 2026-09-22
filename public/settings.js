@@ -27,13 +27,29 @@
       apply: (v) => window.HEROTERM_THEMES.setFontSize(v),
     },
     // Everything else with words on it — title bars, status bar, buttons, these
-    // sheets — as a percentage. Every UI text size in index.html is written as
-    // a multiple of --ui-scale; the terminal grid isn't, it has its own.
+    // sheets — as one of the tiers below. Every UI text size in index.html is
+    // written as a multiple of --ui-scale; the terminal grid isn't, it has its
+    // own. A stored value from before there were tiers snaps to the nearest.
     ui: {
       fallback: () => 100,
-      apply: (v) => document.documentElement.style.setProperty('--ui-scale', String(v / 100)),
+      apply: (v) =>
+        document.documentElement.style.setProperty('--ui-scale', String(nearestTier(v) / 100)),
     },
   };
+
+  // The interface size comes in steps, not a slider: text reads as a set of
+  // sizes, and five you can compare at a glance beat a continuum you have to
+  // hunt along. The default sits in the middle so there's room either way.
+  const UI_TIERS = [
+    { v: 80, name: 'Smallest' },
+    { v: 90, name: 'Small' },
+    { v: 100, name: 'Default' },
+    { v: 115, name: 'Large' },
+    { v: 135, name: 'Largest' },
+  ];
+  const nearestTier = (v) =>
+    UI_TIERS.reduce((a, b) => (Math.abs(b.v - v) < Math.abs(a.v - v) ? b : a)).v;
+  const SAMPLE_BASE = 12; // px: the sheet's own body text, which is what you're comparing against
 
   let saved = {};
   try {
@@ -124,12 +140,34 @@
     document.getElementById('set-tsize-reset')
   );
 
-  bind(
-    'ui',
-    document.getElementById('set-ui'),
-    document.getElementById('set-ui-num'),
-    document.getElementById('set-ui-reset')
-  );
+  const tierBox = document.getElementById('set-ui');
+
+  for (const t of UI_TIERS) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'tier';
+    b.dataset.v = String(t.v);
+    b.textContent = 'Aa';
+    b.style.fontSize = `${(SAMPLE_BASE * t.v) / 100}px`; // fixed, not scaled — see index.html
+    b.title = `${t.name} — ${t.v}%`;
+    b.setAttribute('aria-label', `${t.name}, ${t.v}%`);
+    b.addEventListener('mousedown', (e) => e.preventDefault());
+    b.addEventListener('click', () => {
+      if (t.v === 100) delete saved.ui; // the default is the absence of a choice
+      else saved.ui = t.v;
+      save();
+      OPTIONS.ui.apply(t.v);
+      markTier();
+    });
+    tierBox.appendChild(b);
+  }
+
+  function markTier() {
+    const at = nearestTier(valueOf('ui'));
+    for (const b of tierBox.children) b.setAttribute('aria-pressed', String(Number(b.dataset.v) === at));
+  }
+
+  markTier();
 
   // The window shown beside the sheet is the focused one, and a focused window
   // is always solid — so on its own, moving this slider shows nothing. While

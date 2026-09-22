@@ -1018,6 +1018,45 @@
         cursor: pointer;
       }
 
+      /* Five sizes, each labelled with a sample at the size it produces. The
+         samples are the one bit of text here that doesn't follow --ui-scale:
+         they have to stay put while everything around them changes. */
+      #settings .tiers {
+        display: flex;
+        gap: 8px;
+      }
+
+      #settings .tier {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 48px;
+        padding: 0;
+        border: 1px solid var(--hairline, #252a35);
+        border-radius: 8px;
+        background: transparent;
+        color: var(--fg, #d6d9e0);
+        font-family: var(--font, monospace);
+        line-height: 1;
+        cursor: pointer;
+        transition: border-color 120ms;
+      }
+
+      #settings .tier:hover {
+        border-color: var(--label, #6b7384);
+      }
+
+      #settings .tier[aria-pressed='true'] {
+        border-color: var(--cursor, #e9a13b);
+        box-shadow: inset 0 0 0 1px var(--cursor, #e9a13b);
+      }
+
+      #settings .tier:focus-visible {
+        outline: 1px solid var(--cursor, #e9a13b);
+        outline-offset: 2px;
+      }
+
       #settings .reset:hover {
         color: var(--cursor, #e9a13b);
         border-color: var(--cursor, #e9a13b);
@@ -1605,17 +1644,13 @@
           </div>
 
           <div class="setting">
-            <label for="set-ui">Interface text size</label>
+            <label id="set-ui-label">Interface text size</label>
             <p class="hint">
               Everything else with words on it: title bars, the status bar,
-              buttons, and these sheets.
+              buttons, and these sheets. Each sample is shown at the size it
+              gives you.
             </p>
-            <div class="row">
-              <input id="set-ui" type="range" min="80" max="150" step="5" />
-              <input id="set-ui-num" type="number" min="80" max="150" step="5" aria-label="Interface text size, percent" />
-              <span class="unit">%</span>
-              <button id="set-ui-reset" class="reset" type="button">Reset</button>
-            </div>
+            <div id="set-ui" class="tiers" role="group" aria-labelledby="set-ui-label"></div>
           </div>
 
           <div class="setting">
