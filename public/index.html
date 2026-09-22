@@ -578,7 +578,7 @@
         display: grid;
         place-items: start center;
         padding: 56px 18px 24px;
-        overflow: auto;
+        overflow: hidden; /* the sheet is exactly as tall as the space; its body scrolls */
         background: var(--veil, rgba(5, 7, 12, 0.88));
         backdrop-filter: blur(10px);
         transition: background 220ms ease, backdrop-filter 220ms ease;
@@ -599,9 +599,16 @@
         display: none;
       }
 
+      /* The full height of the screen, inside the same margins as before: the
+         header, tabs and footer stay put, and only the body between scrolls. */
       #settings .sheet {
-        width: min(560px, 100%);
-        padding: 18px 22px 20px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        width: min(606px, 100%);
+        height: calc(100vh - 56px - 24px);
+        height: calc(100dvh - 56px - 24px);
+        padding: 18px 22px 16px;
         border: 1px solid var(--hairline, #252a35);
         border-radius: 12px;
         background: var(--bg, #171b24);
@@ -648,7 +655,8 @@
       }
 
       #settings .src {
-        margin: 22px 0 0;
+        flex: none;
+        margin: 14px 0 0;
         color: var(--label, #6b7384);
         font-size: calc(10px * var(--ui-scale, 1));
       }
@@ -768,8 +776,70 @@
 
       /* ---- pages inside the sheet ---- */
 
-      #settings[data-page='main'] [data-back] {
+      /* Tabs on the three top-level pages; a back arrow instead on the pages
+         reached from one of them. */
+      #settings:not([data-sub]) [data-back],
+      #settings[data-sub] .tabs {
         display: none;
+      }
+
+      #settings .tabs {
+        flex: none;
+        display: flex;
+        gap: 4px;
+        margin: -6px 0 18px;
+        border-bottom: 1px solid var(--hairline, #252a35);
+      }
+
+      #settings .tab {
+        margin-bottom: -1px;
+        padding: 8px 12px;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        background: transparent;
+        color: var(--label, #6b7384);
+        font: calc(12px * var(--ui-scale, 1))/1 var(--font, monospace);
+        cursor: pointer;
+        transition: color 120ms, border-color 120ms;
+      }
+
+      #settings .tab:hover {
+        color: var(--fg, #d6d9e0);
+      }
+
+      #settings .tab[aria-selected='true'] {
+        color: var(--fg, #d6d9e0);
+        border-bottom-color: var(--cursor, #e9a13b);
+      }
+
+      #settings .tab:focus-visible {
+        outline: 1px solid var(--cursor, #e9a13b);
+        outline-offset: -3px;
+      }
+
+      /* The scroller. Pulled out to the sheet's edges so its scrollbar sits
+         there rather than against the controls. */
+      #settings .body {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+        margin: 0 -22px;
+        padding: 0 22px;
+      }
+
+      /* The font page fills the height itself, so its filter stays in view
+         and only the list scrolls. */
+      #settings[data-page='font'] .body {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      #settings .page[data-page='font']:not([hidden]) {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
       }
 
       #settings .page > .hint:first-child {
@@ -863,7 +933,8 @@
       }
 
       #settings .fonts {
-        max-height: min(52vh, 460px);
+        flex: 1;
+        min-height: 0;
         overflow: auto;
         margin: 0 -4px;
         padding: 0 4px;
@@ -1610,8 +1681,16 @@
           </button>
         </header>
 
-        <!-- Three pages in one sheet; data-page on #settings says which shows. -->
-        <div class="page" data-page="main">
+        <!-- Three tabs, and two pages reached from the first. data-page on
+             #settings says which is showing. -->
+        <div class="tabs" role="tablist" aria-label="Settings sections">
+          <button id="tab-appearance" class="tab" type="button" role="tab" data-tab="appearance" aria-controls="page-appearance">Appearance</button>
+          <button id="tab-sound" class="tab" type="button" role="tab" data-tab="sound" aria-controls="page-sound">Sound</button>
+          <button id="tab-effects" class="tab" type="button" role="tab" data-tab="effects" aria-controls="page-effects">Effects</button>
+        </div>
+
+        <div class="body">
+        <div id="page-appearance" class="page" data-page="appearance" role="tabpanel" aria-labelledby="tab-appearance">
           <div class="setting">
             <label for="set-theme-open">Theme</label>
             <button id="set-theme-open" class="nav" type="button" data-go="theme">
@@ -1667,18 +1746,9 @@
               <button id="set-dim-reset" class="reset" type="button">Reset</button>
             </div>
           </div>
+        </div>
 
-          <div class="setting toggle">
-            <div>
-              <label for="set-warp">Flying stars</label>
-              <p class="hint">
-                The rush outward while a command runs, from the middle of whatever
-                is working. Off leaves the sky where it is, still breathing.
-              </p>
-            </div>
-            <input id="set-warp" class="switch" type="checkbox" />
-          </div>
-
+        <div id="page-sound" class="page" data-page="sound" role="tabpanel" aria-labelledby="tab-sound" hidden>
           <div class="setting toggle">
             <div>
               <label for="set-sound">Sound</label>
@@ -1690,8 +1760,19 @@
             </div>
             <input id="set-sound" class="switch" type="checkbox" />
           </div>
+        </div>
 
-          <p class="src">Kept in this browser. The defaults are in <code>public/theme.js</code>.</p>
+        <div id="page-effects" class="page" data-page="effects" role="tabpanel" aria-labelledby="tab-effects" hidden>
+          <div class="setting toggle">
+            <div>
+              <label for="set-warp">Flying stars</label>
+              <p class="hint">
+                The rush outward while a command runs, from the middle of whatever
+                is working. Off leaves the sky where it is, still breathing.
+              </p>
+            </div>
+            <input id="set-warp" class="switch" type="checkbox" />
+          </div>
         </div>
 
         <div class="page" data-page="theme" hidden>
@@ -1719,6 +1800,9 @@
           </label>
           <div id="set-fonts" class="fonts" role="listbox" aria-label="Installed fonts"></div>
         </div>
+        </div>
+
+        <footer class="src">Kept in this browser. The defaults are in <code>public/theme.js</code>.</footer>
       </div>
     </section>
 

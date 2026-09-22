@@ -273,7 +273,9 @@ Star count and colours are in `public/theme.js`.
 The sliders button opens a sheet for the things that are taste rather than
 correctness: the theme, the font, the terminal and interface text sizes, how far
 unfocused windows fade, whether the stars fly, and whether any of it makes a
-sound. Theme and font each open a page of their own.
+sound. It runs the full height of the screen, in three tabs — **Appearance**,
+**Sound** and **Effects** — and opens on whichever you used last. Theme and
+font each open a page of their own from Appearance.
 
 The two text sizes are separate on purpose. **Terminal text size** (px) is the
 grid in every window, replayed cards included; ⌘+ and ⌘− still size one window

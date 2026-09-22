@@ -496,15 +496,43 @@
   const sheet = panel.querySelector('.sheet');
   const title = document.getElementById('settings-title');
   const backBtn = panel.querySelector('[data-back]');
-  const TITLES = { main: 'Settings', theme: 'Theme', font: 'Font' };
-  let opener = null; // the row that led to the page you're on, to go back to
+  // Three tabs, and the two pages you reach from Appearance. A sub-page shows
+  // a back arrow instead of the tabs, and goes back to the tab it came from.
+  const TABS = ['appearance', 'sound', 'effects'];
+  const SUB = { theme: { title: 'Theme', parent: 'appearance' }, font: { title: 'Font', parent: 'appearance' } };
+  const TAB_KEY = 'heroterm.settingsTab';
+  const tabs = [...panel.querySelectorAll('.tab')];
+  let opener = null; // the row that led to the sub-page you're on, to go back to
+
+  let lastTab = 'appearance';
+  try {
+    const t = localStorage.getItem(TAB_KEY);
+    if (TABS.includes(t)) lastTab = t;
+  } catch {
+    /* no memory of it; Appearance it is */
+  }
 
   function go(page, from) {
+    const sub = SUB[page];
     panel.dataset.page = page;
+    panel.toggleAttribute('data-sub', Boolean(sub));
     for (const el of panel.querySelectorAll('.page')) el.hidden = el.dataset.page !== page;
-    title.textContent = TITLES[page];
-    sheet.setAttribute('aria-label', TITLES[page]);
-    if (page === 'main') {
+    const label = sub ? sub.title : 'Settings';
+    title.textContent = label;
+    sheet.setAttribute('aria-label', label);
+
+    if (!sub) {
+      lastTab = page;
+      try {
+        localStorage.setItem(TAB_KEY, page);
+      } catch {
+        /* remembered for this tab only */
+      }
+      for (const t of tabs) {
+        const on = t.dataset.tab === page;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1; // one tab stop for the row; arrows move along it
+      }
       if (opener) opener.focus();
       opener = null;
     } else {
@@ -519,13 +547,30 @@
         backBtn.focus();
       }
     }
-    place(); // the sheet changed height; the window beside it may need to follow
+    place(); // the sheet changed; the window beside it may need to follow
+  }
+
+  // The ARIA tabs pattern: one stop in the tab order, arrows between tabs.
+  for (const t of tabs) {
+    t.addEventListener('click', () => go(t.dataset.tab));
+    t.addEventListener('keydown', (e) => {
+      const i = tabs.indexOf(t);
+      let next = null;
+      if (e.key === 'ArrowRight') next = tabs[(i + 1) % tabs.length];
+      else if (e.key === 'ArrowLeft') next = tabs[(i - 1 + tabs.length) % tabs.length];
+      else if (e.key === 'Home') next = tabs[0];
+      else if (e.key === 'End') next = tabs[tabs.length - 1];
+      if (!next) return;
+      e.preventDefault();
+      go(next.dataset.tab);
+      next.focus();
+    });
   }
 
   for (const row of panel.querySelectorAll('[data-go]')) {
     row.addEventListener('click', () => go(row.dataset.go, row));
   }
-  backBtn.addEventListener('click', () => go('main'));
+  backBtn.addEventListener('click', () => go(SUB[panel.dataset.page]?.parent || lastTab));
 
   /* ---------- the window beside it ---------- */
 
@@ -537,7 +582,6 @@
   const MARGIN = 24;
   const GAP = 24;
   const TOP = 56; // matches #settings's top padding, so the two line up
-  const STATUS_H = 30;
   const MIN_ROOM = 300; // below this there's no window worth showing
 
   function place() {
@@ -554,7 +598,9 @@
       return;
     }
     const w = Math.min(home.w, room);
-    const h = Math.min(home.h, window.innerHeight - STATUS_H - TOP - MARGIN);
+    // Down to the same margin as the full-height sheet beside it. The status bar
+    // it covers is under the veil while the sheet is open anyway.
+    const h = Math.min(home.h, window.innerHeight - TOP - MARGIN);
     // Centre the pair rather than pinning the window to the edge: a small
     // window then sits right beside the sheet instead of across the screen.
     const left = Math.round((window.innerWidth - (w + GAP + sheetW)) / 2);
@@ -571,7 +617,7 @@
     returnFocus = document.activeElement;
     panel.hidden = false;
     openBtn.setAttribute('aria-expanded', 'true');
-    go('main');
+    go(lastTab); // the tab you were on last time
     closeBtn.focus(); // so that typing doesn't quietly go to the shell behind
   }
 
@@ -605,8 +651,8 @@
       if (panel.dataset.page === 'font' && fontQuery.value) {
         fontQuery.value = '';
         renderFonts();
-      } else if (panel.dataset.page !== 'main') {
-        go('main');
+      } else if (SUB[panel.dataset.page]) {
+        go(SUB[panel.dataset.page].parent);
       } else {
         close();
       }
