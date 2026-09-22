@@ -31,6 +31,12 @@
 // same title led by a two-frame spinner, ◐ ◑, while it works. It's the only
 // signal it gives a terminal it doesn't recognise — its progress sequence
 // (OSC 9;4) goes only to Ghostty, iTerm2 and ConEmu, picked by TERM_PROGRAM.
+// Remote logins, by the name of the program that has the terminal (the server
+// reports it). As a command one "runs" until you log out, so it can't be what
+// makes the sky fly; what runs is whatever you type on the far side, which
+// bracketed paste reports where the remote shell supports it.
+const REMOTE = new Set(['ssh', 'mosh', 'mosh-client', 'et', 'telnet']);
+
 const AGENT_IDLE = '\u2733 '; // ✳
 const AGENT_BUSY = /^[\u25D0\u25D1] /; // ◐ ◑
 
@@ -55,6 +61,9 @@ function createSession() {
   // whether anything is running, and bracketed paste is ignored — the agent
   // turns it on for its input box, which is what used to silence everything.
   let agent = null;
+  // Inside a remote login: the local command stays open for the whole session,
+  // so only remote commands — from bracketed paste — count as running.
+  let remote = false;
 
   const listeners = new Set();
 
@@ -112,6 +121,7 @@ function createSession() {
       sawMarker = true;
       depth += 1;
       agent = null;
+      remote = false;
       start();
     },
 
@@ -121,7 +131,24 @@ function createSession() {
       depth = Math.max(0, depth - 1);
       pasteRun = false;
       agent = null;
+      remote = false;
       end(code === 0, code);
+    },
+
+    // The server says which program now has the terminal. Becoming a remote
+    // login settles the connecting command: from here the session is waiting
+    // on you, not working, unless a remote command is under way.
+    foreground(name) {
+      const now = REMOTE.has(String(name || '').replace(/^.*\//, ''));
+      if (now === remote) return;
+      remote = now;
+      if (remote && running && !pasteRun) {
+        // Same as an agent between turns: nothing is working, and the window
+        // says so in grey rather than sitting on the colour of a command that
+        // won't finish until you log out.
+        running = false;
+        emit({ type: 'quiet', agent: true });
+      }
     },
 
     // A title was set. Most titles are only titles; the agent convention above

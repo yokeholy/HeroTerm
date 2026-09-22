@@ -157,6 +157,7 @@ function rememberExit(id, code) {
 }
 const MAX_SESSIONS = 8;
 const PROTOCOL = 3; // the wire contract's version; see the 'hello' below
+const FG_POLL = 1000; // ms between looks at which program has the terminal
 
 const MARKER = /\x1b\](133|633);([^\x07\x1b]*?)(?:\x07|\x1b\\)/g;
 
@@ -326,6 +327,7 @@ function createSession(id) {
     screen: '',
     title: null,
     alt: false,
+    fg: null, // the foreground program's name; see the poll below
     records: [],
     current: null,
   };
@@ -343,7 +345,26 @@ function createSession(id) {
     }
   });
 
+  // Which program has the terminal — zsh at a prompt, or whatever it's
+  // running. The page can't see this from the byte stream, and it matters for
+  // one kind of command in particular: a remote login (ssh), which "runs"
+  // until you log out and so says nothing about whether anything is working.
+  // Polled rather than evented, since nothing announces it; a second is
+  // plenty, and the lookup is one syscall.
+  s.fgTimer = setInterval(() => {
+    let name;
+    try {
+      name = term.process;
+    } catch {
+      return;
+    }
+    if (name === s.fg) return;
+    s.fg = name;
+    if (s.ws && s.ws.readyState === s.ws.OPEN) control(s.ws, { t: 'fg', name });
+  }, FG_POLL);
+
   term.onExit(({ exitCode }) => {
+    clearInterval(s.fgTimer);
     sessions.delete(s.id);
     if (s.reaped) return; // we ended it; see detach() and 'bye'
     rememberExit(s.id, exitCode);
@@ -445,7 +466,9 @@ wss.on('connection', (ws, req) => {
   // contract changes.
   //   1  one session for the whole page
   //   2  a session per container, keyed by the id in the socket URL
-  //   3  { t: 'exit' } when a shell ends on its own, so its window can close
+  //   3  { t: 'exit' } when a shell ends on its own, so its window can close;
+  //      later, { t: 'fg' } for the foreground program — additive, so an
+  //      older page just ignores it
   control(ws, { t: 'hello', protocol: PROTOCOL, resumed, grace: GRACE });
 
   if (resumed) {
@@ -456,6 +479,7 @@ wss.on('connection', (ws, req) => {
       screen: s.screen,
       title: s.title,
       alt: s.alt,
+      fg: s.fg,
     });
   }
 

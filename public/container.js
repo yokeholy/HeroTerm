@@ -203,6 +203,10 @@
         shellEnded(msg.code);
         return;
       }
+      if (msg.t === 'fg') {
+        session.foreground(msg.name);
+        return;
+      }
       if (msg.t === 'hello') {
         // A server older than the per-container sessions ignores the id in the
         // socket URL and hands every container the same shell — so every window
@@ -230,6 +234,7 @@
           session.settleAgent(msg.title, msg.alt); // see session.js
         });
         session.adopt(msg.live);
+        if (msg.fg) session.foreground(msg.fg); // a refresh inside an ssh session
       }
     }
 

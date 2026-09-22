@@ -46,12 +46,24 @@ you connect and "finished" when you log out, so on the marker's account you are
 running one very long command — and the tick-tock would keep going the whole
 session.
 
-So the UI watches a second signal that works on any host: bracketed paste.
+Two signals answer that. The first is the program that has the terminal: the
+server looks once a second, and when it's a remote login — `ssh`, `mosh`, `et`,
+`telnet` — the window is a session you're sitting in rather than a job that's
+working. The ticking stops, the sky settles and the border goes grey the moment
+you're connected, and the command finishes properly when you log out. It needs
+nothing installed on the far side and holds however old that host is.
+
+The second works out what you run *there*: bracketed paste.
 Every modern line editor sends `ESC[?2004h` when it's ready for input and
 `ESC[?2004l` when it hands a line off to run, and inside ssh those come back
 down the same stream from the remote shell. Ticking stops the moment anything
 — here or three hops away — starts waiting for you, and commands you run on the
 far end get their own ding, ticking and chime with nothing installed over there.
+
+Where the remote shell is too old for bracketed paste — bash before 5.1, among
+others — remote commands pass unnoticed and the session simply stays quiet,
+which is the right way round: before the foreground check, one `ssh` kept the
+sky flying until you logged out.
 
 What that can't carry is the exit status, so remote commands always finish with
 the success chime. `shell/heroterm-remote.sh` fixes that if you want it: append
