@@ -179,22 +179,36 @@
       originOf = fn;
     },
 
-    // Only painted in windowed mode — in full screen the terminal covers every
-    // pixel of it, and burning a GPU on an invisible canvas is just rude.
+    // Only painted where it can be seen — in full screen the terminal covers
+    // every pixel of it, and burning a GPU on an invisible canvas is just rude.
+    // The page says when; a demo (below) can borrow it for a moment too.
     setActive(on) {
-      if (on === running) return;
-      running = on;
-      if (!on) {
-        cancelAnimationFrame(raf);
-        raf = null;
-        return;
-      }
-      resize();
-      if (!stars.length) stars = Array.from({ length: T.stars.count }, () => star());
-      last = performance.now();
-      raf = requestAnimationFrame(frame);
+      wanted = on;
+      sync();
     },
   };
+
+  let wanted = false; // what the page asked for
+  let demoing = false; // a demo has borrowed the sky
+
+  // Paint, and show the canvas, if either wants it. The canvas's visibility is
+  // on the body rather than tied to a mode, so the page can want the sky for
+  // its own reasons — an empty page shows it in any mode.
+  function sync() {
+    const on = wanted || demoing;
+    document.body.toggleAttribute('data-sky', on);
+    if (on === running) return;
+    running = on;
+    if (!on) {
+      cancelAnimationFrame(raf);
+      raf = null;
+      return;
+    }
+    resize();
+    if (!stars.length) stars = Array.from({ length: T.stars.count }, () => star());
+    last = performance.now();
+    raf = requestAnimationFrame(frame);
+  }
 
   // A star's colour is chosen when it spawns, so a new palette has to be dealt
   // out to the ones already up there. The background is read every frame and
@@ -209,9 +223,10 @@
   // mid-command starts flying, instead of waiting for the next one.
   let wantWarp = false;
   let warpAllowed = true;
+  let flying = false; // a demo is under way
 
   function aim() {
-    target = wantWarp && warpAllowed ? WARP : 0;
+    target = (wantWarp && warpAllowed) || flying ? WARP : 0;
   }
 
   // Driven by whether *anything* is running rather than by one container's
@@ -224,5 +239,32 @@
   window.HEROTERM_SKY.allowWarp = (on) => {
     warpAllowed = on;
     aim();
+  };
+
+  // Fly for `ms` whatever is running, so turning the effect on in settings
+  // shows you what you turned on. `data-sky-demo` is on the body for as long as
+  // the stars are flying, for anything in the way to step aside (the settings
+  // veil does); the sky stays borrowed a little longer while they slow down.
+  const SETTLE = 900;
+  let demoTimers = [];
+
+  window.HEROTERM_SKY.demo = (ms) => {
+    for (const t of demoTimers) clearTimeout(t);
+    demoing = true;
+    flying = true;
+    sync();
+    aim();
+    document.body.setAttribute('data-sky-demo', '');
+    demoTimers = [
+      setTimeout(() => {
+        flying = false;
+        aim();
+        document.body.removeAttribute('data-sky-demo');
+      }, ms),
+      setTimeout(() => {
+        demoing = false;
+        sync();
+      }, ms + SETTLE),
+    ];
   };
 })();

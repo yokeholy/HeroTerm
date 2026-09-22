@@ -30,6 +30,27 @@
     /* private mode, or storage blocked — default to on, just don't persist */
   }
 
+  // Each sound can be turned off on its own; `enabled` above is the master
+  // switch over all of them. Only the ones turned off are stored, so a sound
+  // added later starts out on.
+  const EACH_KEY = 'heroterm.sounds';
+  const SOUNDS = [
+    { key: 'ding', name: 'Command starts', note: 'A ding the moment a command begins.' },
+    { key: 'tick', name: 'While it runs', note: `A tick-tock, once it has run for ${TICK_DELAY}ms.` },
+    { key: 'success', name: 'Finished', note: 'A rising chime when it succeeds.' },
+    { key: 'failure', name: 'Failed', note: 'Two falling notes when it exits non-zero.' },
+    { key: 'bell', name: 'Terminal bell', note: 'A short knock when something rings the bell.' },
+  ];
+  let off = {};
+  try {
+    off = JSON.parse(localStorage.getItem(EACH_KEY) || '{}') || {};
+  } catch {
+    /* nothing usable stored; all on */
+  }
+
+  let previewing = false; // play() is sounding one on purpose, switches or not
+  const allowed = (key) => previewing || (enabled && !off[key]);
+
   function ready() {
     if (!AudioCtx) return null;
     if (!ctx) {
@@ -62,7 +83,7 @@
   }
 
   function ding() {
-    if (!enabled || !ready()) return;
+    if (!allowed('ding') || !ready()) return;
     const t = ctx.currentTime;
     // A bell is a fundamental plus an inharmonic partial. 2.76x is roughly
     // where a struck bar sits; it is the thing that stops this being a beep.
@@ -71,7 +92,7 @@
   }
 
   function tick() {
-    if (!enabled || !ready()) return;
+    if (!allowed('tick') || !ready()) return;
     // Two pitches alternating is what makes it read as a clock rather than a
     // metronome. Deliberately quieter than the other two — it's the one that
     // repeats, so it has to sit under everything else.
@@ -84,7 +105,7 @@
   }
 
   function success() {
-    if (!enabled || !ready()) return;
+    if (!allowed('success') || !ready()) return;
     const t = ctx.currentTime;
     [1046.5, 1318.5, 1568.0].forEach((f, i) =>
       tone(f, t + i * 0.07, 0.3, { type: 'triangle', peak: 0.42 })
@@ -92,7 +113,7 @@
   }
 
   function failure() {
-    if (!enabled || !ready()) return;
+    if (!allowed('failure') || !ready()) return;
     const t = ctx.currentTime;
     // Falling minor third, and lower. You should be able to tell these apart
     // from the next room without having to think about it.
@@ -112,7 +133,7 @@
   let lastBell = 0;
 
   function bell() {
-    if (!enabled || !ready()) return;
+    if (!allowed('bell') || !ready()) return;
     const now = performance.now();
     if (now - lastBell < BELL_GAP) return;
     lastBell = now;
@@ -161,6 +182,45 @@
     // Called on the first keystroke; see the suspended-context note above.
     unlock() {
       if (enabled) ready();
+    },
+
+    // The sounds there are, for settings to list, and a switch for each.
+    sounds: SOUNDS.map((x) => ({ ...x })),
+
+    isOn(key) {
+      return !off[key];
+    },
+
+    setOn(key, on) {
+      if (on) delete off[key];
+      else off[key] = true;
+      try {
+        localStorage.setItem(EACH_KEY, JSON.stringify(off));
+      } catch {
+        /* not persisted; it holds for this tab */
+      }
+    },
+
+    // One sample of a sound, whatever the switches say — you asked to hear it.
+    play(key) {
+      const fn = { ding, success, failure, bell }[key];
+      const once = (f) => {
+        previewing = true;
+        try {
+          f();
+        } finally {
+          previewing = false;
+        }
+      };
+      if (key === 'tick') {
+        // One tick and one tock, a beat apart: one alone is just a click.
+        tocking = false;
+        once(tick);
+        setTimeout(() => once(tick), TICK_PERIOD);
+        return;
+      }
+      if (key === 'bell') lastBell = 0; // a preview shouldn't be rate-limited away
+      if (fn) once(fn);
     },
 
     get enabled() {

@@ -471,14 +471,56 @@
     input.addEventListener('change', () => set(input.checked));
   }
 
+  const audio = window.HEROTERM_AUDIO;
+  const soundList = document.getElementById('set-sounds');
+
+  // The master switch dims the list rather than hiding it: what's on and off
+  // underneath is still worth seeing, and comes back as it was.
+  function paintMaster() {
+    soundList.toggleAttribute('data-muted', !audio.enabled);
+    for (const input of soundList.querySelectorAll('input')) input.disabled = !audio.enabled;
+  }
+
   bindSwitch(
     document.getElementById('set-sound'),
-    () => window.HEROTERM_AUDIO.enabled,
+    () => audio.enabled,
     (on) => {
-      window.HEROTERM_AUDIO.enabled = on;
-      if (on) window.HEROTERM_AUDIO.ding(); // so you know what you just turned on
+      audio.enabled = on;
+      paintMaster();
+      if (on) audio.ding(); // so you know what you just turned on
     }
   );
+
+  // One row per sound, from audio.js's own list, so a sound added there turns
+  // up here without anyone writing markup for it.
+  for (const snd of audio.sounds) {
+    const row = document.createElement('div');
+    row.className = 'setting toggle';
+    const text = document.createElement('div');
+    const label = document.createElement('label');
+    label.htmlFor = `set-sound-${snd.key}`;
+    label.textContent = snd.name;
+    const hint = document.createElement('p');
+    hint.className = 'hint';
+    hint.textContent = snd.note;
+    text.append(label, hint);
+    const input = document.createElement('input');
+    input.id = `set-sound-${snd.key}`;
+    input.className = 'switch';
+    input.type = 'checkbox';
+    row.append(text, input);
+    soundList.appendChild(row);
+    bindSwitch(
+      input,
+      () => audio.isOn(snd.key),
+      (on) => {
+        audio.setOn(snd.key, on);
+        if (on) audio.play(snd.key); // this is what you just turned on
+      }
+    );
+  }
+
+  paintMaster();
 
   // This one has no other owner, so it is stored here like the slider.
   bindSwitch(
@@ -488,6 +530,7 @@
       saved.warp = on ? 1 : 0;
       save();
       OPTIONS.warp.apply(on);
+      if (on) window.HEROTERM_SKY.demo(2000); // so you see what you just turned on
     }
   );
 

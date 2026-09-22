@@ -343,6 +343,9 @@ muted since before this sheet existed, and the switch drives that rather than
 keeping a second copy — two stores for one fact is how they come to disagree.
 
 Turning the flying stars off leaves the sky where it is, still breathing.
+Turning them on flies them for two seconds — the dimming behind the sheet
+lifts, and in full-tab mode the sky is borrowed for the moment — so you see
+what you've just turned on.
 Whether something is running and whether you want to watch the sky move about
 it are separate questions, both remembered, so switching the flying back on
 part way through a command starts it flying rather than waiting for the next
@@ -460,8 +463,11 @@ you. If that's the wrong trade, `live.clear()` in `public/stack.js` is the line.
 
 A ding when a command starts, a tick-tock while it runs, and a chime when it
 finishes — a falling two-note one if it exited non-zero, so you can tell a
-finished build from a broken one without looking. The switch under the sliders
-button turns all of it off, and the choice is remembered.
+finished build from a broken one without looking. Settings → Sound has a master
+switch and one for each sound — command starts, while it runs, finished,
+failed, terminal bell — and turning one on plays it, so you know which is
+which. The list comes from `public/audio.js`, so a sound added there shows up
+in it without any markup. Choices are remembered.
 
 Commands shorter than 300ms never tick; otherwise every `ls` would rattle.
 

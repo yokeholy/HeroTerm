@@ -18,14 +18,15 @@
         background: var(--space, #05070c);
       }
 
-      /* Only painted in windowed mode, where there is something to see. */
+      /* Only shown where there is something to see: sky.js sets data-sky —
+         windowed mode, an empty page, or a moment's demo. */
       #sky {
         position: fixed;
         inset: 0;
         display: none;
       }
 
-      body[data-mode='windowed'] #sky {
+      body[data-sky] #sky {
         display: block;
       }
 
@@ -586,7 +587,8 @@
 
       /* Adjusting the unfocused-window opacity: the veil lifts, and the window
          beside the sheet shows itself as an unfocused one would look. */
-      body[data-tuning] #settings {
+      body[data-tuning] #settings,
+      body[data-sky-demo] #settings {
         background: transparent;
         backdrop-filter: none;
       }
@@ -765,6 +767,25 @@
         margin-top: 3px;
         color: var(--label, #6b7384);
         font-size: calc(10px * var(--ui-scale, 1));
+      }
+
+      /* ---- the list of sounds ---- */
+
+      #settings .sounds {
+        margin-top: 12px;
+        padding-top: 4px;
+        border-top: 1px solid var(--hairline, #252a35);
+        transition: opacity 150ms;
+      }
+
+      #settings .sounds .setting {
+        margin-top: 18px;
+      }
+
+      /* With the master switch off, the list is still there to read, but none
+         of it would make a sound. */
+      #settings .sounds[data-muted] {
+        opacity: 0.45;
       }
 
       /* ---- pages inside the sheet ---- */
@@ -1750,13 +1771,14 @@
             <div>
               <label for="set-sound">Sound</label>
               <p class="hint">
-                A ding when a command starts, a tick-tock while it runs, and a
-                chime when it finishes — lower and falling if it failed. A
-                short knock when the terminal rings its bell.
+                All of them at once. Each can also be turned off on its own
+                below — turning one on plays it, so you know which it is.
               </p>
             </div>
             <input id="set-sound" class="switch" type="checkbox" />
           </div>
+
+          <div id="set-sounds" class="sounds"></div>
         </div>
 
         <div id="page-effects" class="page" data-page="effects" role="tabpanel" aria-labelledby="tab-effects" hidden>
