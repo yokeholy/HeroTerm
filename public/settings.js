@@ -583,6 +583,7 @@
   const GAP = 24;
   const TOP = 56; // matches #settings's top padding, so the two line up
   const MIN_ROOM = 300; // below this there's no window worth showing
+  const MIN_SHEET = 420; // shorter than this and the sheet is all scrollbar
 
   function place() {
     const W = window.HEROTERM_WINDOWS;
@@ -598,9 +599,14 @@
       return;
     }
     const w = Math.min(home.w, room);
-    // Down to the same margin as the full-height sheet beside it. The status bar
-    // it covers is under the veil while the sheet is open anyway.
-    const h = Math.min(home.h, window.innerHeight - TOP - MARGIN);
+    // The sheet ends where the window does, so the two read as a pair. Its
+    // floor is MIN_SHEET, and a window shorter than that is shown taller to
+    // match — it's only a preview, and its real size comes back on close. Its
+    // ceiling is the bottom margin; the status bar it may cover there is under
+    // the veil while the sheet is open anyway.
+    const tallest = window.innerHeight - TOP - MARGIN;
+    const h = Math.min(Math.max(home.h, MIN_SHEET), tallest);
+    panel.style.setProperty('--sheet-h', `${h}px`);
     // Centre the pair rather than pinning the window to the edge: a small
     // window then sits right beside the sheet instead of across the screen.
     const left = Math.round((window.innerWidth - (w + GAP + sheetW)) / 2);

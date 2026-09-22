@@ -1011,8 +1011,12 @@
         padding-right: 0;
       }
 
+      /* Beside a window, the sheet shares its top and bottom edges, and follows
+         it as it glides into place. */
       #settings[data-preview] .sheet {
         margin-left: var(--sheet-x, 0px);
+        height: var(--sheet-h, calc(100dvh - 56px - 24px));
+        transition: height 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
       }
 
       /* Over the veil, which would otherwise blur the very thing you're

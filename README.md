@@ -273,7 +273,10 @@ Star count and colours are in `public/theme.js`.
 The sliders button opens a sheet for the things that are taste rather than
 correctness: the theme, the font, the terminal and interface text sizes, how far
 unfocused windows fade, whether the stars fly, and whether any of it makes a
-sound. It runs the full height of the screen, in three tabs — **Appearance**,
+sound. Beside the window it's previewing, it shares that window's top and
+bottom edges (never shorter than 420px — a shorter window is shown taller to
+match, and gets its real size back on close); with no room for a preview it
+runs the full height of the screen. It has three tabs — **Appearance**,
 **Sound** and **Effects** — and opens on whichever you used last. Theme and
 font each open a page of their own from Appearance.
 
