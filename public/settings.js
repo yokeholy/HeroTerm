@@ -557,7 +557,7 @@
     const env = (name) => `env ${name}`;
     const src = (file, name) => `${file} · ${name}`;
     const S = cfg || {};
-    const unknown = error ? '—' : '…';
+    const unknown = '…'; // only ever seen for a moment, while the server answers
 
     const groups = [
       ['Server', [
@@ -595,7 +595,12 @@
       e.textContent = error;
       out.push(e);
     }
-    for (const [heading, items] of groups) {
+    for (const [heading, all] of groups) {
+      // With no answer from the server, its rows would be nothing but dashes:
+      // leave them out, and a group left empty with them. The message above
+      // says why they're missing.
+      const items = error ? all.filter(([, value]) => value != null && value !== false) : all;
+      if (!items.length) continue;
       const g = document.createElement('div');
       g.className = 'group';
       g.textContent = heading;
@@ -629,7 +634,7 @@
       }
       renderSystem(await res.json());
     } catch (err) {
-      renderSystem(null, `Couldn't ask the server: ${err.message}. The page's own values are below.`);
+      renderSystem(null, `The server's values aren't available: ${err.message}. The page's own are below.`);
     }
   }
 
