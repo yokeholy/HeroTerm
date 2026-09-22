@@ -600,7 +600,7 @@
       }
 
       /* The full height of the screen, inside the same margins as before: the
-         header, tabs and footer stay put, and only the body between scrolls. */
+         header and tabs stay put, and only the body below them scrolls. */
       #settings .sheet {
         box-sizing: border-box;
         display: flex;
@@ -652,13 +652,6 @@
       #settings .unit {
         margin-left: -8px;
         color: var(--label, #6b7384);
-      }
-
-      #settings .src {
-        flex: none;
-        margin: 14px 0 0;
-        color: var(--label, #6b7384);
-        font-size: calc(10px * var(--ui-scale, 1));
       }
 
       #settings .setting + .setting {
@@ -1805,8 +1798,6 @@
           <div id="set-fonts" class="fonts" role="listbox" aria-label="Installed fonts"></div>
         </div>
         </div>
-
-        <footer class="src">Kept in this browser. The defaults are in <code>public/theme.js</code>.</footer>
       </div>
     </section>
 
