@@ -3,10 +3,12 @@
 The sliders button opens a sheet for the things that are taste rather than
 correctness: the theme, the font, the terminal and interface text sizes, how far
 unfocused windows fade, whether the stars fly, and whether any of it makes a
-sound. Beside the window it's previewing, it shares that window's top and
-bottom edges (never shorter than 420px — a shorter window is shown taller to
-match, and gets its real size back on close); with no room for a preview it
-runs the full height of the screen. It has five tabs — **Appearance**,
+sound. It runs the full height of the screen down the right-hand side,
+wherever you opened it from, and the window you were working in takes the room
+that leaves, sharing its top and bottom edges — so what you change lands on
+something you can see. The window gets its real size and place back when the
+sheet closes. Too narrow a screen for the pair, and the sheet takes the middle
+with no preview. It has five tabs — **Appearance**,
 **Sound**, **Effects**, **Behavior** and **System** — and opens on whichever
 you used last.
 

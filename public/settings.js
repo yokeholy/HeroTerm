@@ -831,22 +831,24 @@
   /* ---------- the window beside it ---------- */
 
   // While the sheet is open, the window you were working in sits to its left,
-  // above the veil, so a theme or a font lands somewhere you can see it. It
-  // keeps its own size where that fits and only shrinks where it doesn't. When
-  // the sheet closes it goes back to exactly where it was: nothing about its
-  // real position is changed in between, so there is nothing to lose.
+  // above the veil, so a theme or a font lands somewhere you can see it.
+  //
+  // The sheet is the fixed one: same place, same height, whatever window you
+  // happen to have been in — a panel that changed shape every time you opened
+  // it from a different window was a panel you had to find again each time.
+  // The window takes the room that leaves, and gets its real size and place
+  // back when the sheet closes; nothing about them is changed in between, so
+  // there is nothing to lose.
   const MARGIN = 24;
   const GAP = 24;
   const TOP = 56; // matches #settings's top padding, so the two line up
   const MIN_ROOM = 300; // below this there's no window worth showing
-  const MIN_SHEET = 420; // shorter than this and the sheet is all scrollbar
 
   function place() {
     const W = window.HEROTERM_WINDOWS;
     if (panel.hidden || !W) return;
     const home = W.home();
-    const sheetW = sheet.offsetWidth;
-    const room = window.innerWidth - 2 * MARGIN - GAP - sheetW;
+    const room = window.innerWidth - 2 * MARGIN - GAP - sheet.offsetWidth;
     if (!home || room < MIN_ROOM) {
       // Too narrow for both side by side: the sheet takes the middle, as it
       // always did, and the window stays where it is.
@@ -854,21 +856,12 @@
       panel.removeAttribute('data-preview');
       return;
     }
-    const w = Math.min(home.w, room);
-    // The sheet ends where the window does, so the two read as a pair. Its
-    // floor is MIN_SHEET, and a window shorter than that is shown taller to
-    // match — it's only a preview, and its real size comes back on close. Its
-    // ceiling is the bottom margin; the status bar it may cover there is under
-    // the veil while the sheet is open anyway.
-    const tallest = window.innerHeight - TOP - MARGIN;
-    const h = Math.min(Math.max(home.h, MIN_SHEET), tallest);
-    panel.style.setProperty('--sheet-h', `${h}px`);
-    // Centre the pair rather than pinning the window to the edge: a small
-    // window then sits right beside the sheet instead of across the screen.
-    const left = Math.round((window.innerWidth - (w + GAP + sheetW)) / 2);
-    panel.style.setProperty('--sheet-x', `${left + w + GAP}px`);
+    // The pair fills the screen between the margins: the sheet down the right
+    // — that's CSS, see #settings[data-preview] — and the window in what's
+    // left, sharing its top and bottom edges. The status bar it covers along
+    // the bottom is under the veil while the sheet is open anyway.
     panel.setAttribute('data-preview', '');
-    W.preview({ x: left, y: TOP, w, h });
+    W.preview({ x: MARGIN, y: TOP, w: room, h: window.innerHeight - TOP - MARGIN });
   }
 
   window.addEventListener('resize', place);
