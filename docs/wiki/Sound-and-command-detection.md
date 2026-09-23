@@ -12,6 +12,15 @@ Thud or a Buzz; the terminal bell a Knock, a Tap or a Glass. Picking one plays
 it, and the first of each is the original, so nothing changes until you
 choose.
 
+A volume slider sits under the master switch, and moving it plays a ding so
+you can hear where you've put it. 50% is the level the sounds were written at,
+so it starts where it has always been; 100% is about four times that. The
+percentage is squared on its way to a gain — loudness isn't linear in
+amplitude, and a straight slider would spend most of its travel at "loud" — and
+a limiter on the output keeps the loud end clean, since the chime is three
+notes ringing together and a sum past full scale tears rather than getting
+louder.
+
 Both the list and the voices come from `public/audio.js`, so a sound or a voice
 added there turns up in settings without any markup: a voice is a name and a
 few enveloped oscillators. Choices are remembered.

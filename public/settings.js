@@ -108,7 +108,9 @@
   // Whichever you're using is left alone while you use it — writing a clamped
   // value back into the field you're typing in moves the caret out from under
   // you, and makes "10" impossible to type on the way to "100".
-  function bind(key, slider, number, reset) {
+  // The value itself may live here, or somewhere else entirely — volume
+  // belongs to audio.js — so this is told how to read, write and restore it.
+  function bindNumber(slider, number, reset, { get, set, restore }) {
     const lo = Number(slider.min);
     const hi = Number(slider.max);
 
@@ -121,9 +123,7 @@
       const n = Math.round(Number(raw));
       if (!Number.isFinite(n)) return;
       const v = Math.max(lo, Math.min(hi, n));
-      saved[key] = v;
-      save();
-      OPTIONS[key].apply(v);
+      set(v);
       show(v, from);
     }
 
@@ -134,17 +134,30 @@
       commit(number.value, number);
     });
     // Tidy up whatever was left in the box once you leave it.
-    number.addEventListener('blur', () => show(valueOf(key)));
+    number.addEventListener('blur', () => show(get()));
 
-    reset.addEventListener('click', () => {
-      delete saved[key];
-      save();
-      const v = OPTIONS[key].fallback();
-      OPTIONS[key].apply(v);
-      show(v);
+    reset.addEventListener('click', () => show(restore()));
+
+    show(get());
+  }
+
+  function bind(key, slider, number, reset) {
+    bindNumber(slider, number, reset, {
+      get: () => valueOf(key),
+      set: (v) => {
+        saved[key] = v;
+        save();
+        OPTIONS[key].apply(v);
+      },
+      // The default is the absence of a stored value, not a value of its own.
+      restore: () => {
+        delete saved[key];
+        save();
+        const v = OPTIONS[key].fallback();
+        OPTIONS[key].apply(v);
+        return v;
+      },
     });
-
-    show(valueOf(key));
   }
 
   bind(
@@ -494,6 +507,9 @@
 
   const audio = window.HEROTERM_AUDIO;
   const soundList = document.getElementById('set-sounds');
+  const volSlider = document.getElementById('set-vol');
+  const volNumber = document.getElementById('set-vol-num');
+  const volReset = document.getElementById('set-vol-reset');
 
   // The master switch dims the list rather than hiding it: what's on and off
   // underneath is still worth seeing, and comes back as it was.
@@ -502,6 +518,8 @@
     for (const input of soundList.querySelectorAll('input')) input.disabled = !audio.enabled;
     // Nothing to choose between while it can't be heard.
     for (const s of soundList.querySelectorAll('.voice select')) s.disabled = !audio.enabled;
+    // Nor a level to set, while there is nothing to hear.
+    for (const el of [volSlider, volNumber, volReset]) el.disabled = !audio.enabled;
   }
 
   bindSwitch(
@@ -513,6 +531,33 @@
       if (on) audio.ding(); // so you know what you just turned on
     }
   );
+
+  // Like the master switch, this one's home is audio.js — it has to know the
+  // level before this sheet exists — so the slider drives the owner rather
+  // than keeping a second copy. Moving it plays a ding, since a percentage on
+  // its own tells you nothing; throttled, or dragging becomes a machine gun.
+  const SAMPLE_GAP = 220;
+  let lastSample = 0;
+
+  function sample() {
+    const now = performance.now();
+    if (now - lastSample < SAMPLE_GAP) return;
+    lastSample = now;
+    audio.play('ding');
+  }
+
+  bindNumber(volSlider, volNumber, volReset, {
+    get: () => audio.volume,
+    set: (v) => {
+      audio.volume = v;
+      sample();
+    },
+    restore: () => {
+      audio.volume = audio.defaultVolume;
+      sample();
+      return audio.volume;
+    },
+  });
 
   // One row per sound, from audio.js's own list, so a sound added there turns
   // up here without anyone writing markup for it.

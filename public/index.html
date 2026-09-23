@@ -2139,6 +2139,20 @@
             <input id="set-sound" class="switch" type="checkbox" />
           </div>
 
+          <div class="setting">
+            <label for="set-vol">Volume</label>
+            <p class="hint">
+              How loud all of them are. Moving this plays one, so you can hear
+              where you have put it.
+            </p>
+            <div class="row">
+              <input id="set-vol" type="range" min="0" max="100" step="1" />
+              <input id="set-vol-num" type="number" min="0" max="100" step="1" aria-label="Volume, percent" />
+              <span class="unit">%</span>
+              <button id="set-vol-reset" class="reset" type="button">Reset</button>
+            </div>
+          </div>
+
           <div id="set-sounds" class="sounds"></div>
         </div>
 

@@ -30,6 +30,26 @@
     /* private mode, or storage blocked — default to on, just don't persist */
   }
 
+  // How loud all of them are, as the percentage the slider shows. Squared on
+  // the way to a gain, because loudness isn't linear in amplitude: a straight
+  // slider spends most of its travel at "loud" and leaves no room at the quiet
+  // end. 50% is the level these were written at, so nothing changes until you
+  // move it, and 100% is about four times that.
+  const VOL_KEY = 'heroterm.volume';
+  const DEFAULT_VOLUME = 50;
+  const FULL_GAIN = 0.9; // the loudest the master gets; see the limiter in ready()
+  const clampVol = (n) => Math.max(0, Math.min(100, n));
+  const gainFor = (percent) => FULL_GAIN * (percent / 100) ** 2;
+
+  let volume = DEFAULT_VOLUME;
+  try {
+    const stored = localStorage.getItem(VOL_KEY);
+    const n = Math.round(Number(stored));
+    if (stored !== null && Number.isFinite(n)) volume = clampVol(n);
+  } catch {
+    /* nothing usable stored; the level they were written at */
+  }
+
   // Each sound can be turned off on its own; `enabled` above is the master
   // switch over all of them. Only the ones turned off are stored, so a sound
   // added later starts out on.
@@ -56,8 +76,18 @@
     if (!ctx) {
       ctx = new AudioCtx();
       master = ctx.createGain();
-      master.gain.value = 0.22;
-      master.connect(ctx.destination);
+      master.gain.value = gainFor(volume);
+      // Turned up, the louder sounds stack — the chime is three notes ringing
+      // together — and a sum past 1.0 doesn't get louder, it tears. A limiter
+      // on the way out makes the top of the slider usable rather than nominal.
+      const limiter = ctx.createDynamicsCompressor();
+      limiter.threshold.value = -1;
+      limiter.knee.value = 0;
+      limiter.ratio.value = 20;
+      limiter.attack.value = 0.001;
+      limiter.release.value = 0.1;
+      master.connect(limiter);
+      limiter.connect(ctx.destination);
     }
     // Browsers hold the context suspended until the page has had a gesture.
     // Typing into the terminal counts, which is why app.js nudges this.
@@ -321,6 +351,26 @@
     },
 
     tickDelay: TICK_DELAY, // for settings' System tab
+
+    defaultVolume: DEFAULT_VOLUME,
+
+    get volume() {
+      return volume;
+    },
+
+    set volume(percent) {
+      const n = Math.round(Number(percent));
+      if (!Number.isFinite(n)) return;
+      volume = clampVol(n);
+      // Ramped rather than set: a step change while something is still ringing
+      // is a click of its own.
+      if (master) master.gain.setTargetAtTime(gainFor(volume), ctx.currentTime, 0.01);
+      try {
+        localStorage.setItem(VOL_KEY, String(volume));
+      } catch {
+        /* not persisted; it holds for this tab */
+      }
+    },
 
     // The sounds there are, for settings to list, and a switch for each.
     sounds: SOUNDS.map((x) => ({ ...x })),
