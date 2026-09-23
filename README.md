@@ -40,7 +40,15 @@ npm install -g heroterm
 heroterm
 ```
 
-> 💡 `heroterm --help` for options, like `--port` or `--no-open`. More in [Installation](docs/wiki/Installation.md).
+To leave it running without a terminal to keep open:
+
+```bash
+heroterm start    # background; closing the terminal doesn't stop it
+heroterm status   # where it is, and the URL to get back
+heroterm stop     # end it
+```
+
+> 💡 `heroterm --help` for the rest, like `--port` or `--no-open`. More in [Installation](docs/wiki/Installation.md).
 
 ## 🧭 Find your way around
 

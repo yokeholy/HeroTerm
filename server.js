@@ -30,6 +30,58 @@ const SHELL = process.env.HEROTERM_SHELL || process.env.SHELL || '/bin/zsh';
 // behaviour of killing the shell the moment the socket drops.
 const GRACE = Math.max(0, Number(process.env.HEROTERM_GRACE ?? 600)) * 1000;
 
+// Started detached by `heroterm start`, which needs to find this process
+// again: the file carries the pid, the port and the token, since the token is
+// generated here and printed nowhere the parent can see. It is written once
+// the port is actually listening, so its existence means "up", and it is
+// removed on the way out, so a file with nothing behind it is stale.
+const STATE = process.env.HEROTERM_STATE || null;
+
+function writeState(url) {
+  if (!STATE) return;
+  const state = {
+    pid: process.pid,
+    port: PORT,
+    url,
+    token: TOKEN,
+    shell: SHELL,
+    version: require('./package.json').version,
+    dev: DEV,
+    startedAt: Date.now(),
+  };
+  fs.mkdirSync(path.dirname(STATE), { recursive: true, mode: 0o700 });
+  // The token is in here, so it is nobody else's business.
+  fs.writeFileSync(STATE, `${JSON.stringify(state, null, 2)}\n`, { mode: 0o600 });
+}
+
+function clearState() {
+  if (!STATE) return;
+  try {
+    fs.unlinkSync(STATE);
+  } catch {
+    /* already gone, or never written */
+  }
+}
+
+// `heroterm stop` sends SIGTERM; Ctrl-C in a foreground one sends SIGINT. The
+// shells belong to this process — a pty whose server has gone is unreachable
+// by anything — so they go down with it rather than being left orphaned.
+let quitting = false;
+
+function shutdown() {
+  if (quitting) return;
+  quitting = true;
+  clearState();
+  for (const s of [...sessions.values()]) kill(s);
+  server.close();
+  // Long enough for the SIGHUPs to land; nothing is waiting on us.
+  setTimeout(() => process.exit(0), 300);
+}
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
+process.on('exit', clearState);
+
 // A page you visit in another tab can open a WebSocket to localhost without
 // tripping CORS, so the socket is gated on a per-launch token plus an origin
 // check. The token is printed once at startup and lives only in memory.
@@ -556,6 +608,7 @@ server.listen(PORT, HOST, () => {
   const url = `http://localhost:${PORT}/?token=${TOKEN}`;
   console.log(`\n  ${path.basename(SHELL)} is ready at${DEV ? ' (development copy)' : ''}:\n`);
   console.log(`  ${url}\n`);
+  writeState(url);
   if (process.env.HEROTERM_OPEN === '1') openBrowser(url);
   if (GRACE === 0) {
     console.log('  Closing the tab ends the shell. Run tmux inside if you want it to survive.\n');

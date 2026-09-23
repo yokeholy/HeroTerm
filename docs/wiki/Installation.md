@@ -16,19 +16,53 @@ heroterm
 ```
 
 `heroterm` starts the server and opens it in your browser, with this launch's
-token already in the URL. Options:
+token already in the URL. It runs in that terminal, so closing it ends the
+session.
+
+## Leaving it running
+
+To keep it up without a terminal babysitting it:
+
+```bash
+heroterm start     # runs in the background, opens the browser, returns
+heroterm status    # what's running, and the URL to get back to it
+heroterm stop      # ends it, and the shells inside it
+heroterm restart   # after an upgrade, say
+```
+
+`heroterm start` detaches into its own process group, so closing the terminal —
+or the ssh session you typed it into — leaves it running. It survives
+everything but a reboot or `stop`.
+
+A background one leaves its details in `~/.heroterm/<port>.json`: the pid, the
+port, and the token, which is why `status` can print a URL you can click. The
+file is `chmod 600`, and it's removed when the server stops, so a file with
+nothing behind it is stale and gets cleaned up on the next command. Its output
+goes to `~/.heroterm/<port>.log`. Set `HEROTERM_HOME` to keep both somewhere
+else.
+
+One per port, so `heroterm start --port 7778` is a second, separate HeroTerm,
+`stop --port 7778` ends that one, and `stop --all` ends every one of them.
+
+**`stop` ends the shells too.** A pty whose server has gone is unreachable by
+anything, so they are hung up rather than left orphaned. Anything you want to
+outlive a `stop` should be inside `tmux` or `screen`.
+
+## Options
 
 | | |
 |---|---|
 | `-p`, `--port <n>` | port to listen on (default 7777, or `$PORT`) |
 | `--no-open` | don't open the browser; just print the URL |
+| `--all` | with `stop`: every background one, whatever the port |
 | `-v`, `--version` | print the version |
 | `-h`, `--help` | print the options |
 
 If the port is taken, it says so — usually HeroTerm is already running in
 another terminal, and you can use that one or start another with `--port`.
 
-To update, `npm install -g heroterm` again.
+To update, `npm install -g heroterm` again, then `heroterm restart` if one is
+running in the background.
 
 ### "packages have install scripts not yet covered by allowScripts"
 
