@@ -46,7 +46,7 @@ windows are numbered.
 
 The `+` gives you another container: its own shell, its own deck, its own
 position, up to eight of them. Click one to bring it forward — that's the one
-keys go to — and close it with the red button in its title bar, or by exiting its
+keys go to, and taking hold of one to move or resize it brings it forward too — and close it with the red button in its title bar, or by exiting its
 shell; close the last one and a fresh one takes its place.
 
 Each container's shell is independent, and each is reattached separately after

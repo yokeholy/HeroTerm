@@ -485,6 +485,13 @@
         if (preview || e.button !== 0 || e.target.closest('button')) return;
         if (!grab(e)) return;
         e.preventDefault();
+        // Taken here rather than left to the mousedown listener below, because
+        // cancelling a pointerdown cancels the compatibility mousedown with
+        // it. Without this the window you have hold of stays inactive: drawn
+        // at the unfocused opacity while you drag it, and then — once the
+        // drag ends and the keyboard is handed to it — eating keystrokes
+        // while a different window is still the one drawn as active.
+        page.focus(self);
         target.setPointerCapture(e.pointerId);
         document.body.dataset.dragging = 'yes';
         page.setDragging(self);
