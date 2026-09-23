@@ -494,8 +494,9 @@ function paintArrange() {
     undo ? 'Put the windows back where they were' : 'Arrange windows to fill the screen'
   );
   // Short, because you are reading it with the pointer already on the button:
-  // the label is for a screen reader, this is a reminder.
-  if (!els.arrange.disabled) els.arrange.dataset.tip = undo ? 'Put them back' : 'Arrange them';
+  // the label is for a screen reader, this is a reminder. A button that can't
+  // be pressed says the same thing — what it does is what you are asking.
+  els.arrange.dataset.tip = undo ? 'Put them back' : 'Arrange them';
 }
 
 function arrange() {
@@ -575,11 +576,7 @@ let overviewMemo = null; // which windows were minimized before we opened
 function paintOverview() {
   els.overview.setAttribute('aria-pressed', String(overviewing));
   els.overview.setAttribute('aria-label', overviewing ? 'Back to the windows' : 'Show every window');
-  els.overview.dataset.tip = els.overview.disabled
-    ? 'Needs two windows'
-    : overviewing
-      ? 'Back to the windows'
-      : 'Every window at once';
+  els.overview.dataset.tip = overviewing ? 'Back to the windows' : 'Every window at once';
 }
 
 // The grid, using the same planner the arrange button uses, so both agree on
@@ -912,11 +909,10 @@ function pull(lo, hi, lines, tol = MAGNET) {
 // how many windows there are.
 function paintControls() {
   els.add.disabled = containers.length >= MAX_CONTAINERS;
-  els.add.dataset.tip = els.add.disabled ? `${MAX_CONTAINERS} windows is the limit` : 'New terminal ⌘D';
-  // One window is already arranged.
+  els.add.dataset.tip = 'New terminal ⌘D';
+  // One window is already arranged, and can't be behind anything.
   els.arrange.disabled = containers.length < 2;
-  if (els.arrange.disabled) els.arrange.dataset.tip = 'Needs two windows';
-  else paintArrange();
+  paintArrange();
   els.overview.disabled = containers.length < 2;
   if (overviewing && els.overview.disabled) closeOverview(null);
   paintOverview(); // its tip says why, when it can't be pressed
@@ -1048,7 +1044,7 @@ if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) {
 
   function unavailable() {
     els.expand.disabled = true;
-    els.expand.dataset.tip = 'Blocked in this browser';
+    els.expand.dataset.tip = 'Browser full screen — blocked here';
     els.expand.setAttribute('aria-label', els.expand.title);
   }
 
