@@ -313,6 +313,150 @@
         opacity: 0.75;
       }
 
+      /* ---------- saved screens ---------- */
+
+      /* Hung under its button, like the help sheet under the ?. */
+      #screens {
+        position: fixed;
+        top: 40px;
+        right: 8px;
+        z-index: 90;
+        box-sizing: border-box;
+        width: min(340px, calc(100vw - 16px));
+        max-height: calc(100vh - 56px);
+        overflow: auto;
+        padding: 8px;
+        border: 1px solid var(--hairline, #252a35);
+        border-radius: 12px;
+        background: var(--bg, #171b24);
+        box-shadow: 0 24px 70px var(--shadow, rgba(0, 0, 0, 0.75));
+        color: var(--fg, #d6d9e0);
+        font: calc(12px * var(--ui-scale, 1))/1.5 var(--font, monospace);
+      }
+
+      #screens[hidden] {
+        display: none;
+      }
+
+      #screens .screen {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 4px;
+      }
+
+      #screens .go {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        min-width: 0;
+        padding: 7px 9px;
+        border: 0;
+        border-radius: 8px;
+        background: none;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      #screens .go:hover,
+      #screens .go:focus-visible {
+        background: var(--hairline, #252a35);
+      }
+
+      #screens .sname {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      #screens .snote {
+        color: var(--label, #6b7384);
+        font-size: calc(11px * var(--ui-scale, 1));
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      #screens .drop {
+        width: 24px;
+        height: 24px;
+        border: 0;
+        border-radius: 7px;
+        background: none;
+        color: var(--label, #6b7384);
+        font: inherit;
+        cursor: pointer;
+      }
+
+      #screens .drop:hover,
+      #screens .drop:focus-visible {
+        background: var(--hairline, #252a35);
+        color: var(--red, #d4736b);
+      }
+
+      /* The question a screen asks before it closes something still working. */
+      #screens .sask {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 9px 8px;
+        color: var(--yellow, #d9a86c);
+        font-size: calc(11px * var(--ui-scale, 1));
+      }
+
+      #screens .sask span {
+        flex: 1;
+      }
+
+      #screens .sask button,
+      #screens form button {
+        flex: none; /* the label is the width; the field takes what's left */
+        padding: 4px 9px;
+        border: 1px solid var(--hairline, #252a35);
+        border-radius: 7px;
+        background: none;
+        color: var(--fg, #d6d9e0);
+        font: inherit;
+        cursor: pointer;
+      }
+
+      #screens .sask button:hover,
+      #screens form button:hover {
+        background: var(--hairline, #252a35);
+      }
+
+      #screens .none {
+        margin: 0;
+        padding: 10px 9px;
+        color: var(--label, #6b7384);
+      }
+
+      #screens form {
+        display: flex;
+        gap: 6px;
+        margin-top: 6px;
+        padding-top: 8px;
+        border-top: 1px solid var(--hairline, #252a35);
+      }
+
+      #screens input {
+        flex: 1;
+        min-width: 0;
+        padding: 5px 9px;
+        border: 1px solid var(--hairline, #252a35);
+        border-radius: 7px;
+        background: none;
+        color: var(--fg, #d6d9e0);
+        font: inherit;
+      }
+
+      #screens input::placeholder {
+        color: var(--label, #6b7384);
+      }
+
       /* ---------- tooltips ---------- */
 
       /* Over everything, including the sheets, since the buttons inside them
@@ -1927,6 +2071,16 @@
       </button>
 
 
+      <button id="screensbtn" class="chip" type="button" aria-expanded="false"
+              aria-label="Saved screens" data-tip="Saved screens">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+          <g fill="none" stroke="currentColor" stroke-width="1.35">
+            <rect x="2.2" y="4.6" width="11.6" height="8.4" rx="1.4" />
+            <path d="M4.4 2.4h7.2M3.3 3.5h9.4" stroke-linecap="round" />
+          </g>
+        </svg>
+      </button>
+
       <button id="expand" class="chip" type="button" aria-pressed="false" aria-label="Full screen">
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
           <g
@@ -1996,6 +2150,17 @@
     <!-- Every window at once. The backdrop sits under the windows and catches
          a click on nothing; the tags sit over them, since a window shrunk to a
          thumbnail can't show its own name legibly. -->
+    <!-- Saved screens: the windows you had, where they were, and which
+         directory each shell was in. See screens.js. -->
+    <div id="screens" hidden aria-label="Saved screens">
+      <div id="screens-list"></div>
+      <form id="screens-save">
+        <input id="screens-name" type="text" maxlength="40" placeholder="Save this screen as…"
+               aria-label="Name for this screen" autocomplete="off" spellcheck="false" />
+        <button type="submit" aria-label="Save this screen" data-tip="Save this screen">Save</button>
+      </form>
+    </div>
+
     <div id="ov-back" hidden></div>
     <div id="ov-tags" hidden aria-hidden="true"></div>
 
@@ -2083,6 +2248,9 @@
           <dt>windows</dt>
           <dd>show every window at once, minimized ones included — click one to go
             to it, Escape to leave them as they were</dd>
+          <dt>card</dt>
+          <dd>saved screens — the windows you had, where they were, and the folder
+            each shell was in; click one to lay it out again</dd>
           <dt>expand</dt>
           <dd>browser full screen</dd>
           <dt>sliders</dt>
@@ -2407,6 +2575,7 @@
     <script src="/help.js"></script>
     <script src="/settings.js"></script>
     <script src="/app.js"></script>
+    <script src="/screens.js"></script>
     <script src="/tips.js"></script>
   </body>
 </html>

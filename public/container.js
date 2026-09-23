@@ -154,9 +154,12 @@
     /* ---------- socket ---------- */
 
     const token = new URLSearchParams(location.search).get('token') || '';
-    const SOCKET = `ws://${location.host}/pty?token=${encodeURIComponent(token)}&id=${encodeURIComponent(
-      id
-    )}`;
+    // The directory is only read when a shell is created, which is the first
+    // time this socket is opened; a reconnect finds the session already there
+    // and standing wherever you left it.
+    const SOCKET =
+      `ws://${location.host}/pty?token=${encodeURIComponent(token)}&id=${encodeURIComponent(id)}` +
+      (opts.cwd ? `&cwd=${encodeURIComponent(opts.cwd)}` : '');
 
     let ws = null;
     let state = 'pending';
@@ -374,6 +377,24 @@
       session.agentTitle(title, replaying);
       return false;
     };
+    // Where this shell is standing, from OSC 7 — our shell integration sends
+    // it at every prompt, and so do plenty of other people's. It is what a
+    // saved screen puts back. Ignored inside an ssh: the directory a remote
+    // shell reports is a directory on a different machine.
+    let cwd = null;
+
+    term.parser.registerOscHandler(7, (payload) => {
+      const m = /^file:\/\/[^/]*(\/.*)$/.exec(payload || '');
+      if (m && !session.remote) {
+        try {
+          cwd = decodeURIComponent(m[1]);
+        } catch {
+          cwd = m[1]; // not valid escaping; the raw path is better than nothing
+        }
+      }
+      return true;
+    });
+
     term.parser.registerOscHandler(0, onTitle);
     term.parser.registerOscHandler(2, onTitle);
 
@@ -715,6 +736,11 @@
 
       get minimized() {
         return minimized;
+      },
+
+      // The directory its shell is in, as far as we have been told.
+      get cwd() {
+        return cwd;
       },
 
       setMinimized(on) {

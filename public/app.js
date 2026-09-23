@@ -393,11 +393,12 @@ function defaultBox(n) {
   };
 }
 
-function spawn(id, box, name) {
+function spawn(id, box, name, cwd) {
   const c = window.HEROTERM_CONTAINER.create({
     id: id || newId(),
     name: name || freshName(),
     zoom: box && box.zoom,
+    cwd: cwd || undefined,
     page,
   });
   containers.push(c);
@@ -975,6 +976,56 @@ let previewed = null;
 window.HEROTERM_WINDOWS = {
   limits: { windows: MAX_CONTAINERS }, // for settings' System tab
 
+  /* ---------- saved screens ---------- */
+
+  // Everything profiles.js needs to put this screen back: where each window
+  // is, what it is called, and where its shell is standing. The directory
+  // comes from OSC 7 and may be missing — a shell that never said, or one
+  // inside an ssh, where the answer would be a directory on another machine.
+  snapshot() {
+    return containers.map((c) => ({
+      name: c.name,
+      ...c.box,
+      min: c.minimized || undefined,
+      cwd: c.cwd || undefined,
+    }));
+  },
+
+  // How many windows have something running in them, which is what a screen
+  // about to replace them ought to say out loud.
+  busy() {
+    return containers.filter((c) => c.session.running).length;
+  },
+
+  // Open a saved screen. The windows on it replace the ones here, shells and
+  // all: a screen is a screen, not something to add to one. Each new shell is
+  // asked to start in the directory its window was saved in.
+  open(windows) {
+    if (!Array.isArray(windows) || !windows.length) return;
+    closeOverview(null);
+    if (window.HEROTERM_SETTINGS) window.HEROTERM_SETTINGS.close();
+
+    const going = [...containers];
+    containers.length = 0;
+    focused = null;
+    dragging = null;
+    arrangement = null; // whatever the arrange button could undo went with them
+    for (const c of going) c.destroy();
+
+    for (const w of windows.slice(0, MAX_CONTAINERS)) {
+      const c = spawn(null, { x: w.x, y: w.y, w: w.w, h: w.h }, w.name, w.cwd);
+      if (w.min) c.setMinimized(true);
+    }
+    const shown = visible();
+    if (shown.length) {
+      page.focus(shown[0]);
+      shown[0].focus();
+    }
+    paintControls();
+    page.runStateChanged();
+    page.save();
+  },
+
   // The focused window where it lives, not where it's being shown beside the
   // settings sheet.
   home() {
@@ -1003,10 +1054,13 @@ window.HEROTERM_WINDOWS = {
     const token = new URLSearchParams(location.search).get('token') || '';
     const res = await fetch(`/config?token=${encodeURIComponent(token)}`, { cache: 'no-store' });
     if (!res.ok) return;
-    const { version, dev } = await res.json();
+    const { version, dev, home } = await res.json();
     if (version) document.getElementById('version').textContent = version;
     // A development copy says so, so it's never mistaken for the one you work in.
     document.getElementById('devchip').hidden = !dev;
+    // What the page knows about the machine it is serving. Small enough to
+    // live here rather than in a module of its own.
+    window.HEROTERM_CONFIG = { version, dev, home };
   } catch {
     /* no version to show; the name stands on its own */
   }

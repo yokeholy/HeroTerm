@@ -317,6 +317,12 @@ function createSession() {
       return () => listeners.delete(fn);
     },
 
+    // Inside an ssh or a mosh: what the shell at the other end says about
+    // itself — its directory, for one — is not about this machine.
+    get remote() {
+      return remote;
+    },
+
     get running() {
       return running;
     },

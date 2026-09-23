@@ -169,6 +169,7 @@ app.get('/config', (req, res) => {
     highWater: HIGH_WATER,
     lowWater: LOW_WATER,
     historyFile: history.file() || null,
+    home: process.env.HOME || null,
     version: require('./package.json').version,
     dev: DEV,
     node: process.version,
@@ -338,7 +339,21 @@ function kill(s) {
   sessions.delete(s.id);
 }
 
-function createSession(id) {
+// A page can ask for a shell to start somewhere in particular — that is how a
+// saved screen comes back in the directories it was saved in. Anything that
+// isn't a directory right now is ignored rather than refused: a screen saved
+// months ago may name a folder that has since been moved, and a shell at home
+// is a better answer than no shell at all.
+function startingIn(want) {
+  if (!want) return process.env.HOME;
+  try {
+    return fs.statSync(want).isDirectory() ? want : process.env.HOME;
+  } catch {
+    return process.env.HOME;
+  }
+}
+
+function createSession(id, cwd) {
   const shellName = path.basename(SHELL);
   const shellArgs = shellName === 'fish' ? ['--login'] : ['-l'];
 
@@ -359,7 +374,7 @@ function createSession(id) {
     name: 'xterm-256color',
     cols: 80,
     rows: 24,
-    cwd: process.env.HOME,
+    cwd: startingIn(cwd),
     env: {
       ...process.env,
       TERM: 'xterm-256color',
@@ -482,7 +497,8 @@ server.on('upgrade', (req, socket, head) => {
 wss.on('connection', (ws, req) => {
   // Which container is asking. An unknown id is a brand-new one; a known id is
   // the same container coming back after a refresh.
-  const id = (new URL(req.url, 'http://localhost').searchParams.get('id') || 'main').slice(0, 64);
+  const ask = new URL(req.url, 'http://localhost').searchParams;
+  const id = (ask.get('id') || 'main').slice(0, 64);
 
   let s = sessions.get(id);
   const resumed = Boolean(s);
@@ -503,7 +519,7 @@ wss.on('connection', (ws, req) => {
       ws.close(1013, `at most ${MAX_SESSIONS} terminals at once`);
       return;
     }
-    s = createSession(id);
+    s = createSession(id, ask.get('cwd'));
     sessions.set(id, s);
   }
 

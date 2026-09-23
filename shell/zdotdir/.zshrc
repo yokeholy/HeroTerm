@@ -92,8 +92,26 @@ __heroterm_precmd() {
   return $ret
 }
 
+# ---------------------------------------------------------------------------
+# OSC 7 — which directory this shell is in. iTerm2, VS Code and GNOME Terminal
+# all report it this way, and here it is what lets a saved screen reopen its
+# windows where they were rather than all at home.
+#
+#   ESC ] 7 ; file://<host><path> BEL
+#
+# Only the two characters that would really break a URL are escaped: a path is
+# handed straight back to a shell, not to a browser, and the page decodes what
+# it gets.
+# ---------------------------------------------------------------------------
+__heroterm_cwd() {
+  local p=${PWD//\%/%25}
+  printf '\033]7;file://%s%s\007' "$HOST" "${p// /%20}"
+}
+
 add-zsh-hook preexec __heroterm_preexec
 add-zsh-hook precmd __heroterm_precmd
+add-zsh-hook precmd __heroterm_cwd
+__heroterm_cwd # this shell's first prompt hasn't been drawn yet
 
 # Run ours first, while $? is still the command's exit status rather than some
 # other precmd hook's return value. p10k and friends register during your

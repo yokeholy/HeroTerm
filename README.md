@@ -20,6 +20,7 @@
 - 🔔 **Sounds you can live with:** a ding, a tick-tock, a chime. Each can be switched off.
 - 🔄 **Refresh loses nothing.** Same shell, same folder, same running job — and it reconnects by itself after your laptop sleeps.
 - 🧱 **Several terminals.** Snap, split, or arrange them all with one click.
+- 💾 **Saved screens.** Keep a layout — windows, sizes, folders — and open it again in one click.
 - 🤖 **Knows when Claude Code is working**, and treats each turn like a command.
 - 🛠 **Your shell, untouched.** zsh, your dotfiles, your prompt and aliases, exactly as they are.
 
@@ -59,6 +60,7 @@ heroterm stop     # end it
 | **＋** | new terminal |
 | **▦** | arrange every window to fill the screen; press again to put them back |
 | **⊞** | show every window at once — click one to go to it (a buried window's way back) |
+| **▭** | saved screens — reopen a set of windows, each in its own folder |
 | **⛶** | browser full screen |
 | **⚙︎** | settings |
 
@@ -121,6 +123,7 @@ The details live in the [wiki](docs/wiki/Home.md):
 [Settings](docs/wiki/Settings.md) ·
 [Sound & command detection](docs/wiki/Sound-and-command-detection.md) ·
 [Sessions & refreshing](docs/wiki/Sessions-and-refreshing.md) ·
+[Saved screens](docs/wiki/Saved-screens.md) ·
 [Command stats](docs/wiki/Command-stats.md) ·
 [Customizing](docs/wiki/Customizing.md) ·
 [Security](docs/wiki/Security.md) ·
