@@ -30,6 +30,24 @@ another terminal, and you can use that one or start another with `--port`.
 
 To update, `npm install -g heroterm` again.
 
+### "packages have install scripts not yet covered by allowScripts"
+
+A warning from npm 11, not a failure: it no longer runs install scripts for
+global installs unless you allow them. HeroTerm works without them —
+`node-pty`'s script only builds from source when no prebuilt binary matches
+(one does, on both Apple Silicon and Intel), and HeroTerm's own script fixes a
+file permission that the server also fixes when it starts. Run `heroterm`; if
+it opens, there's nothing to do.
+
+The one symptom that points back at it is windows failing with
+`posix_spawnp failed`, which means that permission fix never applied — most
+likely from installing with `sudo`, which leaves the files owned by root.
+Either install without `sudo`, or allow the scripts once:
+
+```bash
+npm install -g --allow-scripts=heroterm,node-pty heroterm
+```
+
 On a Mac nothing is compiled: `node-pty` ships prebuilt binaries for Apple
 Silicon and Intel. Elsewhere it builds from source, which needs a compiler and
 Python (`build-essential` and `python3` on Debian or Ubuntu).

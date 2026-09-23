@@ -28,6 +28,21 @@ ZDOTDIR="$USER_ZDOTDIR"
 #   ESC ] 133 ; D ; <code> BEL it finished, with this exit status
 # ---------------------------------------------------------------------------
 
+# ⌘← and ⌘→ in the browser send ^A and ^E, as a Mac terminal does. zsh's emacs
+# keymap already reads those as the ends of the line; its vi keymap doesn't,
+# and zsh chooses vi when $EDITOR looks like vi. So bind them there as well —
+# in shells started here only, and only where they'd otherwise do nothing, so
+# a binding of your own is never taken away.
+() {
+  local key fn now
+  for key fn in '^A' beginning-of-line '^E' end-of-line; do
+    now=$(bindkey -M viins "$key" 2>/dev/null)
+    if [[ -z $now || $now == *undefined-key* || $now == *self-insert* ]]; then
+      bindkey -M viins "$key" "$fn"
+    fi
+  done
+}
+
 autoload -Uz add-zsh-hook
 
 __heroterm_running=''

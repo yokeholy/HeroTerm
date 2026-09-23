@@ -952,12 +952,18 @@ window.addEventListener(
     if (!e.metaKey || e.ctrlKey || e.altKey || !focused) return;
     const term = focused.term;
 
-    // ⌘⌫ clears the line, the way it does in a Mac terminal: ^U, which zsh
-    // and readline both take as "kill the line" — including a shell at the
-    // other end of an ssh.
-    if (e.key === 'Backspace') {
-      focused.input('\x15');
+    // The line-editing trio a Mac terminal sends: ^U to kill the line, ^A and
+    // ^E to jump to its ends. zsh and readline both read them that way — and
+    // so does a shell at the other end of an ssh, which nothing local could
+    // do for it.
+    const LINE_KEYS = { Backspace: '\x15', ArrowLeft: '\x01', ArrowRight: '\x05' };
+    if (LINE_KEYS[e.key]) {
+      focused.input(LINE_KEYS[e.key]);
+      // Stopped as well as prevented: xterm has its own handler for the arrows
+      // and would send its meta-arrow sequence after ours, which the shell has
+      // no binding for and types out as rubbish.
       e.preventDefault();
+      e.stopPropagation();
       return;
     }
     if (e.key === 'c' && term.hasSelection()) {
