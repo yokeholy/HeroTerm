@@ -13,7 +13,6 @@ const els = {
   place: document.getElementById('place'),
   prev: document.getElementById('prev'),
   next: document.getElementById('next'),
-  mode: document.getElementById('mode'),
   expand: document.getElementById('expand'),
   add: document.getElementById('add'),
   tray: document.getElementById('tray'),
@@ -83,7 +82,6 @@ function writeLayout(obj) {
 const containers = [];
 let focused = null;
 let dragging = null;
-let windowed = false;
 
 // Stacking order, in one place because the numbers only make sense together:
 //
@@ -104,13 +102,8 @@ function restack() {
 }
 
 const page = {
-  get windowed() {
-    return windowed;
-  },
-
   save() {
     writeLayout({
-      windowed,
       focused: focused ? focused.id : null,
       containers: containers.map((c) => ({
         ...c.box,
@@ -166,7 +159,7 @@ const page = {
 
   // Yellow: out of the way, still running, back from its chip in the tray.
   minimize(c) {
-    if (!windowed || c.minimized) return;
+    if (c.minimized) return;
     c.setMinimized(true);
     if (focused === c) {
       focused = null;
@@ -197,7 +190,6 @@ const page = {
   // puts it back — as long as it hasn't been moved or resized since, which
   // would mean the full-screen size was the start of something else.
   maximize(c) {
-    if (!windowed) return;
     const z = c.zoom;
     if (z && sameRect(c.visibleRect(), z.after)) {
       c.arrangeTo(z.before, { remember: false });
@@ -370,7 +362,7 @@ function remove(c) {
   // and a window that ran `exit` always is, since the shell never lives to
   // say that command finished.
   page.runStateChanged();
-  applyMode();
+  paintControls();
   page.save();
 }
 
@@ -416,14 +408,10 @@ function spawn(id, box, name) {
 function add() {
   if (containers.length >= MAX_CONTAINERS) return;
   closeOverview(null); // a new window shouldn't arrive behind a grid of thumbnails
-  // More than one container only makes sense floating; full-bleed would stack
-  // them exactly on top of each other. The one that replaces the last window
-  // takes whichever mode you were in.
-  if (!windowed && containers.length > 0) setMode(true);
   const c = spawn(null, defaultBox(containers.length));
   page.focus(c);
   c.focus();
-  applyMode();
+  paintControls();
   page.save();
 }
 
@@ -499,17 +487,20 @@ function tileArea() {
 }
 
 function paintArrange() {
-  const undo = windowed && untouched();
+  const undo = untouched();
   els.arrange.setAttribute('aria-pressed', String(undo));
   els.arrange.setAttribute(
     'aria-label',
     undo ? 'Put the windows back where they were' : 'Arrange windows to fill the screen'
   );
+  // Short, because you are reading it with the pointer already on the button:
+  // the label is for a screen reader, this is a reminder.
+  if (!els.arrange.disabled) els.arrange.dataset.tip = undo ? 'Put them back' : 'Arrange them';
 }
 
 function arrange() {
   const shown = visible();
-  if (!windowed || !shown.length) return;
+  if (!shown.length) return;
 
   if (untouched()) {
     for (const c of shown) c.arrangeTo(arrangement.before[c.id], { remember: false });
@@ -585,10 +576,10 @@ function paintOverview() {
   els.overview.setAttribute('aria-pressed', String(overviewing));
   els.overview.setAttribute('aria-label', overviewing ? 'Back to the windows' : 'Show every window');
   els.overview.dataset.tip = els.overview.disabled
-    ? 'Only with windows to choose between'
+    ? 'Needs two windows'
     : overviewing
-      ? 'Back to the windows, with the one you pick in front'
-      : 'Show every window at once \u2014 click one to go to it';
+      ? 'Back to the windows'
+      : 'Every window at once';
 }
 
 // The grid, using the same planner the arrange button uses, so both agree on
@@ -654,7 +645,7 @@ function layOutOverview() {
 }
 
 function openOverview() {
-  if (overviewing || !windowed || !containers.length) return;
+  if (overviewing || !containers.length) return;
 
   // A sheet would sit over the whole thing; close whichever is up.
   for (const [id, api] of [
@@ -917,50 +908,38 @@ function pull(lo, hi, lines, tol = MAGNET) {
   return best <= tol ? shift : 0;
 }
 
-function applyMode() {
-  document.body.dataset.mode = windowed ? 'windowed' : 'full';
-  els.mode.setAttribute('aria-label', windowed ? 'Fill the tab' : 'Pop out into a window');
-  // Only one container can have the whole page, so the button is off while
-  // there are several.
-  els.mode.disabled = containers.length > 1;
-  // An empty tip falls back to the label, which already says what it does.
-  els.mode.dataset.tip = containers.length > 1 ? 'Close the others to fill the tab' : '';
+// What the page's buttons can do right now. Everything here is a function of
+// how many windows there are.
+function paintControls() {
   els.add.disabled = containers.length >= MAX_CONTAINERS;
-  // Full-tab mode is already the one window filling everything.
-  els.arrange.disabled = !windowed;
-  els.arrange.dataset.tip = windowed ? '' : 'Pop out into windows to arrange them';
-  // One window filling the tab can't be behind anything.
-  els.overview.disabled = !windowed || containers.length < 2;
+  els.add.dataset.tip = els.add.disabled ? `${MAX_CONTAINERS} windows is the limit` : 'New terminal ⌘D';
+  // One window is already arranged.
+  els.arrange.disabled = containers.length < 2;
+  if (els.arrange.disabled) els.arrange.dataset.tip = 'Needs two windows';
+  else paintArrange();
+  els.overview.disabled = containers.length < 2;
   if (overviewing && els.overview.disabled) closeOverview(null);
   paintOverview(); // its tip says why, when it can't be pressed
-  sky.setActive(windowed);
   for (const c of containers) {
     c.applyBox();
     c.relayout();
   }
 }
 
-function setMode(next) {
-  if (!next) {
-    for (const c of containers) if (c.minimized) c.setMinimized(false);
-  }
-  windowed = next;
-  applyMode();
-  page.save();
-  if (focused) focused.focus();
-}
-
 /* ---------- boot ---------- */
 
 const saved = readLayout();
-windowed = saved ? Boolean(saved.windowed) : false;
 arrangement = (saved && saved.arrangement) || null; // so undo survives a reload
 
 if (saved) {
-  for (const box of saved.containers.slice(0, MAX_CONTAINERS)) {
-    const c = spawn(box.id, box, box.name);
-    if (box.min && windowed) c.setMinimized(true);
-  }
+  // A layout saved before windows were the only kind has whatever box its one
+  // window had before it filled the tab, which may be nothing usable. Any
+  // window that comes back the wrong shape gets the box a new one would.
+  const legacy = saved.windowed === false;
+  saved.containers.slice(0, MAX_CONTAINERS).forEach((box, i) => {
+    const c = spawn(box.id, legacy || !(box.w > 200 && box.h > 150) ? defaultBox(i) : box, box.name);
+    if (box.min) c.setMinimized(true);
+  });
 } else {
   spawn(null, defaultBox(0));
 }
@@ -970,7 +949,8 @@ if (saved) {
   const want = shown.find((c) => saved && c.id === saved.focused) || shown[0];
   if (want) page.focus(want);
 }
-applyMode();
+paintControls();
+sky.setActive(true); // there is only one mode now, and it has stars behind it
 if (focused) focused.focus();
 paintTray();
 paintStatus();
@@ -985,16 +965,11 @@ let previewed = null;
 window.HEROTERM_WINDOWS = {
   limits: { windows: MAX_CONTAINERS }, // for settings' System tab
 
-  // The focused window where it lives, not where it's being shown: its own
-  // box when windowed, the whole work area under the deck band when it fills
-  // the tab.
+  // The focused window where it lives, not where it's being shown beside the
+  // settings sheet.
   home() {
     const c = previewed || focused;
-    if (!c) return null;
-    if (windowed) return c.visibleRect();
-    const a = workArea();
-    const top = c.el.querySelector('.card').offsetTop;
-    return { x: a.x, y: a.y + top, w: a.w, h: a.h - top };
+    return c ? c.visibleRect() : null;
   },
 
   preview(r) {
@@ -1036,8 +1011,6 @@ els.arrange.addEventListener('click', arrange);
 els.overview.addEventListener('mousedown', (e) => e.preventDefault());
 els.overview.addEventListener('click', toggleOverview);
 
-els.mode.addEventListener('mousedown', (e) => e.preventDefault());
-els.mode.addEventListener('click', () => setMode(!windowed));
 
 els.prev.addEventListener('mousedown', (e) => e.preventDefault());
 els.next.addEventListener('mousedown', (e) => e.preventDefault());
@@ -1065,9 +1038,7 @@ function renderExpand() {
   const on = Boolean(fsElement());
   els.expand.setAttribute('aria-pressed', String(on));
   els.expand.setAttribute('aria-label', on ? 'Leave full screen' : 'Full screen');
-  els.expand.dataset.tip = on
-    ? 'Leave the browser\u2019s full screen'
-    : 'The browser\u2019s own full screen \u2014 the whole display, tab strip gone';
+  els.expand.dataset.tip = on ? 'Leave full screen' : 'Browser full screen';
 }
 
 if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) {
@@ -1077,7 +1048,7 @@ if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) {
 
   function unavailable() {
     els.expand.disabled = true;
-    els.expand.dataset.tip = 'Full screen is blocked in this browser';
+    els.expand.dataset.tip = 'Blocked in this browser';
     els.expand.setAttribute('aria-label', els.expand.title);
   }
 

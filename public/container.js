@@ -435,10 +435,6 @@
         return;
       }
       deck.style.inset = '';
-      if (!page.windowed) {
-        deck.style.cssText = '';
-        return;
-      }
       // Keep at least a strip of the title bar reachable, whatever the viewport
       // did while we weren't looking.
       box.w = Math.max(MIN_W, Math.min(box.w, window.innerWidth));
@@ -486,7 +482,7 @@
     // own — and moving it moves the whole deck, since they are one stack.
     function gesture(target, grab, onMove, onEnd) {
       target.addEventListener('pointerdown', (e) => {
-        if (!page.windowed || preview || e.button !== 0 || e.target.closest('button')) return;
+        if (preview || e.button !== 0 || e.target.closest('button')) return;
         if (!grab(e)) return;
         e.preventDefault();
         target.setPointerCapture(e.pointerId);

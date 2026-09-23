@@ -55,13 +55,15 @@ heroterm stop     # end it
 | Button | What it does |
 |:---:|---|
 | **?** | help |
+| **▮▮▮** | the commands you type most |
 | **＋** | new terminal |
 | **▦** | arrange every window to fill the screen; press again to put them back |
 | **⊞** | show every window at once — click one to go to it (a buried window's way back) |
-| **▮▮▮** | the commands you type most |
 | **⛶** | browser full screen |
-| **▢** | float the terminal over the star field |
 | **⚙︎** | settings |
+
+**?** and the stats live top left; the rest, top right. Rest the pointer on any
+of them for a second and it says what it does.
 
 **Windows:** 🔴 close · 🟡 minimize to the status bar · 🟢 fill the screen · drag by the title bar · resize from any edge · drag to a screen edge to snap · drop onto another window to split · double-click the name to rename.
 

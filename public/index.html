@@ -34,8 +34,8 @@
 
       #controls {
         position: fixed;
-        /* 4 + 26 + 2*2 padding = 34, which is where the cards start in
-           full-bleed mode. Any lower and this clips the front window's edge. */
+        /* 4 + 26 + 2*2 padding = 34: clear of the top of a window snapped to
+           the top of the screen, whose title bar starts just below. */
         top: 4px;
         right: 8px;
         z-index: 50;
@@ -106,11 +106,11 @@
         display: none;
       }
 
-      body[data-mode='windowed'] #mode .pop {
+      #mode .pop {
         display: none;
       }
 
-      body[data-mode='windowed'] #mode .restore {
+      #mode .restore {
         display: inline;
       }
 
@@ -134,7 +134,7 @@
       }
 
       /* Over open sky the solid bar would read as a slab, so it thins out. */
-      body[data-mode='windowed'] #status {
+      #status {
         background: var(--backdrop, rgba(8, 10, 16, 0.55));
         backdrop-filter: blur(6px);
         border-top-color: transparent;
@@ -221,7 +221,7 @@
         perspective-origin: 50% -30%;
       }
 
-      body[data-mode='windowed'] .deck {
+      .deck {
         inset: auto; /* position and size come from JS */
       }
 
@@ -229,7 +229,7 @@
          fades most of the way out, so there is never a question which — and
          the star field shows through what's left. On the deck rather than the
          front card, so the cascade behind it goes too. */
-      body[data-mode='windowed'] .deck:not([data-focused]) {
+      .deck:not([data-focused]) {
         opacity: var(--dim, 0.2);
       }
 
@@ -443,11 +443,11 @@
 
       /* Only the front window can be picked up; the ones behind it don't take
          pointer events at all. */
-      body[data-mode='windowed'] .card[data-front] .card-head {
+      .card[data-front] .card-head {
         cursor: grab;
       }
 
-      body[data-mode='windowed'][data-dragging='yes'] .card[data-front] .card-head {
+      body[data-dragging='yes'] .card[data-front] .card-head {
         cursor: grabbing;
       }
 
@@ -571,16 +571,8 @@
         background: #28c840;
       }
 
-      .deck:not([data-focused]) .lights:not(:hover) .light,
-      body[data-mode='full'] .card-head .light[data-act='min'],
-      body[data-mode='full'] .card-head .light[data-act='max'] {
+      .deck:not([data-focused]) .lights:not(:hover) .light {
         background: var(--hairline, #252a35);
-      }
-
-      /* One window filling the tab has nothing to minimize into or grow to. */
-      body[data-mode='full'] .card-head .light[data-act='min'],
-      body[data-mode='full'] .card-head .light[data-act='max'] {
-        pointer-events: none;
       }
 
       .card-head .light svg {
@@ -596,10 +588,6 @@
       .card-head .lights:hover .light svg,
       .card-head .light:focus-visible svg {
         opacity: 1;
-      }
-
-      body[data-mode='full'] .card-head .lights:hover .light:not([data-act='close']) svg {
-        opacity: 0;
       }
 
       .card-head .light:focus-visible {
@@ -760,18 +748,25 @@
 
       /* ---- help ---- */
 
-      #helpbtn {
+      /* The other end of the same strip: help, and what you type most. Both
+         are about the page rather than about any window, and both are read
+         before you do anything rather than while you work. */
+      #lcontrols {
         position: fixed;
         top: 4px;
         left: 8px;
         z-index: 50;
-        width: 30px;
-        height: 30px;
+        display: flex;
+        gap: 2px;
+        padding: 2px;
         border-radius: 9px;
         /* Its own backdrop, same as the controls opposite: it sits over a card,
            a peeking title bar or open sky depending on the moment. */
         background: var(--backdrop, rgba(8, 10, 16, 0.55));
         backdrop-filter: blur(6px);
+      }
+
+      #helpbtn {
         font: 600 calc(13px * var(--ui-scale, 1))/1 var(--font, monospace);
       }
 
@@ -1771,7 +1766,7 @@
         z-index: 200;
       }
 
-      body[data-mode='windowed'] .edge {
+      .edge {
         display: block;
       }
 
@@ -1888,14 +1883,27 @@
       }
     </style>
   </head>
-  <body data-mode="full" data-run="idle">
+  <body data-run="idle">
     <canvas id="sky"></canvas>
 
-    <button id="helpbtn" class="chip" type="button" aria-expanded="false" aria-label="Help">?</button>
+    <div id="lcontrols">
+      <button id="helpbtn" class="chip" type="button" aria-expanded="false" aria-label="Help"
+              data-tip="Help">?</button>
+
+      <button id="statsbtn" class="chip" type="button" aria-expanded="false"
+              aria-label="Command history stats" data-tip="Command stats">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+          <g fill="currentColor">
+            <rect x="2" y="9" width="3" height="5" rx="1" />
+            <rect x="6.5" y="5.5" width="3" height="8.5" rx="1" />
+            <rect x="11" y="2" width="3" height="12" rx="1" />
+          </g>
+        </svg>
+      </button>
+    </div>
 
     <div id="controls">
-      <button id="add" class="chip" type="button" aria-label="New terminal"
-              data-tip="New terminal (⌘D)">
+      <button id="add" class="chip" type="button" aria-label="New terminal">
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
           <path d="M8 3.5v9M3.5 8h9" fill="none" stroke="currentColor"
                 stroke-width="1.6" stroke-linecap="round" />
@@ -1924,21 +1932,6 @@
         </svg>
       </button>
 
-      <button
-        id="statsbtn"
-        class="chip"
-        type="button"
-        aria-expanded="false"
-        aria-label="Command history stats"
-      >
-        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
-          <g fill="currentColor">
-            <rect x="2" y="9" width="3" height="5" rx="1" />
-            <rect x="6.5" y="5.5" width="3" height="8.5" rx="1" />
-            <rect x="11" y="2" width="3" height="12" rx="1" />
-          </g>
-        </svg>
-      </button>
 
       <button id="expand" class="chip" type="button" aria-pressed="false" aria-label="Full screen">
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
@@ -1955,14 +1948,6 @@
         </svg>
       </button>
 
-      <button id="mode" class="chip" type="button" aria-label="Pop out into a window">
-        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
-          <g fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
-            <rect class="pop" x="2.5" y="4" width="11" height="8.5" rx="1.5" />
-            <rect class="restore" x="1.5" y="2.5" width="13" height="11" rx="1.5" />
-          </g>
-        </svg>
-      </button>
 
       <button id="settingsbtn" class="chip" type="button" aria-expanded="false" aria-label="Settings">
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
@@ -1982,19 +1967,19 @@
           <div class="card-head">
             <span class="lead">
               <span class="lights">
-                <button class="light" type="button" data-act="close" aria-label="Close this terminal">
+                <button class="light" type="button" data-act="close" aria-label="Close this terminal" data-tip="Close">
                   <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M3.5 3.5l5 5M8.5 3.5l-5 5" /></svg>
                 </button>
-                <button class="light" type="button" data-act="min" aria-label="Minimize">
+                <button class="light" type="button" data-act="min" aria-label="Minimize" data-tip="Minimize">
                   <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M3 6h6" /></svg>
                 </button>
-                <button class="light" type="button" data-act="max" aria-label="Maximize">
+                <button class="light" type="button" data-act="max" aria-label="Maximize" data-tip="Maximize">
                   <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M6 3v6M3 6h6" /></svg>
                 </button>
               </span>
               <span class="dot"></span><span class="cmd">live</span>
             </span>
-            <span class="name" title="Double-click to rename"></span>
+            <span class="name" data-tip="Double-click to rename"></span>
             <span class="tail"><span class="meta"></span></span>
           </div>
           <div class="body"></div>
@@ -2087,6 +2072,14 @@
           failed.
         </p>
 
+        <h2>Buttons, top left</h2>
+        <dl>
+          <dt>?</dt>
+          <dd>this</dd>
+          <dt>bars</dt>
+          <dd>what you type most, from your whole shell history</dd>
+        </dl>
+
         <h2>Buttons, top right</h2>
         <dl>
           <dt>plus</dt>
@@ -2096,12 +2089,8 @@
           <dt>windows</dt>
           <dd>show every window at once, minimized ones included — click one to go
             to it, Escape to leave them as they were</dd>
-          <dt>bars</dt>
-          <dd>what you type most, from your whole shell history</dd>
           <dt>expand</dt>
           <dd>browser full screen</dd>
-          <dt>square</dt>
-          <dd>float the terminal over a star field</dd>
           <dt>sliders</dt>
           <dd>settings — appearance, sound, effects, behavior, and what it's running with</dd>
         </dl>
@@ -2226,7 +2215,7 @@
               <input id="set-tsize" type="range" min="8" max="32" step="1" />
               <input id="set-tsize-num" type="number" min="8" max="32" step="1" aria-label="Terminal text size, px" />
               <span class="unit">px</span>
-              <button id="set-tsize-reset" class="reset" type="button" data-tip="Back to this theme’s own size">Reset</button>
+              <button id="set-tsize-reset" class="reset" type="button" data-tip="Back to the default">Reset</button>
             </div>
           </div>
 
@@ -2251,7 +2240,7 @@
               <input id="set-dim" type="range" min="0" max="100" step="1" />
               <input id="set-dim-num" type="number" min="0" max="100" step="1" aria-label="Unfocused window opacity, percent" />
               <span class="unit">%</span>
-              <button id="set-dim-reset" class="reset" type="button" data-tip="Back to this theme’s own value">Reset</button>
+              <button id="set-dim-reset" class="reset" type="button" data-tip="Back to the default">Reset</button>
             </div>
           </div>
         </div>
@@ -2278,7 +2267,7 @@
               <input id="set-vol" type="range" min="0" max="100" step="1" />
               <input id="set-vol-num" type="number" min="0" max="100" step="1" aria-label="Volume, percent" />
               <span class="unit">%</span>
-              <button id="set-vol-reset" class="reset" type="button" data-tip="Back to 50%, the level the sounds were written at">Reset</button>
+              <button id="set-vol-reset" class="reset" type="button" data-tip="Back to 50%">Reset</button>
             </div>
           </div>
 

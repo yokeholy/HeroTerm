@@ -120,8 +120,7 @@ second copy — two stores for one fact is how they come to disagree.
 
 Turning the flying stars off leaves the sky where it is, still breathing.
 Turning them on flies them for two seconds — the dimming behind the sheet
-lifts, and in full-tab mode the sky is borrowed for the moment — so you see
-what you've just turned on.
+lifts for the moment — so you see what you've just turned on.
 Whether something is running and whether you want to watch the sky move about
 it are separate questions, both remembered, so switching the flying back on
 part way through a command starts it flying rather than waiting for the next

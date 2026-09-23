@@ -5,18 +5,19 @@ and the two things that surprise people. Escape or a click outside closes it.
 Its text lives in the markup in `public/index.html`, so editing it is editing
 the page.
 
-Seven buttons, top-right corner of the page. They belong to the page rather
-than to any window, so they stay put whatever the deck is doing:
+Two buttons top-left — help, and what you actually type — and four top-right.
+They belong to the page rather than to any window, so they stay put whatever
+the deck is doing:
 
 | | |
 |---|---|
+| ? | help |
+| bars | what you actually type — see below |
 | plus | another terminal, in a container of its own |
 | grid | arrange every window to fill the screen, all about the same size |
 | windows | every window at once — see below |
-| bars | what you actually type — see below |
-| sliders | settings |
 | expand | the browser's own full screen — the whole display, tab strip gone |
-| square | pop the deck out of the tab into a floating window, and back |
+| sliders | settings |
 
 Rest the pointer on any button for two seconds and it says what it does —
 including the ones that are greyed out, where what you want to know is why.
@@ -46,9 +47,7 @@ windows are numbered.
 The `+` gives you another container: its own shell, its own deck, its own
 position, up to eight of them. Click one to bring it forward — that's the one
 keys go to — and close it with the red button in its title bar, or by exiting its
-shell; close the last one and a fresh one takes its place. More than one only
-makes sense floating, so adding a second switches to windowed and the fill-the-
-tab button greys out until you're back to one.
+shell; close the last one and a fresh one takes its place.
 
 Each container's shell is independent, and each is reattached separately after
 a refresh, so three terminals in three directories come back as three terminals
@@ -154,10 +153,7 @@ Each window's title bar carries the three a Mac window has, on the left:
 As on a Mac, they're grey on a window you're not in, and show their symbols
 (× − +) when you're over them. Minimized windows are left out of arranging,
 snapping, splitting and where the star field flies from; which ones are
-minimized, and what a maximized window was before, survive a reload. In
-full-tab mode there's only the one window, filling the tab already, so yellow
-and green are off, and switching to full-tab brings every minimized window
-back.
+minimized, and what a maximized window was before, survive a reload.
 
 A window's container is taller than the window, by the band the older
 commands cascade into. That band is click-through, so it never covers the

@@ -18,7 +18,7 @@
 // as well, every time they change.
 
 (function () {
-  const DELAY = 2000; // hover this long before it appears
+  const DELAY = 1000; // hover this long before it appears
   const GAP = 8; // between the button and its tip
   const MARGIN = 6; // ...and between the tip and the edge of the window
 
