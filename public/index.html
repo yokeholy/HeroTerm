@@ -2171,6 +2171,17 @@
         </div>
 
         <div id="page-behavior" class="page" data-page="behavior" role="tabpanel" aria-labelledby="tab-behavior" hidden>
+          <div class="setting toggle">
+            <div>
+              <label for="set-copysel">Copy what I select</label>
+              <p class="hint">
+                Letting go of a selection puts it on the clipboard, the way iTerm
+                does. ⌘C works either way.
+              </p>
+            </div>
+            <input id="set-copysel" class="switch" type="checkbox" />
+          </div>
+
           <div class="setting">
             <label id="set-confirm-label">Confirm before closing a window</label>
             <p class="hint">
@@ -2274,6 +2285,7 @@
     </section>
 
     <script src="/theme.js"></script>
+    <script src="/clip.js"></script>
     <script src="/session.js"></script>
     <script src="/audio.js"></script>
     <script src="/sky.js"></script>

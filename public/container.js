@@ -59,6 +59,7 @@
     term.loadAddon(fit);
     term.loadAddon(new window.WebLinksAddon.WebLinksAddon());
     term.open(termEl);
+    window.HEROTERM_CLIP.watch(term);
 
     // The WebGL renderer is what keeps ligatures and heavy scrollback smooth.
     // It can fail on a headless GPU or lose its context after a sleep, so fall

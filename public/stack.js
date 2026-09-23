@@ -126,6 +126,7 @@ function createStack(opts) {
       convertEol: false,
     });
     t.open(card.el.querySelector('.body'));
+    window.HEROTERM_CLIP.watch(t);
     t.write(card.rec.bytes);
     card.term = t;
   }

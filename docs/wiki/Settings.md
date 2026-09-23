@@ -10,7 +10,15 @@ runs the full height of the screen. It has five tabs — **Appearance**,
 **Sound**, **Effects**, **Behavior** and **System** — and opens on whichever
 you used last.
 
-Behavior holds **Quiet commands**: a list, one pattern a line, of commands to
+Behavior holds **Copy what I select**, on by default: let go of a selection and
+it is on the clipboard, the way iTerm's "copy to pasteboard on selection"
+works. ⌘C still copies either way, and it works in the replayed cards behind
+the front one as well as in the live terminal, so you can drag across the
+output of a command you ran ten commands ago. A click that selects nothing
+leaves the clipboard alone. Turn it off if you would rather your clipboard
+only changed when you asked.
+
+Behavior also holds **Quiet commands**: a list, one pattern a line, of commands to
 neither hear nor watch. A command whose text contains one of them makes no
 sound and doesn't fly the sky — a dev server, a log you're tailing, anything
 that runs all day and means nothing while it does. It still gets its own

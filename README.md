@@ -85,7 +85,7 @@ heroterm stop     # end it
 | `⌘⌫` | clear the line |
 | `⌘K` | clear |
 | `⌘+` / `⌘−` / `⌘0` | this window's text size |
-| `⌘C` / `⌘V` | copy / paste |
+| `⌘C` / `⌘V` | copy / paste — or just select, and it's copied |
 
 ## 🎨 Make it yours
 
@@ -97,6 +97,7 @@ heroterm stop     # end it
 - 🔊 **Sound** on/off, per sound, with a volume slider and three voices each
 - ✨ **Flying stars** on/off
 - 🤫 **Quiet commands** — a dev server shouldn't ring and fly the stars all day
+- 📋 **Copy what you select**, iTerm style — ⌘C still works too
 - 🛑 **Confirm before closing** a window: never, while something runs, or always
 - ⚙️ **System** tab showing what HeroTerm is running with
 

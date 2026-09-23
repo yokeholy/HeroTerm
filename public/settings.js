@@ -35,6 +35,12 @@
       fallback: () => -1,
       apply: () => {},
     },
+    // Letting go of a selection copies it. The terminals read this through
+    // HEROTERM_SETTINGS.get; see clip.js.
+    copySelect: {
+      fallback: () => 1,
+      apply: () => {},
+    },
     // Ask before the red button closes a window: 0 never, 1 while a command is
     // running in it, 2 always. Read by the page when you close one.
     confirmClose: {
@@ -612,6 +618,15 @@
   }
 
   paintMaster();
+
+  bindSwitch(
+    document.getElementById('set-copysel'),
+    () => Boolean(valueOf('copySelect')),
+    (on) => {
+      saved.copySelect = on ? 1 : 0;
+      save();
+    }
+  );
 
   // This one has no other owner, so it is stored here like the slider.
   bindSwitch(
