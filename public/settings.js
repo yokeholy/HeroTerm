@@ -500,6 +500,8 @@
   function paintMaster() {
     soundList.toggleAttribute('data-muted', !audio.enabled);
     for (const input of soundList.querySelectorAll('input')) input.disabled = !audio.enabled;
+    // Nothing to choose between while it can't be heard.
+    for (const b of soundList.querySelectorAll('.voices button')) b.disabled = !audio.enabled;
   }
 
   bindSwitch(
@@ -515,6 +517,8 @@
   // One row per sound, from audio.js's own list, so a sound added there turns
   // up here without anyone writing markup for it.
   for (const snd of audio.sounds) {
+    const block = document.createElement('div');
+    block.className = 'sound';
     const row = document.createElement('div');
     row.className = 'setting toggle';
     const text = document.createElement('div');
@@ -530,7 +534,35 @@
     input.className = 'switch';
     input.type = 'checkbox';
     row.append(text, input);
-    soundList.appendChild(row);
+    block.append(row);
+
+    // Its three voices. Picking one plays it, since a name is no use on its own.
+    const voices = document.createElement('div');
+    voices.className = 'choices voices';
+    voices.setAttribute('role', 'group');
+    voices.setAttribute('aria-label', `${snd.name} sound`);
+    const paintVoices = () => {
+      for (const b of voices.children) {
+        b.setAttribute('aria-pressed', String(Number(b.dataset.v) === audio.voiceOf(snd.key)));
+      }
+    };
+    audio.voices(snd.key).forEach((name, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.dataset.v = String(i);
+      b.textContent = name;
+      b.addEventListener('mousedown', (e) => e.preventDefault());
+      b.addEventListener('click', () => {
+        audio.setVoice(snd.key, i);
+        paintVoices();
+        audio.play(snd.key);
+      });
+      voices.appendChild(b);
+    });
+    paintVoices();
+    block.append(voices);
+    soundList.appendChild(block);
+
     bindSwitch(
       input,
       () => audio.isOn(snd.key),

@@ -86,7 +86,7 @@ heroterm
 - 🎨 **6 themes**, from deep-space blue to a paper light theme
 - 🔤 **Any installed font**, with terminal and interface sizes set separately
 - 👻 **Fade** the windows you're not using
-- 🔊 **Sound** on/off, per sound
+- 🔊 **Sound** on/off, per sound, each with three voices to choose between
 - ✨ **Flying stars** on/off
 - 🤫 **Quiet commands** — a dev server shouldn't ring and fly the stars all day
 - 🛑 **Confirm before closing** a window: never, while something runs, or always

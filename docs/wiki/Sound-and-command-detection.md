@@ -5,8 +5,15 @@ finishes — a falling two-note one if it exited non-zero, so you can tell a
 finished build from a broken one without looking. Settings → Sound has a master
 switch and one for each sound — command starts, while it runs, finished,
 failed, terminal bell — and turning one on plays it, so you know which is
-which. The list comes from `public/audio.js`, so a sound added there shows up
-in it without any markup. Choices are remembered.
+which. Each also has three voices — the command start can be a Bell, a Blip or
+a Wood block; the ticking a Clock, a Click or a Pulse; the finish a Chime, a
+Rise or a Bloom; a failure a Fall, a Thud or a Buzz; the terminal bell a Knock,
+a Tap or a Glass — and picking one plays it. The first of each is the original,
+so nothing changes until you choose.
+
+Both the list and the voices come from `public/audio.js`, so a sound or a voice
+added there turns up in settings without any markup: a voice is a name and a
+few enveloped oscillators. Choices are remembered.
 
 Commands shorter than 300ms never tick; otherwise every `ls` would rattle. And
 commands you've listed under Settings → Behavior → Quiet commands make no sound

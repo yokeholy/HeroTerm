@@ -951,8 +951,28 @@
         transition: opacity 150ms;
       }
 
+      #settings .sound + .sound {
+        margin-top: 18px;
+      }
+
       #settings .sounds .setting {
         margin-top: 18px;
+      }
+
+      /* The three voices of one sound: smaller than a page-level choice, and
+         tucked under the switch they belong to. */
+      #settings .voices {
+        margin-top: 8px;
+      }
+
+      #settings .voices button {
+        padding: 5px 8px;
+        font-size: calc(11px * var(--ui-scale, 1));
+      }
+
+      #settings .voices button:disabled {
+        cursor: default;
+        opacity: 0.6;
       }
 
       /* With the master switch off, the list is still there to read, but none
