@@ -18,6 +18,9 @@ const els = {
   add: document.getElementById('add'),
   tray: document.getElementById('tray'),
   arrange: document.getElementById('arrange'),
+  overview: document.getElementById('overview'),
+  ovBack: document.getElementById('ov-back'),
+  ovTags: document.getElementById('ov-tags'),
 };
 
 const audio = window.HEROTERM_AUDIO;
@@ -412,6 +415,7 @@ function spawn(id, box, name) {
 
 function add() {
   if (containers.length >= MAX_CONTAINERS) return;
+  closeOverview(null); // a new window shouldn't arrive behind a grid of thumbnails
   // More than one container only makes sense floating; full-bleed would stack
   // them exactly on top of each other. The one that replaces the last window
   // takes whichever mode you were in.
@@ -558,6 +562,178 @@ function arrange() {
   page.save();
   if (focused) focused.focus();
 }
+
+/* ---------- every window at once ---------- */
+
+// A window dropped entirely behind another is invisible and unclickable, and
+// the only way back is to move the one on top. This is the way out: everything
+// shrinks into a grid, you click the one you were looking for, and they all go
+// back exactly where they were.
+//
+// Nothing is moved or resized to do it — each window is scaled where it stands
+// with a CSS transform, which the terminal inside never sees. A real resize
+// would reflow it, and a window that came back 40 columns wide instead of 100
+// is not the window you went looking for.
+
+const OV_GAP = 22; // between thumbnails
+const OV_TAG = 26; // room under each for its name
+
+let overviewing = false;
+let overviewMemo = null; // which windows were minimized before we opened
+
+function paintOverview() {
+  els.overview.setAttribute('aria-pressed', String(overviewing));
+  els.overview.setAttribute('aria-label', overviewing ? 'Back to the windows' : 'Show every window');
+}
+
+// The grid, using the same planner the arrange button uses, so both agree on
+// what a sensible set of rows looks like.
+function overviewCells(n) {
+  const a = tileArea();
+  const counts = plan(n, a);
+  const cells = [];
+  counts.forEach((k, row) => {
+    const top = a.y + (a.h * row) / counts.length;
+    const bottom = a.y + (a.h * (row + 1)) / counts.length;
+    for (let i = 0; i < k; i += 1) {
+      const left = a.x + (a.w * i) / k;
+      const right = a.x + (a.w * (i + 1)) / k;
+      cells.push({
+        x: left + OV_GAP / 2,
+        y: top + OV_GAP / 2,
+        w: right - left - OV_GAP,
+        h: bottom - top - OV_GAP - OV_TAG,
+      });
+    }
+  });
+  return cells;
+}
+
+function layOutOverview() {
+  // Reading order, by where each window is now, so a window ends up roughly
+  // where you would look for it rather than in creation order.
+  const shown = [...containers].sort((p, q) => {
+    const a = p.visibleRect();
+    const b = q.visibleRect();
+    return a.y + a.h / 2 - (b.y + b.h / 2) || a.x - b.x;
+  });
+  const cells = overviewCells(shown.length);
+  const tags = [];
+
+  shown.forEach((c, i) => {
+    const cell = cells[i];
+    const r = c.visibleRect();
+    const k = Math.min(cell.w / r.w, cell.h / r.h, 1);
+    // Where the card's top-left has to land for the thumbnail to sit centred
+    // in its cell. The element is the deck, whose top is the cascade band
+    // above the card, so that offset comes out of the translation.
+    const x = cell.x + (cell.w - k * r.w) / 2;
+    const y = cell.y + (cell.h - k * r.h) / 2;
+    const lift = r.y - c.box.y; // the band above the card
+    c.el.dataset.flying = '';
+    c.el.style.transformOrigin = '0 0';
+    c.el.style.transform = `translate(${x - c.box.x}px, ${y - c.box.y - k * lift}px) scale(${k})`;
+
+    const tag = document.createElement('div');
+    tag.className = 'tag';
+    tag.textContent = c.name;
+    if (overviewMemo && overviewMemo.has(c.id)) tag.dataset.min = '';
+    // Under the thumbnail, not under the cell: a window keeps its own shape,
+    // so where it ends inside its cell is where its name belongs.
+    tag.style.left = `${x + (k * r.w) / 2}px`;
+    tag.style.top = `${y + k * r.h + 8}px`;
+    tags.push(tag);
+  });
+
+  els.ovTags.replaceChildren(...tags);
+}
+
+function openOverview() {
+  if (overviewing || !windowed || !containers.length) return;
+
+  // A sheet would sit over the whole thing; close whichever is up.
+  for (const [id, api] of [
+    ['settings', window.HEROTERM_SETTINGS],
+    ['help', window.HEROTERM_HELP],
+    ['stats', window.HEROTERM_STATS],
+  ]) {
+    const panel = document.getElementById(id);
+    if (api && panel && !panel.hidden) api.close();
+  }
+
+  // Minimized windows are exactly the ones you have lost, so they take part —
+  // and go back to the tray afterwards unless you pick one.
+  overviewMemo = new Set(containers.filter((c) => c.minimized).map((c) => c.id));
+  for (const c of containers) if (c.minimized) c.setMinimized(false);
+
+  overviewing = true;
+  document.body.toggleAttribute('data-overview', true);
+  els.ovBack.hidden = false;
+  els.ovTags.hidden = false;
+  // Keys are the page's while this is up, not the shell's.
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  layOutOverview();
+  paintOverview();
+}
+
+function closeOverview(pick) {
+  if (!overviewing) return;
+  overviewing = false;
+  document.body.removeAttribute('data-overview');
+  els.ovBack.hidden = true;
+  els.ovTags.hidden = true;
+  els.ovTags.replaceChildren();
+
+  for (const c of containers) {
+    c.el.style.transform = '';
+    c.el.style.transformOrigin = '';
+    // Left on until the windows have flown home, or they would jump.
+    setTimeout(() => c.el.removeAttribute('data-flying'), 260);
+  }
+
+  // Whatever was in the tray goes back to the tray — except the one you came
+  // here to find.
+  for (const c of containers) {
+    if (overviewMemo.has(c.id) && c !== pick) c.setMinimized(true);
+  }
+  overviewMemo = null;
+
+  if (pick) {
+    page.focus(pick);
+    pick.focus();
+    page.runStateChanged(); // a restored window may be one that's working
+  } else if (focused) {
+    focused.focus();
+  }
+  paintOverview();
+  page.save();
+}
+
+function toggleOverview() {
+  if (overviewing) closeOverview(null);
+  else openOverview();
+}
+
+// Down rather than up, and in the capture phase: a mousedown on a title bar
+// starts a drag, and on a card focuses a terminal. Neither is what a click
+// means while this is open.
+window.addEventListener(
+  'mousedown',
+  (e) => {
+    if (!overviewing) return;
+    if (e.target.closest('#controls') || e.target.closest('.sheet')) return;
+    const deck = e.target.closest('.deck');
+    const pick = deck ? containers.find((c) => c.el === deck) : null;
+    e.preventDefault();
+    e.stopPropagation();
+    closeOverview(pick || null); // a click on nothing leaves things as they were
+  },
+  true
+);
+
+window.addEventListener('resize', () => {
+  if (overviewing) layOutOverview();
+});
 
 /* ---------- where the sky flies from ---------- */
 
@@ -747,6 +923,10 @@ function applyMode() {
   // Full-tab mode is already the one window filling everything.
   els.arrange.disabled = !windowed;
   els.arrange.title = windowed ? '' : 'Pop out into windows to arrange them';
+  // One window filling the tab can't be behind anything.
+  els.overview.disabled = !windowed || containers.length < 2;
+  els.overview.title = els.overview.disabled ? 'Only with windows to choose between' : '';
+  if (overviewing && els.overview.disabled) closeOverview(null);
   sky.setActive(windowed);
   for (const c of containers) {
     c.applyBox();
@@ -847,6 +1027,9 @@ els.add.addEventListener('click', add);
 els.arrange.addEventListener('mousedown', (e) => e.preventDefault());
 els.arrange.addEventListener('click', arrange);
 
+els.overview.addEventListener('mousedown', (e) => e.preventDefault());
+els.overview.addEventListener('click', toggleOverview);
+
 els.mode.addEventListener('mousedown', (e) => e.preventDefault());
 els.mode.addEventListener('click', () => setMode(!windowed));
 
@@ -941,6 +1124,15 @@ window.addEventListener(
   (e) => {
     // A name being renamed is a text field; Cmd-K there should not wipe a grid.
     if (document.activeElement && document.activeElement.isContentEditable) return;
+    // While every window is on show, the keys belong to it: Escape puts them
+    // back, and nothing else fires at a window you're in the middle of picking.
+    if (overviewing) {
+      if (e.key === 'Escape' || (e.metaKey && e.key === 'd')) {
+        closeOverview(null);
+        e.preventDefault();
+      }
+      return;
+    }
     // Cmd-D opens a window, whether or not one has focus — as + does. Cmd-T
     // does too, where the browser lets it through; most keep Cmd-T for a new
     // tab of their own, while Cmd-D (bookmark this page) a page may claim.

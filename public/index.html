@@ -233,6 +233,86 @@
         opacity: var(--dim, 0.2);
       }
 
+      /* ---------- every window at once ---------- */
+
+      /* The windows are scaled where they stand rather than moved: a resize
+         would reflow the terminal inside, and a window that came back with a
+         different number of columns than it left with is not the window you
+         lost. So nothing here touches a box — only transforms, which the
+         terminal never sees. */
+      .deck[data-flying] {
+        transition: transform 0.24s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.24s ease;
+      }
+
+      /* All of them at once means all of them lit: the dimming that tells you
+         which window has focus is the opposite of the point here. */
+      body[data-overview] .deck {
+        opacity: 1 !important;
+        pointer-events: auto;
+        cursor: pointer;
+      }
+
+      /* Clicks land on the deck as a whole — you are picking a window, not
+         clicking into a terminal 30% of its real size. */
+      body[data-overview] .deck .card,
+      body[data-overview] .deck .edge {
+        pointer-events: none;
+      }
+
+      body[data-overview] .deck .card[data-front] {
+        outline: 1px solid transparent;
+        outline-offset: 3px;
+        transition: outline-color 0.12s ease;
+      }
+
+      body[data-overview] .deck:hover .card[data-front] {
+        outline-color: var(--yellow, #d9a86c);
+      }
+
+      #ov-back {
+        position: fixed;
+        inset: 0;
+        z-index: 5; /* under the windows, over the sky */
+        background: var(--veil, rgba(5, 7, 12, 0.88));
+        opacity: 0.72; /* less than a sheet's: the windows are the point here */
+        backdrop-filter: blur(3px);
+        animation: ov-fade 0.24s ease;
+      }
+
+      @keyframes ov-fade {
+        from {
+          opacity: 0;
+        }
+      }
+
+      #ov-tags {
+        position: fixed;
+        inset: 0;
+        z-index: 55; /* over the windows, under the sheets */
+        pointer-events: none;
+      }
+
+      #ov-tags .tag {
+        position: absolute;
+        transform: translateX(-50%);
+        max-width: 240px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        padding: 3px 9px;
+        border-radius: 999px;
+        font-size: calc(11px * var(--ui-scale, 1));
+        letter-spacing: 0.02em;
+        color: var(--fg, #e6e6e6);
+        background: var(--surface, rgba(18, 22, 30, 0.9));
+        border: 1px solid var(--hairline, rgba(255, 255, 255, 0.12));
+      }
+
+      #ov-tags .tag[data-min] {
+        font-style: italic;
+        opacity: 0.75;
+      }
+
       .deck {
         transition: opacity 260ms ease;
       }
@@ -1804,6 +1884,17 @@
         </svg>
       </button>
 
+      <button id="overview" class="chip" type="button" aria-pressed="false" aria-label="Show every window">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+          <g fill="none" stroke="currentColor" stroke-width="1.35">
+            <rect x="1.7" y="2.4" width="6.1" height="4.6" rx="1" />
+            <rect x="9.4" y="2.4" width="4.9" height="4.6" rx="1" />
+            <rect x="1.7" y="8.6" width="4.2" height="5" rx="1" />
+            <rect x="7.5" y="8.6" width="6.8" height="5" rx="1" />
+          </g>
+        </svg>
+      </button>
+
       <button
         id="statsbtn"
         class="chip"
@@ -1894,6 +1985,12 @@
     <div id="snap" hidden></div>
     <div id="snap-b" hidden></div>
 
+    <!-- Every window at once. The backdrop sits under the windows and catches
+         a click on nothing; the tags sit over them, since a window shrunk to a
+         thumbnail can't show its own name legibly. -->
+    <div id="ov-back" hidden></div>
+    <div id="ov-tags" hidden aria-hidden="true"></div>
+
     <footer id="status">
       <span id="state" data-live="pending"><span id="dot"></span><span id="state-text">Connecting</span></span>
 
@@ -1967,6 +2064,9 @@
           <dd>another terminal</dd>
           <dt>grid</dt>
           <dd>arrange every window to fill the screen; press again to put them back</dd>
+          <dt>windows</dt>
+          <dd>show every window at once, minimized ones included — click one to go
+            to it, Escape to leave them as they were</dd>
           <dt>bars</dt>
           <dd>what you type most, from your whole shell history</dd>
           <dt>expand</dt>

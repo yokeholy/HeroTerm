@@ -57,6 +57,7 @@ heroterm stop     # end it
 | **?** | help |
 | **＋** | new terminal |
 | **▦** | arrange every window to fill the screen; press again to put them back |
+| **⊞** | show every window at once — click one to go to it (a buried window's way back) |
 | **▮▮▮** | the commands you type most |
 | **⛶** | browser full screen |
 | **▢** | float the terminal over the star field |

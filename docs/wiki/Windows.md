@@ -5,13 +5,14 @@ and the two things that surprise people. Escape or a click outside closes it.
 Its text lives in the markup in `public/index.html`, so editing it is editing
 the page.
 
-Six buttons, top-right corner of the page. They belong to the page rather
+Seven buttons, top-right corner of the page. They belong to the page rather
 than to any window, so they stay put whatever the deck is doing:
 
 | | |
 |---|---|
 | plus | another terminal, in a container of its own |
 | grid | arrange every window to fill the screen, all about the same size |
+| windows | every window at once — see below |
 | bars | what you actually type — see below |
 | sliders | settings |
 | expand | the browser's own full screen — the whole display, tab strip gone |
@@ -176,3 +177,20 @@ Pressing it again puts every window back where it was — as long as nothing
 has changed in between. The button stays lit while that's true; move or
 resize a window, open or close one, and it goes dark and the next press
 arranges afresh instead. The undo survives a reload.
+
+## Every window at once
+
+A window dropped squarely behind another is invisible and unclickable, and the
+only way back would be to move the one on top. The windows button is the way
+out: every window shrinks into a grid with its name under it, you click the one
+you were looking for, and they all go back exactly where they were with that
+one in front. Escape, or a click on the background, leaves everything as it
+was.
+
+Minimized windows take part too — they are, after all, the ones most easily
+lost — and go back to the tray afterwards unless you pick one.
+
+Nothing is moved or resized to do this. Each window is scaled where it stands
+with a CSS transform, which the terminal inside never sees: a real resize would
+reflow it, and a window that came back 40 columns wide instead of 100 is not
+the window you went looking for.
