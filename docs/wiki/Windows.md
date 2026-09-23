@@ -82,13 +82,19 @@ leaving you towing a half-screen slab. On a free drag the edges are magnetic —
 they line up with the screen's sides and middle and with every other window,
 within a few pixels.
 
+You aim at the real edges of the screen, but a snapped window lands in the same
+inset area that arranging tiles into and the green light fills: clear of the
+buttons along the top and the status bar along the bottom, with a margin down
+each side and a gap between two halves. Snapped, arranged and maximized windows
+therefore line up with each other, and nothing ends up underneath the page's
+own furniture. The margin is `TILE_GAP` in `public/app.js`.
+
 Snapping works in the coordinates of the window you can see, not the deck box
 that holds it: a deck is taller than its window by the band the older commands
 cascade into, so a window snapped to the top of the screen puts its title bar
 there rather than 36px of empty air.
 
-Where you put it is remembered, including which mode you were in. The two size buttons are independent, so a floating
-deck on a full-screen star field is available if you want it.
+Where you put it is remembered.
 
 The status line along the bottom — connection, deck position, grid size — is
 page furniture too.

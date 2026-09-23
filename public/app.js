@@ -805,26 +805,40 @@ const rect = (x, y, w, h) => ({
 // Where the pointer is aiming, or null for "leave it where you drop it".
 // Corners are tested first: within EDGE of one side and CORNER along another
 // is a quarter, not a half.
+//
+// Two areas, on purpose. You aim at the real edges of the screen — that is
+// what a screen edge is for — but a window lands in the same inset area that
+// arranging tiles into and the green light fills: clear of the buttons along
+// the top and the status bar along the bottom, with a margin down the sides
+// and a gap between halves. Snapped, arranged and maximized windows then all
+// line up, and nothing lands underneath the page's own furniture.
 function snapZone(px, py) {
-  const a = workArea();
+  const v = workArea(); // where the pointer has to be
+  const a = tileArea(); // ...and where the window goes
   const L = px <= EDGE;
-  const R = px >= a.w - EDGE;
+  const R = px >= v.w - EDGE;
   const T = py <= EDGE;
-  const B = py >= a.h - EDGE;
+  const B = py >= v.h - EDGE;
   const nearT = py <= CORNER;
-  const nearB = py >= a.h - CORNER;
+  const nearB = py >= v.h - CORNER;
   const nearL = px <= CORNER;
-  const nearR = px >= a.w - CORNER;
+  const nearR = px >= v.w - CORNER;
 
-  if ((L && nearT) || (T && nearL)) return rect(0, 0, a.w / 2, a.h / 2);
-  if ((R && nearT) || (T && nearR)) return rect(a.w / 2, 0, a.w / 2, a.h / 2);
-  if ((L && nearB) || (B && nearL)) return rect(0, a.h / 2, a.w / 2, a.h / 2);
-  if ((R && nearB) || (B && nearR)) return rect(a.w / 2, a.h / 2, a.w / 2, a.h / 2);
+  // Halves give up half a gap each where they meet, as tiles do.
+  const halfW = (a.w - TILE_GAP) / 2;
+  const halfH = (a.h - TILE_GAP) / 2;
+  const eastX = a.x + halfW + TILE_GAP;
+  const southY = a.y + halfH + TILE_GAP;
 
-  if (T) return rect(0, 0, a.w, a.h); // the whole work area
-  if (L) return rect(0, 0, a.w / 2, a.h);
-  if (R) return rect(a.w / 2, 0, a.w / 2, a.h);
-  if (B) return rect(0, a.h / 2, a.w, a.h / 2);
+  if ((L && nearT) || (T && nearL)) return rect(a.x, a.y, halfW, halfH);
+  if ((R && nearT) || (T && nearR)) return rect(eastX, a.y, halfW, halfH);
+  if ((L && nearB) || (B && nearL)) return rect(a.x, southY, halfW, halfH);
+  if ((R && nearB) || (B && nearR)) return rect(eastX, southY, halfW, halfH);
+
+  if (T) return rect(a.x, a.y, a.w, a.h); // all of it, as the green light does
+  if (L) return rect(a.x, a.y, halfW, a.h);
+  if (R) return rect(eastX, a.y, halfW, a.h);
+  if (B) return rect(a.x, southY, a.w, halfH);
   return null;
 }
 
