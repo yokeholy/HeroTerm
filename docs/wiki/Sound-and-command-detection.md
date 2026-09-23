@@ -5,11 +5,12 @@ finishes — a falling two-note one if it exited non-zero, so you can tell a
 finished build from a broken one without looking. Settings → Sound has a master
 switch and one for each sound — command starts, while it runs, finished,
 failed, terminal bell — and turning one on plays it, so you know which is
-which. Each also has three voices — the command start can be a Bell, a Blip or
-a Wood block; the ticking a Clock, a Click or a Pulse; the finish a Chime, a
-Rise or a Bloom; a failure a Fall, a Thud or a Buzz; the terminal bell a Knock,
-a Tap or a Glass — and picking one plays it. The first of each is the original,
-so nothing changes until you choose.
+which. Each also has three voices, chosen from the dropdown under its switch:
+the command start can be a Bell, a Blip or a Wood block; the ticking a Clock, a
+Click or a Pulse; the finish a Chime, a Rise or a Bloom; a failure a Fall, a
+Thud or a Buzz; the terminal bell a Knock, a Tap or a Glass. Picking one plays
+it, and the first of each is the original, so nothing changes until you
+choose.
 
 Both the list and the voices come from `public/audio.js`, so a sound or a voice
 added there turns up in settings without any markup: a voice is a name and a
