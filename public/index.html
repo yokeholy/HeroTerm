@@ -959,20 +959,56 @@
         margin-top: 18px;
       }
 
-      /* The three voices of one sound: smaller than a page-level choice, and
-         tucked under the switch they belong to. */
-      #settings .voices {
+      /* Which voice a sound speaks with, under the switch it belongs to. The
+         caret is drawn here because a native one can't be themed. */
+      #settings .voice {
+        position: relative;
+        display: inline-block;
         margin-top: 8px;
       }
 
-      #settings .voices button {
-        padding: 5px 8px;
-        font-size: calc(11px * var(--ui-scale, 1));
+      #settings .voice::after {
+        content: '▾';
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        color: var(--label, #6b7384);
+        pointer-events: none;
       }
 
-      #settings .voices button:disabled {
+      #settings .voice select {
+        appearance: none;
+        -webkit-appearance: none;
+        min-width: 140px;
+        padding: 6px 28px 6px 10px;
+        border: 1px solid var(--hairline, #252a35);
+        border-radius: 7px;
+        background: transparent;
+        color: var(--fg, #d6d9e0);
+        font: calc(12px * var(--ui-scale, 1))/1.3 var(--font, monospace);
+        cursor: pointer;
+      }
+
+      #settings .voice select:hover {
+        border-color: var(--label, #6b7384);
+      }
+
+      #settings .voice select:focus-visible {
+        outline: 1px solid var(--cursor, #e9a13b);
+        outline-offset: 2px;
+      }
+
+      #settings .voice select:disabled {
         cursor: default;
         opacity: 0.6;
+      }
+
+      /* The menu itself is drawn by the browser, so its colours are set here
+         rather than inherited. */
+      #settings .voice option {
+        background: var(--bg, #171b24);
+        color: var(--fg, #d6d9e0);
       }
 
       /* With the master switch off, the list is still there to read, but none

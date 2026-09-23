@@ -501,7 +501,7 @@
     soundList.toggleAttribute('data-muted', !audio.enabled);
     for (const input of soundList.querySelectorAll('input')) input.disabled = !audio.enabled;
     // Nothing to choose between while it can't be heard.
-    for (const b of soundList.querySelectorAll('.voices button')) b.disabled = !audio.enabled;
+    for (const s of soundList.querySelectorAll('.voice select')) s.disabled = !audio.enabled;
   }
 
   bindSwitch(
@@ -536,31 +536,24 @@
     row.append(text, input);
     block.append(row);
 
-    // Its three voices. Picking one plays it, since a name is no use on its own.
-    const voices = document.createElement('div');
-    voices.className = 'choices voices';
-    voices.setAttribute('role', 'group');
+    // Its three voices. Choosing one plays it, since a name is no use on its own.
+    const pick = document.createElement('label');
+    pick.className = 'voice';
+    const voices = document.createElement('select');
     voices.setAttribute('aria-label', `${snd.name} sound`);
-    const paintVoices = () => {
-      for (const b of voices.children) {
-        b.setAttribute('aria-pressed', String(Number(b.dataset.v) === audio.voiceOf(snd.key)));
-      }
-    };
     audio.voices(snd.key).forEach((name, i) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.dataset.v = String(i);
-      b.textContent = name;
-      b.addEventListener('mousedown', (e) => e.preventDefault());
-      b.addEventListener('click', () => {
-        audio.setVoice(snd.key, i);
-        paintVoices();
-        audio.play(snd.key);
-      });
-      voices.appendChild(b);
+      const option = document.createElement('option');
+      option.value = String(i);
+      option.textContent = name;
+      voices.append(option);
     });
-    paintVoices();
-    block.append(voices);
+    voices.value = String(audio.voiceOf(snd.key));
+    voices.addEventListener('change', () => {
+      audio.setVoice(snd.key, Number(voices.value));
+      audio.play(snd.key);
+    });
+    pick.append(voices);
+    block.append(pick);
     soundList.appendChild(block);
 
     bindSwitch(
