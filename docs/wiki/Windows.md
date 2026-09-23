@@ -18,6 +18,9 @@ than to any window, so they stay put whatever the deck is doing:
 | expand | the browser's own full screen — the whole display, tab strip gone |
 | square | pop the deck out of the tab into a floating window, and back |
 
+Rest the pointer on any button for two seconds and it says what it does —
+including the ones that are greyed out, where what you want to know is why.
+
 The window you're working in breathes: its glow swells and settles on a slow
 cycle, in whatever colour its last command left behind — grey when nothing has
 run, yellow while something is, green or red once it's done. The others fade to

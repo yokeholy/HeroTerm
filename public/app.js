@@ -584,6 +584,11 @@ let overviewMemo = null; // which windows were minimized before we opened
 function paintOverview() {
   els.overview.setAttribute('aria-pressed', String(overviewing));
   els.overview.setAttribute('aria-label', overviewing ? 'Back to the windows' : 'Show every window');
+  els.overview.dataset.tip = els.overview.disabled
+    ? 'Only with windows to choose between'
+    : overviewing
+      ? 'Back to the windows, with the one you pick in front'
+      : 'Show every window at once \u2014 click one to go to it';
 }
 
 // The grid, using the same planner the arrange button uses, so both agree on
@@ -918,15 +923,16 @@ function applyMode() {
   // Only one container can have the whole page, so the button is off while
   // there are several.
   els.mode.disabled = containers.length > 1;
-  els.mode.title = containers.length > 1 ? 'Close the others to fill the tab' : '';
+  // An empty tip falls back to the label, which already says what it does.
+  els.mode.dataset.tip = containers.length > 1 ? 'Close the others to fill the tab' : '';
   els.add.disabled = containers.length >= MAX_CONTAINERS;
   // Full-tab mode is already the one window filling everything.
   els.arrange.disabled = !windowed;
-  els.arrange.title = windowed ? '' : 'Pop out into windows to arrange them';
+  els.arrange.dataset.tip = windowed ? '' : 'Pop out into windows to arrange them';
   // One window filling the tab can't be behind anything.
   els.overview.disabled = !windowed || containers.length < 2;
-  els.overview.title = els.overview.disabled ? 'Only with windows to choose between' : '';
   if (overviewing && els.overview.disabled) closeOverview(null);
+  paintOverview(); // its tip says why, when it can't be pressed
   sky.setActive(windowed);
   for (const c of containers) {
     c.applyBox();
@@ -1059,7 +1065,9 @@ function renderExpand() {
   const on = Boolean(fsElement());
   els.expand.setAttribute('aria-pressed', String(on));
   els.expand.setAttribute('aria-label', on ? 'Leave full screen' : 'Full screen');
-  els.expand.title = on ? 'Leave full screen' : 'Full screen';
+  els.expand.dataset.tip = on
+    ? 'Leave the browser\u2019s full screen'
+    : 'The browser\u2019s own full screen \u2014 the whole display, tab strip gone';
 }
 
 if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) {
@@ -1069,7 +1077,7 @@ if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) {
 
   function unavailable() {
     els.expand.disabled = true;
-    els.expand.title = 'Full screen is blocked in this browser';
+    els.expand.dataset.tip = 'Full screen is blocked in this browser';
     els.expand.setAttribute('aria-label', els.expand.title);
   }
 

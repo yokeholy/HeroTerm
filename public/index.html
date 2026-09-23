@@ -313,6 +313,34 @@
         opacity: 0.75;
       }
 
+      /* ---------- tooltips ---------- */
+
+      /* Over everything, including the sheets, since the buttons inside them
+         have tips too. It never takes a click: it is an explanation, not a
+         thing to press. */
+      #tip {
+        position: fixed;
+        z-index: 200;
+        pointer-events: none;
+        max-width: 280px;
+        padding: 5px 9px;
+        border-radius: 7px;
+        font-size: calc(11.5px * var(--ui-scale, 1));
+        line-height: 1.35;
+        color: var(--fg, #e6e6e6);
+        background: var(--surface, rgba(18, 22, 30, 0.96));
+        border: 1px solid var(--hairline, rgba(255, 255, 255, 0.12));
+        box-shadow: 0 6px 20px var(--shadow, rgba(0, 0, 0, 0.45));
+        animation: tip-in 0.12s ease;
+      }
+
+      @keyframes tip-in {
+        from {
+          opacity: 0;
+          transform: translateY(-2px);
+        }
+      }
+
       .deck {
         transition: opacity 260ms ease;
       }
@@ -1866,7 +1894,8 @@
     <button id="helpbtn" class="chip" type="button" aria-expanded="false" aria-label="Help">?</button>
 
     <div id="controls">
-      <button id="add" class="chip" type="button" aria-label="New terminal">
+      <button id="add" class="chip" type="button" aria-label="New terminal"
+              data-tip="New terminal (⌘D)">
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
           <path d="M8 3.5v9M3.5 8h9" fill="none" stroke="currentColor"
                 stroke-width="1.6" stroke-linecap="round" />
@@ -2197,7 +2226,7 @@
               <input id="set-tsize" type="range" min="8" max="32" step="1" />
               <input id="set-tsize-num" type="number" min="8" max="32" step="1" aria-label="Terminal text size, px" />
               <span class="unit">px</span>
-              <button id="set-tsize-reset" class="reset" type="button">Reset</button>
+              <button id="set-tsize-reset" class="reset" type="button" data-tip="Back to this theme’s own size">Reset</button>
             </div>
           </div>
 
@@ -2222,7 +2251,7 @@
               <input id="set-dim" type="range" min="0" max="100" step="1" />
               <input id="set-dim-num" type="number" min="0" max="100" step="1" aria-label="Unfocused window opacity, percent" />
               <span class="unit">%</span>
-              <button id="set-dim-reset" class="reset" type="button">Reset</button>
+              <button id="set-dim-reset" class="reset" type="button" data-tip="Back to this theme’s own value">Reset</button>
             </div>
           </div>
         </div>
@@ -2249,7 +2278,7 @@
               <input id="set-vol" type="range" min="0" max="100" step="1" />
               <input id="set-vol-num" type="number" min="0" max="100" step="1" aria-label="Volume, percent" />
               <span class="unit">%</span>
-              <button id="set-vol-reset" class="reset" type="button">Reset</button>
+              <button id="set-vol-reset" class="reset" type="button" data-tip="Back to 50%, the level the sounds were written at">Reset</button>
             </div>
           </div>
 
@@ -2395,5 +2424,6 @@
     <script src="/help.js"></script>
     <script src="/settings.js"></script>
     <script src="/app.js"></script>
+    <script src="/tips.js"></script>
   </body>
 </html>
