@@ -20,9 +20,17 @@
 
       /* Only shown where there is something to see: sky.js sets data-sky —
          windowed mode, or a moment's demo. */
+      /* A canvas is a replaced element: inset alone does not stretch it, it
+         takes its intrinsic size — which is the backing store, innerWidth
+         times the pixel ratio. On a retina screen that is a canvas twice the
+         viewport, anchored top left, with everything drawn into the top-left
+         quarter of it and the vanishing point off the bottom corner. The size
+         has to be said in CSS as well as in the attributes. */
       #sky {
         position: fixed;
         inset: 0;
+        width: 100%;
+        height: 100%;
         display: none;
       }
 
