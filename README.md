@@ -71,8 +71,8 @@ of them for a second and it says what it does.
 
 <table>
   <tr>
-    <td width="50%"><img src="https://raw.githubusercontent.com/yokeholy/HeroTerm/main/docs/arrange.png" alt="Four windows arranged across the screen: one running ping, one git log, one ls, one failed cat"></td>
-    <td width="50%"><img src="https://raw.githubusercontent.com/yokeholy/HeroTerm/main/docs/deck.png" alt="A window with the previous commands stacked behind it"></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/yokeholy/HeroTerm/main/docs/arrange.png" alt="Four windows tiled across the screen: a git log in green, a server still running in yellow, a failed git command in red, and a line count in green"></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/yokeholy/HeroTerm/main/docs/deck.png" alt="A window showing an earlier command, with the three commands run after it stacked above, and 2 back in the status bar"></td>
   </tr>
   <tr>
     <td align="center">▦ Arrange, and see every result at a glance</td>
@@ -94,7 +94,7 @@ of them for a second and it says what it does.
 
 ## 🎨 Make it yours
 
-![Settings beside the window they apply to](https://raw.githubusercontent.com/yokeholy/HeroTerm/main/docs/settings.png)
+![The settings sheet down the right-hand side, full height, with the window it is previewing fitted beside it](https://raw.githubusercontent.com/yokeholy/HeroTerm/main/docs/settings.png)
 
 - 🎨 **6 themes**, from deep-space blue to a paper light theme
 - 🔤 **Any installed font**, with terminal and interface sizes set separately
