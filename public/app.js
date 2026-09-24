@@ -382,6 +382,29 @@ function freshName() {
   return NAMES.find((n) => !taken.has(n)) || `Terminal ${containers.length + 1}`;
 }
 
+// A layout — or a saved screen — put together on a bigger display would leave
+// windows hanging off this one: off the bottom, where the title bar and the
+// three lights go with them. Shrink what doesn't fit and slide the rest back
+// on. Dragging a window half off an edge yourself is still your business;
+// this is only about boxes arriving from somewhere larger.
+function fitToScreen(box) {
+  const a = workArea();
+  const w = Math.max(MIN_BOX, Math.min(box.w, a.w - 2 * TILE_GAP));
+  // The deck is CARD_TOP taller than the window you see, and the strip along
+  // the top is the same height, so a deck of exactly the work area's height
+  // has its card in exactly the right place.
+  const h = Math.max(MIN_BOX, Math.min(box.h, a.h));
+  return {
+    ...box,
+    w,
+    h,
+    x: Math.round(Math.max(TILE_GAP, Math.min(box.x, a.x + a.w - TILE_GAP - w))),
+    y: Math.round(Math.max(0, Math.min(box.y, a.y + a.h - h))),
+  };
+}
+
+const MIN_BOX = 220; // below this a window is no use to anyone
+
 function defaultBox(n) {
   const w = Math.round(Math.min(900, window.innerWidth * 0.62));
   const h = Math.round(Math.min(620, window.innerHeight * 0.66));
@@ -739,14 +762,25 @@ window.addEventListener('resize', () => {
 // to answer for the current frame: commands start and stop, and a window can
 // be dragged or resized while its command runs.
 function runningCentre() {
+  const a = workArea();
   let x = 0;
   let y = 0;
   let n = 0;
   for (const c of visible()) {
     if (!c.session.running) continue;
     const r = c.visibleRect();
-    x += r.x + r.w / 2;
-    y += r.y + r.h / 2;
+    // The middle of the part you can see, not of the window. A window hanging
+    // off an edge — a layout that arrived from a bigger screen — would
+    // otherwise put the vanishing point outside the screen, and the stars
+    // would stream up from the bottom of the display instead of out of the
+    // window that is working.
+    const left = Math.max(r.x, a.x);
+    const right = Math.min(r.x + r.w, a.x + a.w);
+    const top = Math.max(r.y, a.y);
+    const bottom = Math.min(r.y + r.h, a.y + a.h);
+    if (right <= left || bottom <= top) continue; // nothing of it is on screen
+    x += (left + right) / 2;
+    y += (top + bottom) / 2;
     n += 1;
   }
   if (n) return { x: x / n, y: y / n };
@@ -755,7 +789,6 @@ function runningCentre() {
   // the viewport — the status bar takes 30px off the bottom, and the windows
   // already treat the smaller box as the screen. Falling back to the viewport
   // centre put the idle sky 15px below where everything else calls centre.
-  const a = workArea();
   return { x: a.x + a.w / 2, y: a.y + a.h / 2 };
 }
 
@@ -948,7 +981,8 @@ if (saved) {
   // window that comes back the wrong shape gets the box a new one would.
   const legacy = saved.windowed === false;
   saved.containers.slice(0, MAX_CONTAINERS).forEach((box, i) => {
-    const c = spawn(box.id, legacy || !(box.w > 200 && box.h > 150) ? defaultBox(i) : box, box.name);
+    const usable = !legacy && box.w > 200 && box.h > 150;
+    const c = spawn(box.id, usable ? fitToScreen(box) : defaultBox(i), box.name);
     if (box.min) c.setMinimized(true);
   });
 } else {
@@ -1013,7 +1047,8 @@ window.HEROTERM_WINDOWS = {
     for (const c of going) c.destroy();
 
     for (const w of windows.slice(0, MAX_CONTAINERS)) {
-      const c = spawn(null, { x: w.x, y: w.y, w: w.w, h: w.h }, w.name, w.cwd);
+      // A screen saved on the big monitor still has to fit the laptop.
+      const c = spawn(null, fitToScreen({ x: w.x, y: w.y, w: w.w, h: w.h }), w.name, w.cwd);
       if (w.min) c.setMinimized(true);
     }
     const shown = visible();
