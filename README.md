@@ -10,7 +10,7 @@
   <img alt="Node 18+" src="https://img.shields.io/badge/node-18%2B-339933?logo=node.js&logoColor=white">
 </p>
 
-![A ping running in its own window, its border yellow, three finished commands stacked behind it, and the star field streaking away from the one that's working](https://raw.githubusercontent.com/yokeholy/heroterm/main/docs/hero.png)
+![Three windows: a tall one on the left showing git log, its border green, with earlier commands stacked behind it; on the right a server still running, its border yellow, and below it a failed git command in red; the star field streaming out from the window that's working](https://raw.githubusercontent.com/yokeholy/HeroTerm/main/docs/hero.png)
 
 ## ✨ Why HeroTerm
 
@@ -71,8 +71,8 @@ of them for a second and it says what it does.
 
 <table>
   <tr>
-    <td width="50%"><img src="https://raw.githubusercontent.com/yokeholy/heroterm/main/docs/arrange.png" alt="Four windows arranged across the screen: one running ping, one git log, one ls, one failed cat"></td>
-    <td width="50%"><img src="https://raw.githubusercontent.com/yokeholy/heroterm/main/docs/deck.png" alt="A window with the previous commands stacked behind it"></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/yokeholy/HeroTerm/main/docs/arrange.png" alt="Four windows arranged across the screen: one running ping, one git log, one ls, one failed cat"></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/yokeholy/HeroTerm/main/docs/deck.png" alt="A window with the previous commands stacked behind it"></td>
   </tr>
   <tr>
     <td align="center">▦ Arrange, and see every result at a glance</td>
@@ -94,7 +94,7 @@ of them for a second and it says what it does.
 
 ## 🎨 Make it yours
 
-![Settings beside the window they apply to](https://raw.githubusercontent.com/yokeholy/heroterm/main/docs/settings.png)
+![Settings beside the window they apply to](https://raw.githubusercontent.com/yokeholy/HeroTerm/main/docs/settings.png)
 
 - 🎨 **6 themes**, from deep-space blue to a paper light theme
 - 🔤 **Any installed font**, with terminal and interface sizes set separately
