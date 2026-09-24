@@ -26,7 +26,7 @@ const USAGE = `
     heroterm status             what is running, and where
 
   Options
-    -p, --port <n>   port to listen on (default 7777, or $PORT)
+    -p, --port <n>   port to listen on (default 7777, or $HEROTERM_PORT)
         --no-open    don't open the browser; just print the URL
         --all        stop every background one, whatever the port
     -v, --version    print the version
@@ -150,7 +150,7 @@ function start(port, open) {
     stdio: ['ignore', log, log],
     env: {
       ...process.env,
-      PORT: String(port),
+      HEROTERM_PORT: String(port),
       HEROTERM_STATE: stateFile(port),
       HEROTERM_OPEN: '', // the browser is this end's job, once there's a URL
     },
@@ -271,7 +271,7 @@ if (argv.length && !argv[0].startsWith('-')) {
   command = first;
 }
 
-let port = Number(process.env.PORT || 7777);
+let port = Number(process.env.HEROTERM_PORT || process.env.PORT || 7777);
 let open = true;
 let all = false;
 
@@ -316,7 +316,7 @@ async function main() {
     return;
   }
   // Here, in this terminal, the way it has always worked.
-  process.env.PORT = String(port);
+  process.env.HEROTERM_PORT = String(port);
   if (open) process.env.HEROTERM_OPEN = '1';
   require('../server.js');
 }

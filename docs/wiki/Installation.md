@@ -52,7 +52,7 @@ outlive a `stop` should be inside `tmux` or `screen`.
 
 | | |
 |---|---|
-| `-p`, `--port <n>` | port to listen on (default 7777, or `$PORT`) |
+| `-p`, `--port <n>` | port to listen on (default 7777, or `$HEROTERM_PORT`; `$PORT` still works) |
 | `--no-open` | don't open the browser; just print the URL |
 | `--all` | with `stop`: every background one, whatever the port |
 | `-v`, `--version` | print the version |

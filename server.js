@@ -12,7 +12,13 @@ const history = require('./history');
 const fixSpawnHelper = require('./scripts/fix-spawn-helper');
 const fonts = require('./fonts');
 
-const PORT = Number(process.env.PORT || 7777);
+// HEROTERM_PORT, not PORT: a bare PORT is what half the world's dev servers
+// read, and whatever this one listens on used to be handed to every shell it
+// spawned — where dotenv and friends leave an already-set variable alone, so
+// a project's own PORT=4000 quietly lost to ours with nothing to say why.
+// $PORT is still read as a fallback, because `PORT=8080 npm start` has always
+// worked and is nobody's dev server at that point; it just never leaves here.
+const PORT = Number(process.env.HEROTERM_PORT || process.env.PORT || 7777);
 
 // Running from a git checkout — the copy being worked on — rather than an
 // installed package, which never ships a .git. The page marks itself so the
@@ -370,13 +376,23 @@ function createSession(id, cwd) {
         }
       : {};
 
+  // Your environment, less the bits that are this server's own business.
+  // A shell in a window is somewhere you work: it should look like the one
+  // you would have got from Terminal, not carry HeroTerm's plumbing around.
+  // PORT above all — see the note where it is read — but the state file's
+  // path and the browser flag are just as much noise, and a HEROTERM_PORT
+  // inherited by a nested `heroterm` would send it at the port already in
+  // use. HEROTERM_HOME, _SHELL, _GRACE and the rest are yours, and stay.
+  const env = { ...process.env };
+  for (const name of ['PORT', 'HEROTERM_PORT', 'HEROTERM_STATE', 'HEROTERM_OPEN']) delete env[name];
+
   const term = pty.spawn(SHELL, shellArgs, {
     name: 'xterm-256color',
     cols: 80,
     rows: 24,
     cwd: startingIn(cwd),
     env: {
-      ...process.env,
+      ...env,
       TERM: 'xterm-256color',
       COLORTERM: 'truecolor',
       HEROTERM: '1', // so your rc files can branch on this if you want

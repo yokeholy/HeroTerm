@@ -58,3 +58,18 @@ before you refreshed picks its ticking back up without dinging at you, and the
 deck doesn't open a second card for it.
 
 The grace period is per-process: restart the server and the shell goes with it.
+
+## What a window's shell inherits
+
+The environment HeroTerm was started with, plus `HEROTERM=1` so your rc files
+can tell, and `TERM=xterm-256color`.
+
+What it does *not* inherit is HeroTerm's own plumbing: the port it is
+listening on, where its state file lives, and whether it was asked to open a
+browser. The port matters most. HeroTerm used to pass its own `PORT` down, and
+`PORT` is what half the world's dev servers read — while dotenv and friends
+leave an already-set variable alone, so a project's own `PORT=4000` lost
+silently to HeroTerm's, with nothing on screen to say why. HeroTerm's port is
+`HEROTERM_PORT` now, and neither name reaches your shell. A `PORT` you export
+yourself, in your rc files or your project's `.env`, is your own and arrives
+untouched.

@@ -668,7 +668,7 @@
     const groups = [
       ['Server', [
         ['Shell', S.shell, env('HEROTERM_SHELL') + ', else $SHELL'],
-        ['Address', S.host && `${S.host}:${S.port}`, env('PORT') + ' · the host is loopback, always'],
+        ['Address', S.host && `${S.host}:${S.port}`, env('HEROTERM_PORT') + ' · the host is loopback, always'],
         ['Shells survive a closed tab for', S.grace != null && seconds(S.grace), env('HEROTERM_GRACE') + ' (seconds)'],
         ['Terminals at once', S.maxSessions, src('server.js', 'MAX_SESSIONS')],
         ['HeroTerm', S.version, 'package.json · version'],
