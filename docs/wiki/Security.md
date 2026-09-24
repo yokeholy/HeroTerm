@@ -39,3 +39,16 @@ Everything above about the token, plus what it doesn't cover:
 
 Found something worse? Open an issue, or mail the address on the GitHub
 profile if you'd rather not do it in public.
+
+## Which addresses it listens on
+
+Two sockets, both loopback: `127.0.0.1` and `::1`. Never `0.0.0.0`, never
+`::` — nothing outside the machine can reach it either way.
+
+It takes both because `localhost` is two addresses, and which one a browser
+tries first is the resolver's business: macOS tries `::1`. Holding only one
+leaves the other free for anything else to bind, and then the URL HeroTerm
+prints can land on a different program — the symptom is someone else's error
+page in a tab that should have been a terminal. A specific address also wins
+over a wildcard on both macOS and Linux, so a program already listening on
+`*:7777` does not take `localhost:7777` away from HeroTerm.

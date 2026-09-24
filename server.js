@@ -28,6 +28,7 @@ const DEV =
     ? process.env.HEROTERM_DEV === '1'
     : fs.existsSync(path.join(__dirname, '.git'));
 const HOST = '127.0.0.1'; // loopback only, never 0.0.0.0
+const HOST6 = '::1'; // ...and the same address in the other family, never ::
 const SHELL = process.env.HEROTERM_SHELL || process.env.SHELL || '/bin/zsh';
 
 // How long the shell outlives the tab. A refresh closes the socket exactly the
@@ -80,6 +81,7 @@ function shutdown() {
   clearState();
   for (const s of [...sessions.values()]) kill(s);
   server.close();
+  server6.close();
   // Long enough for the SIGHUPs to land; nothing is waiting on us.
   setTimeout(() => process.exit(0), 300);
 }
@@ -95,6 +97,7 @@ const TOKEN = crypto.randomBytes(24).toString('hex');
 const ALLOWED_ORIGINS = new Set([
   `http://127.0.0.1:${PORT}`,
   `http://localhost:${PORT}`,
+  `http://[::1]:${PORT}`,
 ]);
 
 // Flow control. Without it, `cat` on a large file floods the socket faster
@@ -183,7 +186,14 @@ app.get('/config', (req, res) => {
   });
 });
 
-const server = http.createServer(app);
+// Two servers, one app. `localhost` is 127.0.0.1 and ::1, and which one a
+// browser reaches first is the resolver's business, not ours — macOS tries
+// ::1 first. Listening on only one of them leaves the other free for anything
+// else to take, and then the URL we printed lands on a stranger's server: the
+// symptom is someone else's 404 in a tab that should have been a terminal.
+// Holding both means the address we hand out is ours whichever way it goes.
+const server = http.createServer(app); // 127.0.0.1
+const server6 = http.createServer(app); // ::1, where there is an IPv6 stack
 const wss = new WebSocketServer({ noServer: true });
 
 /* ------------------------------------------------------------------ *
@@ -497,7 +507,7 @@ function detach(s, ws) {
   }, s.grace);
 }
 
-server.on('upgrade', (req, socket, head) => {
+function upgrade(req, socket, head) {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const originOk = !req.headers.origin || ALLOWED_ORIGINS.has(req.headers.origin);
   const tokenOk = url.searchParams.get('token') === TOKEN;
@@ -508,7 +518,10 @@ server.on('upgrade', (req, socket, head) => {
     return;
   }
   wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
-});
+}
+
+server.on('upgrade', upgrade);
+server6.on('upgrade', upgrade);
 
 wss.on('connection', (ws, req) => {
   // Which container is asking. An unknown id is a brand-new one; a known id is
@@ -623,6 +636,22 @@ server.on('error', (err) => {
   throw err;
 });
 
+// The same port over IPv6, held by something else. Worth stopping for rather
+// than starting anyway: we would get 127.0.0.1 and the browser, resolving
+// localhost to ::1 first, would get them.
+server6.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n  Port ${PORT} is taken over IPv6 by another program.`);
+    console.error('  HeroTerm could have 127.0.0.1 — but your browser tries ::1 first,');
+    console.error('  and would reach that program instead of this one.\n');
+    console.error(`  Stop it, or pick another port: heroterm --port ${PORT + 1}\n`);
+    process.exit(1);
+  }
+  // No IPv6 on this machine, or no ::1 to bind: IPv4 alone is the whole story.
+  if (err.code === 'EAFNOSUPPORT' || err.code === 'EADDRNOTAVAIL' || err.code === 'EINVAL') return;
+  throw err;
+});
+
 // The `heroterm` command asks for this; `npm start` doesn't. The URL carries
 // the token, so it goes straight to the browser rather than via the clipboard.
 function openBrowser(url) {
@@ -637,6 +666,7 @@ function openBrowser(url) {
 }
 
 server.listen(PORT, HOST, () => {
+  server6.listen(PORT, HOST6);
   const url = `http://localhost:${PORT}/?token=${TOKEN}`;
   console.log(`\n  ${path.basename(SHELL)} is ready at${DEV ? ' (development copy)' : ''}:\n`);
   console.log(`  ${url}\n`);
