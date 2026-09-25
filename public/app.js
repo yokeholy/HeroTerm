@@ -92,76 +92,10 @@ let dragging = null;
 
 /* ---------- workspaces ---------- */
 
-// A workspace is a set of windows and the shells inside them. Switching hides
-// one set and shows another: nothing restarts, and a build left running on the
-// workspace you walked away from is still running when you come back.
-//
-// `containers` is always the workspace you are looking at, which is why the
-// rest of this file can go on saying `containers` and mean it — arranging,
-// snapping, the tray, the star field. The workspaces you are not looking at
-// keep their windows in `workspaces[i].windows`, alive and out of sight.
-const MAX_WORKSPACES = 6;
-const MAX_SHELLS = 24; // across every workspace; the server has the same ceiling
-
-// Closing one is the most destructive thing on the page — several shells at
-// once, and the × is a few pixels from the row that merely switches. So it
-// doesn't kill them: it lets go, and the server keeps the sessions for a
-// moment, the same way it does across a refresh. Undo inside that moment and
-// the whole workspace comes back with its shells still running. Ignore it and
-// they are reaped, only a little later than they would have been.
-const UNDO = 20; // seconds the offer stands
-let undone = null; // { index, name, windows: [...] } — one at a time
-let undoTimer = null;
-
-let workspaces = [{ id: 's1', name: '', windows: [], focused: null, arrangement: null }];
-let at = 0; // which workspace is in front
-
-const totalWindows = () =>
-  workspaces.reduce((n, s, i) => n + (i === at ? containers.length : s.windows.length), 0);
-
-// What the current workspace holds, written back to it before we look away.
-function rememberWorkspace() {
-  const s = workspaces[at];
-  if (!s) return;
-  s.windows = [...containers];
-  s.focused = focused;
-  s.arrangement = arrangement;
-}
-
-function showWorkspace(i) {
-  if (i === at || !workspaces[i]) return;
-  closeOverview(null);
-  rememberWorkspace();
-  for (const c of containers) c.el.toggleAttribute('data-away', true);
-
-  at = i;
-  const s = workspaces[at];
-  containers.length = 0;
-  containers.push(...s.windows);
-  arrangement = s.arrangement || null;
-  focused = null;
-
-  for (const c of containers) {
-    c.el.removeAttribute('data-away');
-    // Its box was set while it was out of sight, where a terminal has no size
-    // to fit itself to.
-    c.applyBox();
-    c.relayout();
-  }
-
-  const want = (s.focused && containers.includes(s.focused) && s.focused) || visible().slice(-1)[0];
-  if (want) {
-    page.focus(want);
-    want.focus();
-  } else {
-    paintStatus();
-    paintTitle();
-  }
-  paintControls();
-  page.runStateChanged();
-  page.save();
-  if (window.HEROTERM_SPACES) window.HEROTERM_SPACES.paint();
-}
+// Several sets of windows live in workspaces.js. What matters here is that
+// `containers` is always the set in front, so everything in this file can go
+// on saying `containers` and mean it. WS is created at boot, below.
+let WS = null;
 
 // Stacking order, in one place because the numbers only make sense together:
 //
@@ -190,21 +124,7 @@ const page = {
       min: c.minimized || undefined,
       zoom: c.zoom || undefined,
     });
-    writeLayout({
-      at,
-      workspaces: workspaces.map((s, i) => {
-        const here = i === at;
-        const windows = here ? containers : s.windows;
-        const its = here ? focused : s.focused;
-        return {
-          id: s.id,
-          name: s.name || undefined,
-          focused: its && windows.includes(its) ? its.id : null,
-          arrangement: here ? arrangement : s.arrangement,
-          containers: windows.map(boxOf),
-        };
-      }),
-    });
+    writeLayout(WS.serialize(boxOf));
     paintTray(); // names and minimized windows both end up here
     paintTitle(); // ...and a rename is one of those
     // The panel draws each workspace from where its windows are, so a move, a
@@ -536,7 +456,7 @@ function spawn(id, box, name, cwd, away) {
 const hereCwd = () => (focused && focused.cwd) || undefined;
 
 function add() {
-  if (containers.length >= MAX_CONTAINERS || totalWindows() >= MAX_SHELLS) return;
+  if (containers.length >= MAX_CONTAINERS || WS.total() >= WS.limits.shells) return;
   closeOverview(null); // a new window shouldn't arrive behind a grid of thumbnails
   const c = spawn(null, defaultBox(containers.length), undefined, hereCwd());
   page.focus(c);
@@ -1062,12 +982,12 @@ function pull(lo, hi, lines, tol = MAGNET) {
 // What the page's buttons can do right now. Everything here is a function of
 // how many windows there are.
 function paintControls() {
-  els.add.disabled = containers.length >= MAX_CONTAINERS || totalWindows() >= MAX_SHELLS;
+  els.add.disabled = containers.length >= MAX_CONTAINERS || WS.total() >= WS.limits.shells;
   els.add.dataset.tip = !els.add.disabled
     ? 'New terminal ⌘D'
     : containers.length >= MAX_CONTAINERS
       ? `${MAX_CONTAINERS} windows is the limit for one workspace`
-      : `${MAX_SHELLS} terminals is the limit across every workspace`;
+      : `${WS.limits.shells} terminals is the limit across every workspace`;
   // One window is already arranged, and can't be behind anything.
   els.arrange.disabled = containers.length < 2;
   paintArrange();
@@ -1082,49 +1002,51 @@ function paintControls() {
 
 /* ---------- boot ---------- */
 
-const saved = readLayout();
+// What workspaces.js may do to the page, and nothing more.
+const host = {
+  containers,
+  get focused() {
+    return focused;
+  },
+  set focused(c) {
+    focused = c;
+  },
+  get arrangement() {
+    return arrangement;
+  },
+  set arrangement(a) {
+    arrangement = a;
+  },
+  maxWindows: MAX_CONTAINERS,
+  spawn,
+  visible,
+  newId,
+  defaultBox,
+  fitToScreen,
+  workArea,
+  hereCwd,
+  focus(c) {
+    page.focus(c);
+    c.focus();
+  },
+  unfocused() {
+    for (const c of containers) c.el.removeAttribute('data-focused');
+    paintStatus();
+    paintTitle();
+  },
+  changed() {
+    paintControls();
+    page.runStateChanged();
+    page.save();
+  },
+  closeOverview() {
+    closeOverview(null);
+  },
+};
 
-// A layout from before workspaces is one screen; one from before windows were the
-// only kind has boxes that were never real boxes. Either way it comes back.
-const legacy = saved && saved.windowed === false;
-const stored = saved
-  ? saved.workspaces ||
-    saved.screens || // before the rename
-    [{ id: 's1', focused: saved.focused, arrangement: saved.arrangement, containers: saved.containers }]
-  : [{ id: 's1', containers: [defaultBox(0)] }];
-
-workspaces = stored.slice(0, MAX_WORKSPACES).map((s, i) => ({
-  id: s.id || `s${i + 1}`,
-  name: s.name || '',
-  windows: [],
-  focused: null,
-  arrangement: s.arrangement || null,
-}));
-at = Math.max(0, Math.min(workspaces.length - 1, saved ? saved.at || 0 : 0));
-
-// Every workspace's shells start now, not when you first look at one: a screen
-// you switch to should be where you left it, not still connecting.
-let budget = MAX_SHELLS;
-stored.slice(0, MAX_WORKSPACES).forEach((s, i) => {
-  const boxes = (s.containers || []).slice(0, Math.min(MAX_CONTAINERS, budget));
-  budget -= boxes.length;
-  const made = boxes.map((box, n) => {
-    const usable = !legacy && box.w > 200 && box.h > 150;
-    const c = spawn(box.id, usable ? fitToScreen(box) : defaultBox(n), box.name, undefined, i !== at);
-    if (box.min) c.setMinimized(true);
-    return c;
-  });
-  const its = made.find((c) => c.id === s.focused) || made.find((c) => !c.minimized) || made[0];
-  if (i === at) {
-    arrangement = s.arrangement || null;
-    if (its) page.focus(its);
-  } else {
-    workspaces[i].windows = made;
-    workspaces[i].focused = its || null;
-  }
-});
-
-if (!containers.length) spawn(null, defaultBox(0)); // nothing usable was stored
+WS = window.HEROTERM_WORKSPACES.create(host);
+window.HEROTERM_SPACES = WS; // the name spaces.js and the keys know it by
+WS.load(readLayout());
 paintControls();
 sky.setActive(true); // there is only one mode now, and it has stars behind it
 if (focused) focused.focus();
@@ -1138,178 +1060,6 @@ paintStatus();
 // remembered, so it's that one that goes back.
 let previewed = null;
 
-// The workspaces, for the panel down the left-hand edge. See spaces.js.
-window.HEROTERM_SPACES = {
-  limits: { workspaces: MAX_WORKSPACES, shells: MAX_SHELLS },
-
-  // One row per workspace: what to call it, what is on it, and where each of
-  // those windows sits — the panel draws a small picture of the workspace from
-  // this, which is a faster way to recognise one than reading three names.
-  // Rects are in page coordinates; `area` is what to scale them against.
-  list() {
-    const area = workArea();
-    return workspaces.map((s, i) => {
-      const here = i === at;
-      const windows = here ? containers : s.windows;
-      const its = here ? focused : s.focused;
-      return {
-        id: s.id,
-        name: s.name,
-        here,
-        area,
-        busy: windows.some((c) => c.session.running),
-        names: windows.map((c) => c.name),
-        windows: windows.map((c) => ({
-          name: c.name,
-          rect: c.visibleRect(),
-          run: c.el.dataset.run || 'idle',
-          min: c.minimized,
-          focused: c === its,
-        })),
-      };
-    });
-  },
-
-  go(i) {
-    showWorkspace(i);
-  },
-
-  // Left and right of the one you are on, for the keys.
-  step(by) {
-    if (workspaces.length < 2) return;
-    showWorkspace((at + by + workspaces.length) % workspaces.length);
-  },
-
-  add() {
-    if (workspaces.length >= MAX_WORKSPACES || totalWindows() >= MAX_SHELLS) return;
-    const from = hereCwd(); // asked now, while the window it comes from is still in front
-    rememberWorkspace();
-    for (const c of containers) c.el.toggleAttribute('data-away', true);
-    workspaces.push({ id: newId(), name: '', windows: [], focused: null, arrangement: null });
-    at = workspaces.length - 1;
-    containers.length = 0;
-    arrangement = null;
-    focused = null;
-    const c = spawn(null, defaultBox(0), undefined, from); // a workspace with nothing on it is not a workspace
-    page.focus(c);
-    c.focus();
-    paintControls();
-    page.runStateChanged();
-    page.save();
-    window.HEROTERM_SPACES.paint();
-  },
-
-  rename(i, name) {
-    if (!workspaces[i]) return;
-    workspaces[i].name = String(name || '').trim().slice(0, 24);
-    page.save();
-    window.HEROTERM_SPACES.paint();
-  },
-
-  // How many windows on a screen have something running, which is what a
-  // question about closing it should say out loud.
-  busyOn(i) {
-    const windows = i === at ? containers : workspaces[i].windows;
-    return windows.filter((c) => c.session.running).length;
-  },
-
-  // What could still be brought back, for the panel to offer.
-  pending() {
-    if (!undone) return null;
-    return { index: undone.index, name: undone.name, names: undone.windows.map((w) => w.name) };
-  },
-
-  // The offer taken up: the workspace goes back where it was, its windows
-  // asking for the same session ids, which the server still has — so they
-  // come back mid-command with their scrollback behind them.
-  undo() {
-    if (!undone) return;
-    const back = undone;
-    undone = null;
-    clearTimeout(undoTimer);
-    closeOverview(null);
-    rememberWorkspace();
-    for (const c of containers) c.el.toggleAttribute('data-away', true);
-
-    const w = { id: newId(), name: back.name, windows: [], focused: null, arrangement: null };
-    at = Math.max(0, Math.min(workspaces.length, back.index));
-    workspaces.splice(at, 0, w);
-    containers.length = 0;
-    arrangement = null;
-    focused = null;
-    for (const spec of back.windows) {
-      const c = spawn(spec.id, { ...spec.box, zoom: spec.zoom }, spec.name, spec.cwd);
-      if (spec.min) c.setMinimized(true);
-    }
-    const shown = visible();
-    if (shown.length) {
-      page.focus(shown[0]);
-      shown[0].focus();
-    }
-    paintControls();
-    page.runStateChanged();
-    page.save();
-    window.HEROTERM_SPACES.paint();
-  },
-
-  // Closing a workspace takes its windows off the page and lets go of their
-  // shells — see UNDO. The last workspace standing stays: there is always
-  // somewhere to be.
-  close(i) {
-    if (workspaces.length < 2 || !workspaces[i]) return;
-    const going = i === at ? [...containers] : [...workspaces[i].windows];
-    // Everything needed to build it again, while the windows are still here
-    // to be asked.
-    undone = {
-      index: i,
-      name: workspaces[i].name,
-      windows: going.map((c) => ({
-        id: c.id,
-        name: c.name,
-        box: { ...c.box },
-        zoom: c.zoom || undefined,
-        min: c.minimized,
-        cwd: c.cwd || undefined,
-      })),
-    };
-    clearTimeout(undoTimer);
-    undoTimer = setTimeout(() => {
-      undone = null;
-      window.HEROTERM_SPACES.paint();
-    }, UNDO * 1000);
-    workspaces.splice(i, 1);
-    if (i === at) {
-      containers.length = 0;
-      at = Math.min(i, workspaces.length - 1);
-      const s = workspaces[at];
-      containers.push(...s.windows);
-      arrangement = s.arrangement || null;
-      focused = null;
-      for (const c of containers) {
-        c.el.removeAttribute('data-away');
-        c.applyBox();
-        c.relayout();
-      }
-      const want = (s.focused && containers.includes(s.focused) && s.focused) || visible().slice(-1)[0];
-      if (want) {
-        page.focus(want);
-        want.focus();
-      }
-    } else if (i < at) {
-      at -= 1;
-    }
-    // A little longer than the offer stands, so the last second of it is not
-    // a race with the server.
-    for (const c of going) c.detach(UNDO + 5);
-    paintControls();
-    page.runStateChanged();
-    page.save();
-    window.HEROTERM_SPACES.paint();
-  },
-
-  // spaces.js fills this in; the page calls it whenever the list changed.
-  paint() {},
-};
 
 window.HEROTERM_WINDOWS = {
   limits: { windows: MAX_CONTAINERS }, // for settings' System tab
