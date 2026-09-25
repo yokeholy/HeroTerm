@@ -65,9 +65,12 @@ function readLayout() {
   try {
     const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) || 'null');
     if (!saved) return null;
-    // Two shapes: workspaces, each with its windows, and — from before there were
-    // workspaces — one set of windows at the top level.
+    // Three shapes. Workspaces, each with its windows; the same under the
+    // name `screens`, which is what the builds before the rename wrote; and,
+    // from before there were workspaces at all, one set of windows at the top
+    // level.
     if (Array.isArray(saved.workspaces) && saved.workspaces.length) return saved;
+    if (Array.isArray(saved.screens) && saved.screens.length) return saved;
     if (Array.isArray(saved.containers) && saved.containers.length) return saved;
   } catch {
     /* nothing usable stored; start fresh */
@@ -1079,7 +1082,9 @@ const saved = readLayout();
 // only kind has boxes that were never real boxes. Either way it comes back.
 const legacy = saved && saved.windowed === false;
 const stored = saved
-  ? saved.workspaces || [{ id: 's1', focused: saved.focused, arrangement: saved.arrangement, containers: saved.containers }]
+  ? saved.workspaces ||
+    saved.screens || // before the rename
+    [{ id: 's1', focused: saved.focused, arrangement: saved.arrangement, containers: saved.containers }]
   : [{ id: 's1', containers: [defaultBox(0)] }];
 
 workspaces = stored.slice(0, MAX_WORKSPACES).map((s, i) => ({
@@ -1302,9 +1307,9 @@ window.HEROTERM_SPACES = {
 window.HEROTERM_WINDOWS = {
   limits: { windows: MAX_CONTAINERS }, // for settings' System tab
 
-  /* ---------- saved workspaces ---------- */
+  /* ---------- saved screens ---------- */
 
-  // Everything profiles.js needs to put this screen back: where each window
+  // Everything screens.js needs to put this screen back: where each window
   // is, what it is called, and where its shell is standing. The directory
   // comes from OSC 7 and may be missing — a shell that never said, or one
   // inside an ssh, where the answer would be a directory on another machine.
