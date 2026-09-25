@@ -34,6 +34,7 @@
     "server.js",
     "history.js",
     "fonts.js",
+    "update.js",
     "shell/heroterm-remote.sh",
     "shell/zdotdir/.zshenv",
     "shell/zdotdir/.zprofile",

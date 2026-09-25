@@ -13,7 +13,16 @@ It runs a shell, so the question is a fair one. The short version:
   and every user on the machine can reach that port.
 - Everything else the server hands out is gated on the same token: your shell
   history for the stats page (counted server-side, only the aggregate sent),
-  the list of installed fonts, and the configuration it's running with.
+  the list of installed fonts, the configuration it's running with, and
+  whether there's an update. Restarting it (`POST /restart`, the Restart
+  button) wants the token too, and turns away a request that says it comes
+  from any other site.
+- The one request HeroTerm makes itself is to `registry.npmjs.org`, for its
+  latest version — nothing about you or your machine goes with it beyond what
+  any HTTP request carries. Settings → System turns it off.
+- A restart from the page hands the token to the server replacing it, in that
+  process's environment, so the open tab can reconnect. It's taken out of the
+  environment as soon as it's read; no shell ever sees it.
 
 Longer version, including what it deliberately does *not* protect against, in
 [What the token doesn't cover](#what-the-token-doesnt-cover) below.

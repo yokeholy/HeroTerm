@@ -153,13 +153,26 @@
 
     /* ---------- socket ---------- */
 
+    // Where this shell is standing, from OSC 7 — our shell integration sends
+    // it at every prompt, and so do plenty of other people's. It is what a
+    // saved workspace puts back, and where a shell comes back after a
+    // restart. Ignored inside an ssh: the directory a remote shell reports is
+    // a directory on a different machine.
+    let cwd = null;
+
     const token = new URLSearchParams(location.search).get('token') || '';
-    // The directory is only read when a shell is created, which is the first
-    // time this socket is opened; a reconnect finds the session already there
-    // and standing wherever you left it.
-    const SOCKET =
-      `ws://${location.host}/pty?token=${encodeURIComponent(token)}&id=${encodeURIComponent(id)}` +
-      (opts.cwd ? `&cwd=${encodeURIComponent(opts.cwd)}` : '');
+    // The directory is only read when a shell is created: the first time this
+    // socket is opened, or after a restarted server has forgotten the old one.
+    // A reconnect that finds the session still there ignores it. So it is the
+    // folder the shell last said it was in, when it has said, and a restart
+    // puts a new shell back where the old one stood.
+    const socketUrl = () => {
+      const where = cwd || opts.cwd;
+      return (
+        `ws://${location.host}/pty?token=${encodeURIComponent(token)}&id=${encodeURIComponent(id)}` +
+        (where ? `&cwd=${encodeURIComponent(where)}` : '')
+      );
+    };
 
     let ws = null;
     let state = 'pending';
@@ -325,7 +338,7 @@
     function connect() {
       if (ended || closed) return;
       clearTimeout(retryTimer);
-      ws = new WebSocket(SOCKET);
+      ws = new WebSocket(socketUrl());
       // Terminal output arrives as text frames, anything structural as binary.
       ws.binaryType = 'arraybuffer';
       ws.onopen = onopen;
@@ -377,12 +390,7 @@
       session.agentTitle(title, replaying);
       return false;
     };
-    // Where this shell is standing, from OSC 7 — our shell integration sends
-    // it at every prompt, and so do plenty of other people's. It is what a
-    // saved workspace puts back. Ignored inside an ssh: the directory a remote
-    // shell reports is a directory on a different machine.
-    let cwd = null;
-
+    // OSC 7: where this shell is standing, into `cwd` (declared above).
     term.parser.registerOscHandler(7, (payload) => {
       const m = /^file:\/\/[^/]*(\/.*)$/.exec(payload || '');
       if (m && !session.remote) {
@@ -738,9 +746,10 @@
         return minimized;
       },
 
-      // The directory its shell is in, as far as we have been told.
+      // The directory its shell is in, as far as we have been told — or, until
+      // it says, the one it was asked to start in.
       get cwd() {
-        return cwd;
+        return cwd || opts.cwd || null;
       },
 
       setMinimized(on) {

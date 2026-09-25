@@ -11,6 +11,7 @@ const { spawn } = require('child_process');
 const history = require('./history');
 const fixSpawnHelper = require('./scripts/fix-spawn-helper');
 const fonts = require('./fonts');
+const update = require('./update');
 
 // HEROTERM_PORT, not PORT: a bare PORT is what half the world's dev servers
 // read, and whatever this one listens on used to be handed to every shell it
@@ -79,7 +80,16 @@ function shutdown() {
   if (quitting) return;
   quitting = true;
   clearState();
-  for (const s of [...sessions.values()]) kill(s);
+  // Ending the server ends the shells, but it isn't them exiting: a window
+  // told "shell exited" closes, the way it does after `exit`, and then a
+  // restart comes back to an empty page. So the shells are ended quietly and
+  // the sockets closed as a server going away, which a window waits out and
+  // reconnects after — to the new server, when this is a restart.
+  for (const s of [...sessions.values()]) {
+    s.reaped = true;
+    kill(s);
+    if (s.ws && s.ws.readyState === s.ws.OPEN) s.ws.close(1012, 'server stopping');
+  }
   server.close();
   server6.close();
   // Long enough for the SIGHUPs to land; nothing is waiting on us.
@@ -93,7 +103,14 @@ process.on('exit', clearState);
 // A page you visit in another tab can open a WebSocket to localhost without
 // tripping CORS, so the socket is gated on a per-launch token plus an origin
 // check. The token is printed once at startup and lives only in memory.
-const TOKEN = crypto.randomBytes(24).toString('hex');
+//
+// One exception: a restart asked for from the page (see /restart) hands its
+// token to the server that replaces it, so the tab that asked — and any other
+// open on it — reconnects to the new one rather than being locked out of it.
+// Read once and taken out of the environment, so no shell ever sees it.
+const CARRIED = process.env.HEROTERM_TOKEN;
+delete process.env.HEROTERM_TOKEN;
+const TOKEN = /^[0-9a-f]{48}$/.test(CARRIED || '') ? CARRIED : crypto.randomBytes(24).toString('hex');
 const ALLOWED_ORIGINS = new Set([
   `http://127.0.0.1:${PORT}`,
   `http://localhost:${PORT}`,
@@ -184,6 +201,60 @@ app.get('/config', (req, res) => {
     node: process.version,
     protocol: PROTOCOL,
   });
+});
+
+// Is there a newer HeroTerm? See update.js. `?check=1` asks the registry now
+// rather than taking the answer from the last few hours.
+app.get('/update', async (req, res) => {
+  if (req.query.token !== TOKEN) {
+    res.sendStatus(403);
+    return;
+  }
+  res.set('Cache-Control', 'no-store');
+  // `?ask=0`: what's on disk only, no registry — the page, with the check
+  // turned off, still wants to know whether an install is waiting on a restart.
+  const out = await update.status({ dev: DEV, force: req.query.check === '1', ask: req.query.ask !== '0' });
+  res.json({
+    ok: true,
+    ...out,
+    // Only a background one can restart itself: a foreground one belongs to
+    // the terminal it was started in, and has nowhere to come back to.
+    canRestart: Boolean(STATE),
+    shells: sessions.size,
+  });
+});
+
+// Stop, and start again from whatever is on disk now — which, after an
+// update, is the new version. The shells end: they are this process's
+// children, and nothing survives it. The page asks before it gets here.
+//
+// Done by `heroterm restart`, the same as from a terminal, started detached so
+// it outlives the process it is about to stop. The token goes with it (see
+// TOKEN), and its output goes to this one's log.
+app.post('/restart', (req, res) => {
+  const origin = req.headers.origin;
+  if (req.query.token !== TOKEN || (origin && !ALLOWED_ORIGINS.has(origin))) {
+    res.sendStatus(403);
+    return;
+  }
+  if (!STATE) {
+    res.status(409).json({ ok: false, reason: 'This HeroTerm belongs to the terminal it was started in. Stop it there and start it again.' });
+    return;
+  }
+  let log = 'ignore';
+  try {
+    log = fs.openSync(STATE.replace(/\.json$/, '') + '.log', 'a');
+  } catch {
+    /* nowhere to write; it restarts all the same */
+  }
+  const child = spawn(
+    process.execPath,
+    [path.join(__dirname, 'bin', 'heroterm.js'), 'restart', '--port', String(PORT), '--no-open'],
+    { detached: true, stdio: ['ignore', log, log], env: { ...process.env, HEROTERM_TOKEN: TOKEN } }
+  );
+  child.on('error', () => {});
+  child.unref();
+  res.status(202).json({ ok: true });
 });
 
 // Two servers, one app. `localhost` is 127.0.0.1 and ::1, and which one a

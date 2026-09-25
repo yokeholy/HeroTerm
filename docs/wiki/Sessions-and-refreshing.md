@@ -58,6 +58,9 @@ before you refreshed picks its ticking back up without dinging at you, and the
 deck doesn't open a second card for it.
 
 The grace period is per-process: restart the server and the shell goes with it.
+The window doesn't — it is told the server went away, not that its shell
+exited, so it waits, reconnects to the new server, and gets a new shell in the
+folder the old one was standing in.
 
 ## What a window's shell inherits
 

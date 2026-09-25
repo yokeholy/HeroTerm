@@ -38,17 +38,25 @@ ANSI escape sequences coming back and paints them.
 Beyond the terminal itself the server hands out three things, all behind the
 same token: your shell history counted up for the stats sheet (`/stats`, see
 [Command stats](Command-stats.md)), the installed fonts for the font picker (`/fonts`),
-and the limits it's running with for the System tab (`/config`).
+the limits it's running with for the System tab (`/config`), and whether
+there's a newer version (`/update`, see `update.js`). A background one can also
+be asked to restart itself (`POST /restart`), which it does by running
+`heroterm restart` detached, handing over its token.
 
 ## Tests
 
 `npm test` runs the suite in `test/`, with Node's own test runner and no
-dependencies beyond HeroTerm's: about twenty tests in a few seconds.
+dependencies beyond HeroTerm's: a few dozen tests in under a minute.
 
 - **server** — what it serves, who it lets in, both loopback addresses, and
   what a spawned shell is given (a clean environment, the folder it asked for).
-- **cli** — `heroterm start`, `status` and `stop` finding the same server, and a
-  stale state file not being believed.
+- **cli** — `heroterm start`, `status` and `stop` finding the same server, a
+  stale state file not being believed, and a background server restarting
+  itself when the page asks, token and all.
+- **update** — against a registry of its own: an update offered or not, the
+  answer kept, the check turned off, a failing registry, the restart refused
+  when it can't work, a carried token kept from the shells, and a stopping
+  server not telling windows their shells exited.
 - **page** — a real headless browser against a real server: commands and their
   colours, workspaces surviving a switch and a reload, undoing a close, the
   panel's question, old layouts still loading, the star field's canvas at 2×.

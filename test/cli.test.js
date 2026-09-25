@@ -57,3 +57,32 @@ test('a stale state file is not believed', () => {
   assert.match(cli('status'), /Nothing is running/);
   assert.ok(!fs.existsSync(path.join(state, '1.json')), 'the stale file should be cleared away');
 });
+
+// The Restart button: the background server restarts itself — new process,
+// same port — and keeps its token, so the page that asked gets back in.
+test('a background server restarts itself when the page asks', async () => {
+  const port = await freePort();
+  cli('start', '--port', String(port), '--no-open');
+  const file = path.join(state, `${port}.json`);
+  const first = JSON.parse(fs.readFileSync(file, 'utf8'));
+
+  const u = await fetch(`http://127.0.0.1:${port}/update?token=${first.token}&ask=0`).then((r) => r.json());
+  assert.equal(u.canRestart, true);
+
+  const res = await fetch(`http://127.0.0.1:${port}/restart?token=${first.token}`, { method: 'POST' });
+  assert.equal(res.status, 202);
+
+  const second = await waitFor(
+    () => {
+      const now = JSON.parse(fs.readFileSync(file, 'utf8'));
+      return now.pid !== first.pid ? now : null;
+    },
+    { timeout: 15000, what: 'a new server' }
+  );
+  assert.equal(second.token, first.token, 'the token changed, locking the page out');
+  const cfg = await fetch(`http://127.0.0.1:${port}/config?token=${first.token}`);
+  assert.equal(cfg.status, 200);
+
+  cli('stop', '--port', String(port));
+});
+

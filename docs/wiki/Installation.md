@@ -46,7 +46,9 @@ One per port, so `heroterm start --port 7778` is a second, separate HeroTerm,
 
 **`stop` ends the shells too.** A pty whose server has gone is unreachable by
 anything, so they are hung up rather than left orphaned. Anything you want to
-outlive a `stop` should be inside `tmux` or `screen`.
+outlive a `stop` should be inside `tmux` or `screen`. An open tab keeps its
+windows, waiting to reconnect: start HeroTerm again and each gets a new shell,
+in the folder the old one was in.
 
 ## Options
 
@@ -73,8 +75,38 @@ outlive a `stop` should be inside `tmux` or `screen`.
 If the port is taken, it says so — usually HeroTerm is already running in
 another terminal, and you can use that one or start another with `--port`.
 
-To update, `npm install -g heroterm` again, then `heroterm restart` if one is
-running in the background.
+## Updating
+
+HeroTerm asks npm for its latest version every few hours, and when there's a
+newer one the status bar says so: **0.7.0 available**. Click it, or open
+Settings → System:
+
+1. **Update** opens a window called *Update* and types the install into it —
+   `npm install -g heroterm@0.7.0`, using the npm that belongs to the node
+   HeroTerm runs on, and the install prefix it was installed under when that
+   isn't the default. It's typed, not run behind your back, so you see the
+   command and everything npm says, and a permissions error is right there.
+2. When that command finishes, HeroTerm reads its own version off the disk. If
+   it changed, the chip becomes **Restart for 0.7.0**. If npm failed, or
+   installed somewhere else, the section says that instead.
+3. **Restart HeroTerm…** asks first — it says how many shells will end, and how
+   many of them are still running — then restarts the server and reloads the
+   page. Your windows and workspaces come back with new shells, each started
+   in the folder the old one was standing in.
+
+Only a background HeroTerm (`heroterm start`) can restart itself; one running
+in a terminal belongs to that terminal, and the section says to stop it there
+and run `heroterm` again. By hand, it's the same thing: `npm install -g
+heroterm`, then `heroterm restart`.
+
+A development copy — a git checkout — isn't checked; it updates with `git
+pull`. Nor is one run through `npx` or from a project's `node_modules` offered
+the install, since `npm install -g` would put a second copy somewhere this one
+never looks.
+
+The check is one request to `registry.npmjs.org` for HeroTerm's latest version.
+**Settings → System → Check for updates** turns it off; **Check now** asks once
+regardless.
 
 ### "packages have install scripts not yet covered by allowScripts"
 

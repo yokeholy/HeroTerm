@@ -53,6 +53,11 @@ heroterm status   # where it is, and the URL to get back
 heroterm stop     # end it
 ```
 
+When a newer HeroTerm is out, the status bar says so. **Update** in Settings →
+System runs the install in a window of its own, where you can watch it, and
+**Restart** puts you on the new version — your windows come back, with new
+shells in the same folders.
+
 > 💡 `heroterm --help` for the rest, like `--port` or `--no-open`. More in [Installation](docs/wiki/Installation.md).
 
 ## 🧭 Find your way around
@@ -128,7 +133,7 @@ still running, and three columns](https://raw.githubusercontent.com/yokeholy/Her
 - 🤫 **Quiet commands** — a dev server shouldn't ring and fly the stars all day
 - 📋 **Copy what you select**, iTerm style — ⌘C still works too
 - 🛑 **Confirm before closing** a window: never, while something runs, or always
-- ⚙️ **System** tab showing what HeroTerm is running with
+- ⚙️ **System** tab showing what HeroTerm is running with — and whether there's a newer one
 
 Changes preview live on the window beside the panel.
 
@@ -136,7 +141,9 @@ Changes preview live on the window beside the panel.
 
 - Listens on loopback only — `127.0.0.1` and `::1` — never the network.
 - A random token per launch, so other web pages can't reach your shell.
-- Nothing is sent anywhere. Settings stay in your browser.
+- Nothing about you is sent anywhere, and settings stay in your browser. The one
+  request out asks npm for HeroTerm's latest version, every few hours — and
+  Settings → System turns that off.
 - Your shells get your environment, not HeroTerm's plumbing — no stray `PORT`
   for a dev server to trip over.
 

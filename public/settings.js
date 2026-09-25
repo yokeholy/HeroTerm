@@ -41,6 +41,12 @@
       fallback: () => 1,
       apply: () => {},
     },
+    // Ask the npm registry, every few hours, whether there's a newer HeroTerm.
+    // Read by updates.js, which is told when it changes.
+    updateCheck: {
+      fallback: () => 1,
+      apply: (v) => window.HEROTERM_UPDATES && window.HEROTERM_UPDATES.enabled(Boolean(v)),
+    },
     // Ask before the red button closes a window: 0 never, 1 while a command is
     // running in it, 2 always. Read by the page when you close one.
     confirmClose: {
@@ -628,6 +634,16 @@
     }
   );
 
+  bindSwitch(
+    document.getElementById('set-updcheck'),
+    () => Boolean(valueOf('updateCheck')),
+    (on) => {
+      saved.updateCheck = on ? 1 : 0;
+      save();
+      OPTIONS.updateCheck.apply(on);
+    }
+  );
+
   // This one has no other owner, so it is stored here like the slider.
   bindSwitch(
     document.getElementById('set-warp'),
@@ -790,7 +806,10 @@
       }
       if (opener) opener.focus();
       opener = null;
-      if (page === 'system') loadSystem();
+      if (page === 'system') {
+        loadSystem();
+        if (window.HEROTERM_UPDATES) window.HEROTERM_UPDATES.refresh();
+      }
     } else {
       opener = from || null;
       if (page === 'font') {
@@ -868,11 +887,12 @@
 
   /* ---------- open and close ---------- */
 
-  function open() {
+  // On the tab you were on last time, unless something sent you to one.
+  function open(tab) {
     returnFocus = document.activeElement;
     panel.hidden = false;
     openBtn.setAttribute('aria-expanded', 'true');
-    go(lastTab); // the tab you were on last time
+    go(TABS.includes(tab) ? tab : lastTab);
     closeBtn.focus(); // so that typing doesn't quietly go to the shell behind
   }
 

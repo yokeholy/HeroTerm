@@ -41,8 +41,10 @@ function tempHome() {
 // The environment every child of a test gets: yours, less anything that
 // would point a shell back at your own files.
 function isolatedEnv(home, extra = {}) {
-  const env = { ...process.env, HOME: home, HEROTERM_DEV: '0', ...extra };
-  for (const name of ['ZDOTDIR', 'HISTFILE', 'PORT', 'HEROTERM_PORT', 'HEROTERM_STATE', 'HEROTERM_HOME']) {
+  // The update check goes to a port nothing listens on, so no test ever asks
+  // the real registry; the tests of the check stand one up of their own.
+  const env = { ...process.env, HOME: home, HEROTERM_DEV: '0', HEROTERM_UPDATE_URL: 'http://127.0.0.1:9/', ...extra };
+  for (const name of ['ZDOTDIR', 'HISTFILE', 'PORT', 'HEROTERM_PORT', 'HEROTERM_STATE', 'HEROTERM_HOME', 'HEROTERM_TOKEN']) {
     if (!(name in extra)) delete env[name];
   }
   return env;

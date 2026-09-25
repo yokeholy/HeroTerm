@@ -188,6 +188,7 @@
       <span id="size"></span>
       <span id="brand">HeroTerm <span id="version"></span></span>
       <span id="devchip" hidden>development</span>
+      <button id="updchip" type="button" hidden></button>
     </footer>
 
     <script src="/vendor/xterm/lib/xterm.js"></script>
@@ -509,6 +510,20 @@
         </div>
 
         <div id="page-system" class="page" data-page="system" role="tabpanel" aria-labelledby="tab-system" hidden>
+          <div class="update">
+            <div class="setting toggle">
+              <div>
+                <label for="set-updcheck">Check for updates</label>
+                <p class="hint">
+                  Asks the npm registry, every few hours, for HeroTerm's latest
+                  version. Updating is always your call.
+                </p>
+              </div>
+              <input id="set-updcheck" class="switch" type="checkbox" />
+            </div>
+            <div id="update-state" class="update-state" aria-live="polite"></div>
+          </div>
+
           <p class="hint">
             What HeroTerm is running with. Read-only here: each says where
             it's set. Server values take effect when the server restarts; the
@@ -579,6 +594,7 @@
     <script src="/workspaces.js"></script>
     <script src="/app.js"></script>
     <script src="/spaces.js"></script>
+    <script src="/updates.js"></script>
     <script src="/tips.js"></script>
   </body>
 </html>

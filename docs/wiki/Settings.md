@@ -55,6 +55,11 @@ values after any environment overrides; the page's are read from the modules
 that own them, not copied. When the server predates `/config`, the tab says so
 and lists only the page's own values.
 
+Above those, **Updates**: whether this is the latest HeroTerm, a newer one to
+install, or one installed and waiting on a restart — with the buttons for each,
+and the switch that turns the check off. See
+[Installation → Updating](Installation.md#updating).
+
 The two text sizes are separate on purpose. **Terminal text size** (px) is the
 grid in every window, replayed cards included; ⌘+ and ⌘− still size one window
 for a while, and ⌘0 returns to the setting rather than to 14. **Interface text

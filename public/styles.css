@@ -216,6 +216,28 @@ body[data-sky] #sky {
   display: none;
 }
 
+/* A newer HeroTerm, or one installed and waiting on a restart. Only there
+   when there's something to do; opens Settings on the System tab. */
+#updchip {
+  flex: none;
+  margin-left: -8px;
+  padding: 2px 8px;
+  border: 1px solid var(--green, #93b07a);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--green, #93b07a);
+  font: inherit;
+  cursor: pointer;
+}
+
+#updchip:hover {
+  background: color-mix(in srgb, var(--green, #93b07a) 16%, transparent);
+}
+
+#updchip[hidden] {
+  display: none;
+}
+
 /* ---- the deck: the windows themselves ---- */
 
 .deck {
@@ -1561,6 +1583,71 @@ body[data-tuning] .deck[data-preview] {
 }
 
 /* ---- the System tab: read-only values ---- */
+
+/* Updates, at the top of the System tab. */
+#settings .update {
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--hairline, #252a35);
+}
+
+#settings .update-state {
+  margin-top: 14px;
+}
+
+#settings .update-state p {
+  margin: 0 0 8px;
+}
+
+#settings .upd-line {
+  color: var(--fg, #d6d9e0);
+}
+
+#settings .upd-hint {
+  color: var(--label, #6b7384);
+}
+
+#settings .upd-warn {
+  color: var(--yellow, #d9a86c);
+}
+
+#settings .update-state a {
+  color: var(--cursor, #e9a13b);
+}
+
+#settings .update-state code {
+  font-family: var(--font, monospace);
+  color: var(--fg, #d6d9e0);
+  overflow-wrap: anywhere;
+}
+
+#settings .upd-row {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+#settings .upd {
+  padding: 5px 12px;
+  border: 1px solid var(--hairline, #252a35);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--fg, #d6d9e0);
+  font: calc(11px * var(--ui-scale, 1)) var(--font, monospace);
+  cursor: pointer;
+}
+
+#settings .upd:hover,
+#settings .upd:focus-visible {
+  border-color: var(--cursor, #e9a13b);
+  color: var(--cursor, #e9a13b);
+  outline: none;
+}
+
+#settings .upd.primary {
+  border-color: var(--green, #93b07a);
+  color: var(--green, #93b07a);
+}
 
 #settings .system .group {
   margin: 18px 0 8px;

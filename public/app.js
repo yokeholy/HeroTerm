@@ -123,6 +123,9 @@ const page = {
       name: c.name,
       min: c.minimized || undefined,
       zoom: c.zoom || undefined,
+      // Only used if the server has forgotten the shell — it was restarted —
+      // so the new one starts where the old one was standing.
+      cwd: c.cwd || undefined,
     });
     writeLayout(WS.serialize(boxOf));
     paintTray(); // names and minimized windows both end up here
@@ -1063,6 +1066,27 @@ let previewed = null;
 
 window.HEROTERM_WINDOWS = {
   limits: { windows: MAX_CONTAINERS }, // for settings' System tab
+
+  // A new window, named, in front, with a command typed into it once its
+  // shell is there — typed, not run behind your back, so you see what it is
+  // and everything it says. The updater uses it. Null when there's no room.
+  run(name, command) {
+    if (containers.length >= MAX_CONTAINERS || WS.total() >= WS.limits.shells) return null;
+    closeOverview(null);
+    if (window.HEROTERM_SETTINGS) window.HEROTERM_SETTINGS.close();
+    const c = spawn(null, defaultBox(containers.length), name, hereCwd());
+    page.focus(c);
+    c.focus();
+    paintControls();
+    page.save();
+    let tries = 300; // thirty seconds to connect, or it's left untyped
+    const typeIt = () => {
+      if (c.state.live === 'yes') c.input(`${command}\r`);
+      else if ((tries -= 1) > 0) setTimeout(typeIt, 100);
+    };
+    typeIt();
+    return c;
+  },
 
   /* ---------- kept workspaces ---------- */
 

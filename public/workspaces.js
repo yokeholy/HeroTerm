@@ -303,7 +303,7 @@
           budget -= boxes.length;
           const made = boxes.map((box, n) => {
             const usable = !legacy && box.w > 200 && box.h > 150;
-            const c = host.spawn(box.id, usable ? host.fitToScreen(box) : host.defaultBox(n), box.name, undefined, i !== at);
+            const c = host.spawn(box.id, usable ? host.fitToScreen(box) : host.defaultBox(n), box.name, box.cwd, i !== at);
             if (box.min) c.setMinimized(true);
             return c;
           });

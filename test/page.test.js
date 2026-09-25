@@ -11,10 +11,13 @@ const { test, before, after, beforeEach } = require('node:test');
 const assert = require('node:assert');
 const { startServer } = require('./helpers/stage');
 const { findBrowser, launch } = require('./helpers/browser');
+const http = require('http');
+const { RUNNING } = require('../update');
 
 const skip = findBrowser() ? false : 'no Chromium-family browser found (set HEROTERM_TEST_BROWSER)';
 let srv;
 let page;
+let registry; // stands in for npm's, so the page has an update to show
 
 before(async () => {
   if (skip) return;
@@ -22,7 +25,15 @@ before(async () => {
   // An odd ceiling, so the test below can tell it was read rather than typed;
   // and a roomy one, because every test abandons its shells to the grace
   // period on its way out, and those add up.
-  srv = await startServer({ grace: 60, env: { HEROTERM_MAX_SESSIONS: '57' } });
+  registry = http.createServer((_req, res) => {
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ version: '99.0.0' }));
+  });
+  await new Promise((r) => registry.listen(0, '127.0.0.1', r));
+  srv = await startServer({
+    grace: 60,
+    env: { HEROTERM_MAX_SESSIONS: '57', HEROTERM_UPDATE_URL: `http://127.0.0.1:${registry.address().port}/` },
+  });
   // At 2x, because that is a retina Mac and the sky has been wrong there.
   page = await launch({ width: 1440, height: 900, scale: 2 });
   await page.open(srv.url);
@@ -31,6 +42,7 @@ before(async () => {
 after(async () => {
   await page?.close();
   await srv?.stop();
+  registry?.close();
 });
 
 const here = "document.querySelector('.deck:not([data-away])')";
@@ -280,6 +292,26 @@ test('screens saved by the old toolbar button are still there', { skip }, async 
 // that a number typed into the page by hand could not pass by coincidence.
 test("the page takes its shell ceiling from the server", { skip }, async () => {
   await page.until('HEROTERM_SPACES.limits.shells === 57', 'the ceiling from /config');
+});
+
+test('a newer HeroTerm shows in the status bar, and in Settings', { skip }, async () => {
+  const chip = "document.getElementById('updchip')";
+  await page.until(`!${chip}.hidden && ${chip}.textContent === '99.0.0 available'`, 'the update chip', 15000);
+
+  await page.ev(`${chip}.click(), 1`);
+  await page.until("!document.getElementById('page-system').hidden", 'Settings, on the System tab');
+  const box = "document.getElementById('update-state')";
+  await page.until(`${box}.textContent.includes('HeroTerm 99.0.0 is out')`, 'the Updates section');
+  assert.equal(await page.ev(`${box}.querySelector('a').getAttribute('href')`), `https://github.com/yokeholy/HeroTerm/compare/v${RUNNING}...v99.0.0`);
+  // A checkout is not a global install, so there's no command to offer.
+  assert.equal(await page.ev(`!!${box}.querySelector('button.primary')`), false);
+  assert.match(await page.ev(`${box}.textContent`), /update it the way it was installed/);
+
+  // Turned off: the chip goes, and the section says it isn't checking.
+  await page.ev("document.getElementById('set-updcheck').click(), 1");
+  await page.until(`${chip}.hidden`, 'the chip to go');
+  await page.until(`${box}.textContent.includes('Not checking')`, 'the section to say so');
+  await page.ev('HEROTERM_SETTINGS.close(), 1');
 });
 
 test('nothing threw along the way', { skip }, () => {
