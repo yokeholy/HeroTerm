@@ -321,6 +321,200 @@
         opacity: 0.75;
       }
 
+      /* ---------- screens, down the left edge ---------- */
+
+      /* Thin on purpose: a panel that opens whenever the pointer drifts left
+         is one that opens while you are reaching for a window's close button.
+         See REST in spaces.js — it also has to rest here for a moment. */
+      #edge {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 30px; /* clear of the status bar, which has its own business */
+        width: 10px;
+        z-index: 70;
+      }
+
+      /* A window that belongs to a screen you are not looking at. Its shell
+         is still running; display:none is the whole of "not looking". */
+      .deck[data-away] {
+        display: none;
+      }
+
+      #spaces {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 30px;
+        z-index: 95; /* over the windows, under the sheets */
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        width: 232px;
+        padding: 10px;
+        border-right: 1px solid var(--hairline, #252a35);
+        background: var(--backdrop, rgba(8, 10, 16, 0.55));
+        backdrop-filter: blur(10px);
+        color: var(--fg, #d6d9e0);
+        font: calc(12px * var(--ui-scale, 1))/1.45 var(--font, monospace);
+        animation: spaces-in 0.16s cubic-bezier(0.32, 0.72, 0, 1);
+      }
+
+      #spaces[hidden] {
+        display: none;
+      }
+
+      @keyframes spaces-in {
+        from {
+          transform: translateX(-100%);
+        }
+      }
+
+      #spaces h2 {
+        margin: 2px 0 6px 6px;
+        color: var(--label, #6b7384);
+        font-size: calc(11px * var(--ui-scale, 1));
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      #spaces .space {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 2px;
+        border-radius: 8px;
+      }
+
+      #spaces .space[data-here] {
+        background: var(--hairline, #252a35);
+      }
+
+      #spaces .go {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        padding: 7px 8px;
+        border: 0;
+        border-radius: 8px;
+        background: none;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      #spaces .space:not([data-here]) .go:hover {
+        background: color-mix(in srgb, var(--hairline, #252a35) 60%, transparent);
+      }
+
+      /* Grey when the screen is idle, and the running colour when something on
+         it is working — which is how a screen you are not looking at tells you
+         its build has finished. */
+      #spaces .sdot {
+        flex: none;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--label, #6b7384);
+        opacity: 0.5;
+      }
+
+      #spaces .sdot[data-busy] {
+        background: var(--yellow, #d9a86c);
+        opacity: 1;
+      }
+
+      #spaces .stext {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      #spaces .slabel,
+      #spaces .snote {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      #spaces .slabel[contenteditable='true'] {
+        outline: 1px solid var(--yellow, #d9a86c);
+        border-radius: 4px;
+      }
+
+      #spaces .snote {
+        color: var(--label, #6b7384);
+        font-size: calc(10.5px * var(--ui-scale, 1));
+      }
+
+      #spaces .drop {
+        width: 22px;
+        height: 22px;
+        margin-right: 4px;
+        border: 0;
+        border-radius: 6px;
+        background: none;
+        color: var(--label, #6b7384);
+        font: inherit;
+        cursor: pointer;
+        opacity: 0;
+      }
+
+      #spaces .space:hover .drop,
+      #spaces .drop:focus-visible {
+        opacity: 1;
+      }
+
+      #spaces .drop:hover {
+        background: var(--hairline, #252a35);
+        color: var(--red, #d4736b);
+      }
+
+      #spaces .sask {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 8px 8px;
+        color: var(--yellow, #d9a86c);
+        font-size: calc(10.5px * var(--ui-scale, 1));
+      }
+
+      #spaces .sask span {
+        flex: 1;
+      }
+
+      #spaces .sask button,
+      #spaces-add {
+        padding: 5px 9px;
+        border: 1px solid var(--hairline, #252a35);
+        border-radius: 7px;
+        background: none;
+        color: var(--fg, #d6d9e0);
+        font: inherit;
+        cursor: pointer;
+      }
+
+      #spaces-add {
+        margin-top: auto;
+        color: var(--label, #6b7384);
+      }
+
+      #spaces .sask button:hover,
+      #spaces-add:not(:disabled):hover {
+        background: var(--hairline, #252a35);
+        color: var(--fg, #d6d9e0);
+      }
+
+      #spaces-add:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+
       /* ---------- saved screens ---------- */
 
       /* Hung under its button, like the help sheet under the ?. */
@@ -2169,6 +2363,15 @@
       </form>
     </div>
 
+    <!-- Screens: the strip you rest the pointer on, and what it brings out.
+         See spaces.js; the windows themselves belong to app.js. -->
+    <div id="edge" aria-hidden="true"></div>
+    <nav id="spaces" hidden aria-label="Screens">
+      <h2>Screens</h2>
+      <div id="spaces-list"></div>
+      <button id="spaces-add" type="button" aria-label="New screen">＋ New screen</button>
+    </nav>
+
     <div id="ov-back" hidden></div>
     <div id="ov-tags" hidden aria-hidden="true"></div>
 
@@ -2238,6 +2441,17 @@
           behind. The border says how it went: yellow running, green clean, red
           failed.
         </p>
+
+        <h2>Screens</h2>
+        <dl>
+          <dt>left edge</dt>
+          <dd>rest the pointer on the left edge of the screen: the panel that slides
+            out holds your screens, each with its own windows and shells. Switching
+            hides one set and shows another — nothing restarts, and a build left
+            running on another screen keeps going</dd>
+          <dt>⌘⌥← ⌘⌥→</dt>
+          <dd>the screen to the left, the screen to the right</dd>
+        </dl>
 
         <h2>Buttons, top left</h2>
         <dl>
@@ -2584,6 +2798,7 @@
     <script src="/settings.js"></script>
     <script src="/app.js"></script>
     <script src="/screens.js"></script>
+    <script src="/spaces.js"></script>
     <script src="/tips.js"></script>
   </body>
 </html>

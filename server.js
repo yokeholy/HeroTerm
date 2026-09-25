@@ -224,7 +224,10 @@ function rememberExit(id, code) {
   exited.set(id, code);
   if (exited.size > MAX_EXITED) exited.delete(exited.keys().next().value);
 }
-const MAX_SESSIONS = 8;
+// Across every screen, not per screen: a page can hold several sets of
+// windows now, each with its shells still running while you are looking at
+// another. Eight was the old ceiling when there was only ever one set.
+const MAX_SESSIONS = 24;
 const PROTOCOL = 3; // the wire contract's version; see the 'hello' below
 const FG_POLL = 1000; // ms between looks at which program has the terminal
 const MAX_GRACE = 24 * 60 * 60; // seconds; the longest a page may ask to keep a shell

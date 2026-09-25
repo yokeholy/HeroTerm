@@ -64,7 +64,11 @@ const CASCADE = 28; // how far each new container sits from the last
 function readLayout() {
   try {
     const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) || 'null');
-    if (saved && Array.isArray(saved.containers) && saved.containers.length) return saved;
+    if (!saved) return null;
+    // Two shapes: screens, each with its windows, and — from before there were
+    // screens — one set of windows at the top level.
+    if (Array.isArray(saved.screens) && saved.screens.length) return saved;
+    if (Array.isArray(saved.containers) && saved.containers.length) return saved;
   } catch {
     /* nothing usable stored; start fresh */
   }
@@ -82,6 +86,69 @@ function writeLayout(obj) {
 const containers = [];
 let focused = null;
 let dragging = null;
+
+/* ---------- screens ---------- */
+
+// A screen is a set of windows and the shells inside them. Switching hides one
+// set and shows another: nothing restarts, and a build left running on the
+// screen you walked away from is still running when you come back.
+//
+// `containers` is always the screen you are looking at, which is why the rest
+// of this file can go on saying `containers` and mean it — arranging, snapping,
+// the tray, the star field. The screens you are not looking at keep their
+// windows in `screens[i].windows`, alive and out of sight.
+const MAX_SCREENS = 6;
+const MAX_SHELLS = 24; // across every screen; the server has the same ceiling
+
+let screens = [{ id: 's1', name: '', windows: [], focused: null, arrangement: null }];
+let at = 0; // which screen is on screen
+
+const totalWindows = () =>
+  screens.reduce((n, s, i) => n + (i === at ? containers.length : s.windows.length), 0);
+
+// What the current screen holds, written back to it before we look away.
+function rememberScreen() {
+  const s = screens[at];
+  if (!s) return;
+  s.windows = [...containers];
+  s.focused = focused;
+  s.arrangement = arrangement;
+}
+
+function showScreen(i) {
+  if (i === at || !screens[i]) return;
+  closeOverview(null);
+  rememberScreen();
+  for (const c of containers) c.el.toggleAttribute('data-away', true);
+
+  at = i;
+  const s = screens[at];
+  containers.length = 0;
+  containers.push(...s.windows);
+  arrangement = s.arrangement || null;
+  focused = null;
+
+  for (const c of containers) {
+    c.el.removeAttribute('data-away');
+    // Its box was set while it was out of sight, where a terminal has no size
+    // to fit itself to.
+    c.applyBox();
+    c.relayout();
+  }
+
+  const want = (s.focused && containers.includes(s.focused) && s.focused) || visible().slice(-1)[0];
+  if (want) {
+    page.focus(want);
+    want.focus();
+  } else {
+    paintStatus();
+    paintTitle();
+  }
+  paintControls();
+  page.runStateChanged();
+  page.save();
+  if (window.HEROTERM_SPACES) window.HEROTERM_SPACES.paint();
+}
 
 // Stacking order, in one place because the numbers only make sense together:
 //
@@ -103,16 +170,27 @@ function restack() {
 
 const page = {
   save() {
+    const boxOf = (c) => ({
+      ...c.box,
+      id: c.id,
+      name: c.name,
+      min: c.minimized || undefined,
+      zoom: c.zoom || undefined,
+    });
     writeLayout({
-      focused: focused ? focused.id : null,
-      containers: containers.map((c) => ({
-        ...c.box,
-        id: c.id,
-        name: c.name,
-        min: c.minimized || undefined,
-        zoom: c.zoom || undefined,
-      })),
-      arrangement,
+      at,
+      screens: screens.map((s, i) => {
+        const here = i === at;
+        const windows = here ? containers : s.windows;
+        const its = here ? focused : s.focused;
+        return {
+          id: s.id,
+          name: s.name || undefined,
+          focused: its && windows.includes(its) ? its.id : null,
+          arrangement: here ? arrangement : s.arrangement,
+          containers: windows.map(boxOf),
+        };
+      }),
     });
     paintTray(); // names and minimized windows both end up here
     paintTitle(); // ...and a rename is one of those
@@ -260,7 +338,10 @@ const page = {
 
   runStateChanged() {
     // The sky warps and the clock ticks while anything at all is running, not
-    // just the container you happen to be looking at.
+    // just the container you happen to be looking at — on this screen, that
+    // is: the stars fly from a window you can see, and a build on a screen
+    // you are not looking at says so in the panel instead.
+    if (window.HEROTERM_SPACES) window.HEROTERM_SPACES.paint();
     const busy = containers.some((c) => c.session.running);
     document.body.dataset.run = busy ? 'busy' : 'idle';
     sky.setWarp(busy);
@@ -416,7 +497,7 @@ function defaultBox(n) {
   };
 }
 
-function spawn(id, box, name, cwd) {
+function spawn(id, box, name, cwd, away) {
   const c = window.HEROTERM_CONTAINER.create({
     id: id || newId(),
     name: name || freshName(),
@@ -424,13 +505,16 @@ function spawn(id, box, name, cwd) {
     cwd: cwd || undefined,
     page,
   });
-  containers.push(c);
+  // A window made for a screen you are not looking at: its shell connects and
+  // its scrollback fills, out of sight, until you go there.
+  if (away) c.el.toggleAttribute('data-away', true);
+  else containers.push(c);
   c.setBox(box || defaultBox(containers.length - 1));
   return c;
 }
 
 function add() {
-  if (containers.length >= MAX_CONTAINERS) return;
+  if (containers.length >= MAX_CONTAINERS || totalWindows() >= MAX_SHELLS) return;
   closeOverview(null); // a new window shouldn't arrive behind a grid of thumbnails
   const c = spawn(null, defaultBox(containers.length));
   page.focus(c);
@@ -956,8 +1040,12 @@ function pull(lo, hi, lines, tol = MAGNET) {
 // What the page's buttons can do right now. Everything here is a function of
 // how many windows there are.
 function paintControls() {
-  els.add.disabled = containers.length >= MAX_CONTAINERS;
-  els.add.dataset.tip = 'New terminal ⌘D';
+  els.add.disabled = containers.length >= MAX_CONTAINERS || totalWindows() >= MAX_SHELLS;
+  els.add.dataset.tip = !els.add.disabled
+    ? 'New terminal ⌘D'
+    : containers.length >= MAX_CONTAINERS
+      ? `${MAX_CONTAINERS} windows is the limit for one screen`
+      : `${MAX_SHELLS} terminals is the limit across every screen`;
   // One window is already arranged, and can't be behind anything.
   els.arrange.disabled = containers.length < 2;
   paintArrange();
@@ -973,27 +1061,46 @@ function paintControls() {
 /* ---------- boot ---------- */
 
 const saved = readLayout();
-arrangement = (saved && saved.arrangement) || null; // so undo survives a reload
 
-if (saved) {
-  // A layout saved before windows were the only kind has whatever box its one
-  // window had before it filled the tab, which may be nothing usable. Any
-  // window that comes back the wrong shape gets the box a new one would.
-  const legacy = saved.windowed === false;
-  saved.containers.slice(0, MAX_CONTAINERS).forEach((box, i) => {
+// A layout from before screens is one screen; one from before windows were the
+// only kind has boxes that were never real boxes. Either way it comes back.
+const legacy = saved && saved.windowed === false;
+const stored = saved
+  ? saved.screens || [{ id: 's1', focused: saved.focused, arrangement: saved.arrangement, containers: saved.containers }]
+  : [{ id: 's1', containers: [defaultBox(0)] }];
+
+screens = stored.slice(0, MAX_SCREENS).map((s, i) => ({
+  id: s.id || `s${i + 1}`,
+  name: s.name || '',
+  windows: [],
+  focused: null,
+  arrangement: s.arrangement || null,
+}));
+at = Math.max(0, Math.min(screens.length - 1, saved ? saved.at || 0 : 0));
+
+// Every screen's shells start now, not when you first look at one: a screen
+// you switch to should be where you left it, not still connecting.
+let budget = MAX_SHELLS;
+stored.slice(0, MAX_SCREENS).forEach((s, i) => {
+  const boxes = (s.containers || []).slice(0, Math.min(MAX_CONTAINERS, budget));
+  budget -= boxes.length;
+  const made = boxes.map((box, n) => {
     const usable = !legacy && box.w > 200 && box.h > 150;
-    const c = spawn(box.id, usable ? fitToScreen(box) : defaultBox(i), box.name);
+    const c = spawn(box.id, usable ? fitToScreen(box) : defaultBox(n), box.name, undefined, i !== at);
     if (box.min) c.setMinimized(true);
+    return c;
   });
-} else {
-  spawn(null, defaultBox(0));
-}
+  const its = made.find((c) => c.id === s.focused) || made.find((c) => !c.minimized) || made[0];
+  if (i === at) {
+    arrangement = s.arrangement || null;
+    if (its) page.focus(its);
+  } else {
+    screens[i].windows = made;
+    screens[i].focused = its || null;
+  }
+});
 
-{
-  const shown = visible();
-  const want = shown.find((c) => saved && c.id === saved.focused) || shown[0];
-  if (want) page.focus(want);
-}
+if (!containers.length) spawn(null, defaultBox(0)); // nothing usable was stored
 paintControls();
 sky.setActive(true); // there is only one mode now, and it has stars behind it
 if (focused) focused.focus();
@@ -1006,6 +1113,106 @@ paintStatus();
 // theme or font lands on something you can see. Which window was moved is
 // remembered, so it's that one that goes back.
 let previewed = null;
+
+// The screens, for the panel down the left-hand edge. See spaces.js.
+window.HEROTERM_SPACES = {
+  limits: { screens: MAX_SCREENS, shells: MAX_SHELLS },
+
+  // One row per screen: what to call it, how much is in it, and whether
+  // anything in it is working.
+  list() {
+    return screens.map((s, i) => {
+      const here = i === at;
+      const windows = here ? containers : s.windows;
+      return {
+        id: s.id,
+        name: s.name,
+        here,
+        windows: windows.length,
+        busy: windows.some((c) => c.session.running),
+        names: windows.map((c) => c.name),
+      };
+    });
+  },
+
+  go(i) {
+    showScreen(i);
+  },
+
+  // Left and right of the one you are on, for the keys.
+  step(by) {
+    if (screens.length < 2) return;
+    showScreen((at + by + screens.length) % screens.length);
+  },
+
+  add() {
+    if (screens.length >= MAX_SCREENS || totalWindows() >= MAX_SHELLS) return;
+    rememberScreen();
+    for (const c of containers) c.el.toggleAttribute('data-away', true);
+    screens.push({ id: newId(), name: '', windows: [], focused: null, arrangement: null });
+    at = screens.length - 1;
+    containers.length = 0;
+    arrangement = null;
+    focused = null;
+    const c = spawn(null, defaultBox(0)); // a screen with nothing on it is not a screen
+    page.focus(c);
+    c.focus();
+    paintControls();
+    page.runStateChanged();
+    page.save();
+    window.HEROTERM_SPACES.paint();
+  },
+
+  rename(i, name) {
+    if (!screens[i]) return;
+    screens[i].name = String(name || '').trim().slice(0, 24);
+    page.save();
+    window.HEROTERM_SPACES.paint();
+  },
+
+  // How many windows on a screen have something running, which is what a
+  // question about closing it should say out loud.
+  busyOn(i) {
+    const windows = i === at ? containers : screens[i].windows;
+    return windows.filter((c) => c.session.running).length;
+  },
+
+  // Closing a screen closes its windows, shells and all. The last screen
+  // standing stays: there is always somewhere to be.
+  close(i) {
+    if (screens.length < 2 || !screens[i]) return;
+    const going = i === at ? [...containers] : [...screens[i].windows];
+    screens.splice(i, 1);
+    if (i === at) {
+      containers.length = 0;
+      at = Math.min(i, screens.length - 1);
+      const s = screens[at];
+      containers.push(...s.windows);
+      arrangement = s.arrangement || null;
+      focused = null;
+      for (const c of containers) {
+        c.el.removeAttribute('data-away');
+        c.applyBox();
+        c.relayout();
+      }
+      const want = (s.focused && containers.includes(s.focused) && s.focused) || visible().slice(-1)[0];
+      if (want) {
+        page.focus(want);
+        want.focus();
+      }
+    } else if (i < at) {
+      at -= 1;
+    }
+    for (const c of going) c.destroy();
+    paintControls();
+    page.runStateChanged();
+    page.save();
+    window.HEROTERM_SPACES.paint();
+  },
+
+  // spaces.js fills this in; the page calls it whenever the list changed.
+  paint() {},
+};
 
 window.HEROTERM_WINDOWS = {
   limits: { windows: MAX_CONTAINERS }, // for settings' System tab
@@ -1202,6 +1409,15 @@ window.addEventListener(
   (e) => {
     // A name being renamed is a text field; Cmd-K there should not wipe a grid.
     if (document.activeElement && document.activeElement.isContentEditable) return;
+    // Screens, the way a Mac moves between desktops: one to the left, one to
+    // the right. Alt as well as Cmd, because Cmd-arrow is the line-editing
+    // pair and a terminal wants those far more often than this.
+    if (e.metaKey && e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      window.HEROTERM_SPACES.step(e.key === 'ArrowRight' ? 1 : -1);
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
     // While every window is on show, the keys belong to it: Escape puts them
     // back, and nothing else fires at a window you're in the middle of picking.
     if (overviewing) {

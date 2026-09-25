@@ -11,6 +11,7 @@ dip into whatever you're curious about.
 | [Settings](Settings.md) | themes, fonts, text sizes, fading, sound, effects, the System tab |
 | [Sound and command detection](Sound-and-command-detection.md) | the sounds, and how HeroTerm knows a command started — locally, over ssh, in Claude Code |
 | [Sessions and refreshing](Sessions-and-refreshing.md) | why a refresh loses nothing, and when shells end |
+| [Screens](Screens.md) | several sets of live windows, switched from the left edge |
 | [Saved screens](Saved-screens.md) | keeping a set of windows, and opening it again in their folders |
 | [Command stats](Command-stats.md) | the "what you actually type" page |
 | [Customizing](Customizing.md) | fonts, prompts, editing the look |
