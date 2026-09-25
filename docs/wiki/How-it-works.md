@@ -39,3 +39,27 @@ Beyond the terminal itself the server hands out three things, all behind the
 same token: your shell history counted up for the stats sheet (`/stats`, see
 [Command stats](Command-stats.md)), the installed fonts for the font picker (`/fonts`),
 and the limits it's running with for the System tab (`/config`).
+
+## Tests
+
+`npm test` runs the suite in `test/`, with Node's own test runner and no
+dependencies beyond HeroTerm's: about twenty tests in a few seconds.
+
+- **server** — what it serves, who it lets in, both loopback addresses, and
+  what a spawned shell is given (a clean environment, the folder it asked for).
+- **cli** — `heroterm start`, `status` and `stop` finding the same server, and a
+  stale state file not being believed.
+- **page** — a real headless browser against a real server: commands and their
+  colours, workspaces surviving a switch and a reload, undoing a close, the
+  panel's question, old layouts still loading, the star field's canvas at 2×.
+
+Every shell a test starts runs in a throwaway `HOME` with no `ZDOTDIR` or
+`HISTFILE`, so none of your rc files load and none of your history is touched —
+see `test/helpers/stage.js`, and the test that checks it. Servers and browsers
+take free ports, never 7777.
+
+The page tests use whichever Chromium-family browser is installed (Chrome,
+Brave, Chromium, Edge), or `HEROTERM_TEST_BROWSER` if you set it, and skip
+rather than fail without one. WebGL is off in them on purpose: headless
+captures of a WebGL canvas come back nearly blank, and without it xterm uses
+the DOM renderer, which a test can read.
