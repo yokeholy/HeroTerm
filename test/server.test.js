@@ -105,6 +105,38 @@ test('a shell starts in the folder it was asked for', async () => {
   assert.equal(fs.realpathSync(pwd), fs.realpathSync(dir));
 });
 
+// A refresh rebuilds each window's deck from the records the server kept, so
+// those records have to know which command each one was. zsh announces the
+// command line just *before* the start marker; this server used to write it
+// onto whatever record was open at the time — the one that had just finished —
+// so after a refresh every card said "command", or the one before's name.
+test('the commands kept for a refresh are named after themselves', async () => {
+  const id = `r${Math.random().toString(36).slice(2)}`;
+  const sh = await inShell('echo fir""st', { id });
+  let seen = '';
+  sh.ws.on('message', (m) => (seen += m.toString()));
+  await waitFor(() => /^first\r?$/m.test(seen), { what: 'the first command' });
+  sh.ws.send(JSON.stringify({ t: 'i', d: 'echo sec""ond\r' }));
+  await waitFor(() => /^second\r?$/m.test(seen), { what: 'the second command' });
+  sh.ws.send(JSON.stringify({ t: 'g', s: 60 })); // outlive the socket, as the page asks
+  sh.ws.close(); // a refresh: no bye, so the shell stays
+
+  const again = new WebSocket(`ws://127.0.0.1:${srv.port}/pty?token=${srv.token}&id=${id}`);
+  const restore = await new Promise((resolve, reject) => {
+    again.on('message', (m, binary) => {
+      if (!binary) return;
+      const msg = JSON.parse(m.toString());
+      if (msg.t === 'restore') resolve(msg);
+    });
+    again.once('error', reject);
+  });
+  again.send(JSON.stringify({ t: 'bye' }));
+  again.close();
+
+  const named = [...restore.cards, restore.live].filter(Boolean).map((r) => r.cmd);
+  assert.deepEqual(named.slice(-2), ['echo fir""st', 'echo sec""ond']);
+});
+
 // A saved workspace can name a folder that has since gone. Home is a better
 // answer than no shell at all.
 test('a folder that no longer exists falls back to home', async () => {

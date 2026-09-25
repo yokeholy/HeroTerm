@@ -277,8 +277,15 @@ function absorb(s, text) {
 
 function marker(s, code, payload) {
   if (code === '633') {
-    // The command line, sent just after the start marker.
-    if (payload.startsWith('E;') && s.current) s.current.cmd = payload.slice(2);
+    // The command line. zsh sends it just *before* the start marker, so at
+    // that moment the open record is the command that just finished — it is
+    // held until the start makes the new one. The ssh helper sends it just
+    // after, when the new one is already open and still unnamed. stack.js
+    // does the same on the page.
+    if (!payload.startsWith('E;')) return;
+    const line = payload.slice(2);
+    if (s.current && s.current.running && !s.current.cmd) s.current.cmd = line;
+    else s.pendingCmd = line;
     return;
   }
 
@@ -288,6 +295,8 @@ function marker(s, code, payload) {
       while (s.records.length > MAX_CARDS) s.records.shift();
     }
     s.current = newRecord();
+    s.current.cmd = s.pendingCmd || '';
+    s.pendingCmd = '';
     s.screen = ''; // the browser wipes its screen here too, so we match it
     s.title = null; // whatever set it before belongs to the last command
     return;
@@ -423,6 +432,7 @@ function createSession(id, cwd) {
     unacked: 0,
     paused: false,
     carry: '',
+    pendingCmd: '', // a command line waiting for its start marker; see marker()
     screen: '',
     title: null,
     alt: false,
