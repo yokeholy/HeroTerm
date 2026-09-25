@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- icon.svg, for a browser tab: at 16px three borders are a smear, so one
+       window behind stands in for the stack, and everything is heavier. -->
+  <rect width="512" height="512" rx="112" fill="#0b1020" />
+  <rect x="168" y="62" width="290" height="250" rx="44" fill="#0c1120" stroke="#d9a86c" stroke-width="36" />
+  <rect x="50" y="160" width="340" height="290" rx="48" fill="#0a0e19" stroke="#93b07a" stroke-width="40" />
+  <path d="M116 245l70 60-70 60" fill="none" stroke="#eef1f7" stroke-width="44" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M296 232C309 292 309 292 369 305 309 318 309 318 296 378 283 318 283 318 223 305 283 292 283 292 296 232Z" fill="#f3d38c" />
+</svg>

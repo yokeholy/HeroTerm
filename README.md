@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/yokeholy/HeroTerm/main/docs/icon.png" width="128" height="128" alt="HeroTerm icon: three stacked terminal windows, bordered red, yellow and green, with a star for a cursor">
+</p>
+
 <h1 align="center">HeroTerm</h1>
 
 <p align="center">
