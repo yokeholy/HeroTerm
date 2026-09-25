@@ -466,6 +466,28 @@
         background: color-mix(in srgb, var(--red, #d4736b) 22%, transparent);
       }
 
+      /* Its name, centred in it. Small enough that a window has to be a
+         reasonable size to get one — spaces.js decides that — and clipped
+         rather than wrapped, since two lines in a box this size is a blur. */
+      #spaces .sthumb i b {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 0 2px;
+        overflow: hidden;
+        color: var(--fg, #d6d9e0);
+        font: calc(7.5px * var(--ui-scale, 1)) / 1 var(--font, monospace);
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        white-space: nowrap;
+        opacity: 0.8;
+      }
+
+      #spaces .sthumb i[data-min] b {
+        opacity: 0.5;
+      }
+
       /* The one keys would go to, if you went there. */
       #spaces .sthumb i[data-focused] {
         box-shadow: 0 0 0 1px var(--fg, #d6d9e0) inset;

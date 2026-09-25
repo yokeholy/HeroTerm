@@ -16,9 +16,11 @@ was hidden, not closed.
   asks first. The last screen can't be closed — there is always somewhere to be.
 
 Each row draws that screen: one box per window, where the window actually is,
-in the colour its border is wearing — grey idle, yellow while something runs,
-green or red for how the last command went. The window keys would go to has a
-light ring; one that's minimized to the tray is dashed. Two windows side by
+with its name in the middle of it, in the colour its border is wearing — grey
+idle, yellow while something runs, green or red for how the last command went.
+The window keys would go to has a light ring; one that's minimized to the tray
+is dashed. A window too small to hold its name is drawn without one rather than
+with a smear of letters — hovering it still says which it is. Two windows side by
 side, or one wide one over a short one, is a shape you recognise long before
 you have read three window names.
 

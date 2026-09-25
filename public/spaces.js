@@ -17,6 +17,13 @@
   const REST = 180; // hold the edge this long before it opens
   const LINGER = 260; // ...and this long after leaving before it closes again
 
+  // The drawing, in pixels — .sthumb and .sfield in index.html. Only used to
+  // work out whether a window's box is big enough to hold its name.
+  const FIELD_W = 86;
+  const FIELD_H = 50;
+  const NAME_W = 26; // narrower than this and a name is a smear
+  const NAME_H = 13;
+
   const edge = document.getElementById('edge');
   const panel = document.getElementById('spaces');
   const list = document.getElementById('spaces-list');
@@ -85,6 +92,15 @@
         if (w.focused) box.dataset.focused = '';
         if (w.min) box.dataset.min = '';
         box.title = w.name;
+        // The name, in the middle of the window it belongs to — but only
+        // where there is room for it. A box a few pixels across holds no
+        // word, and half a word is worse than the shape on its own; hovering
+        // still says which is which.
+        if ((w.rect.w / a.w) * FIELD_W >= NAME_W && (w.rect.h / a.h) * FIELD_H >= NAME_H) {
+          const tag = document.createElement('b');
+          tag.textContent = w.name;
+          box.append(tag);
+        }
         field.append(box);
       }
       if (!screen.windows.length) thumb.dataset.empty = '';
