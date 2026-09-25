@@ -194,6 +194,9 @@ const page = {
     });
     paintTray(); // names and minimized windows both end up here
     paintTitle(); // ...and a rename is one of those
+    // The panel draws each screen from where its windows are, so a move, a
+    // resize or a rename is a new picture. It only paints when it is open.
+    if (window.HEROTERM_SPACES) window.HEROTERM_SPACES.paint();
     // Every move, resize, split and close ends up here, so this is where the
     // arrange button finds out whether its undo still holds.
     paintArrange();
@@ -1118,19 +1121,30 @@ let previewed = null;
 window.HEROTERM_SPACES = {
   limits: { screens: MAX_SCREENS, shells: MAX_SHELLS },
 
-  // One row per screen: what to call it, how much is in it, and whether
-  // anything in it is working.
+  // One row per screen: what to call it, what is on it, and where each of
+  // those windows sits — the panel draws a small picture of the screen from
+  // this, which is a faster way to recognise one than reading three names.
+  // Rects are in page coordinates; `area` is what to scale them against.
   list() {
+    const area = workArea();
     return screens.map((s, i) => {
       const here = i === at;
       const windows = here ? containers : s.windows;
+      const its = here ? focused : s.focused;
       return {
         id: s.id,
         name: s.name,
         here,
-        windows: windows.length,
+        area,
         busy: windows.some((c) => c.session.running),
         names: windows.map((c) => c.name),
+        windows: windows.map((c) => ({
+          name: c.name,
+          rect: c.visibleRect(),
+          run: c.el.dataset.run || 'idle',
+          min: c.minimized,
+          focused: c === its,
+        })),
       };
     });
   },

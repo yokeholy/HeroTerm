@@ -351,7 +351,7 @@
         display: flex;
         flex-direction: column;
         gap: 4px;
-        width: 232px;
+        width: 284px;
         padding: 10px;
         border-right: 1px solid var(--hairline, #252a35);
         background: var(--backdrop, rgba(8, 10, 16, 0.55));
@@ -396,8 +396,9 @@
         display: flex;
         align-items: center;
         gap: 8px;
+        /* The picture sets the height; the text sits beside it. */
+        padding: 6px 8px;
         min-width: 0;
-        padding: 7px 8px;
         border: 0;
         border-radius: 8px;
         background: none;
@@ -409,6 +410,64 @@
 
       #spaces .space:not([data-here]) .go:hover {
         background: color-mix(in srgb, var(--hairline, #252a35) 60%, transparent);
+      }
+
+      /* The screen in miniature: the work area as a box, and a window in it
+         wherever the real one is. Same proportions as the page, so a layout
+         you arranged is recognisable at 96px wide. */
+      #spaces .sthumb {
+        position: relative;
+        flex: none;
+        width: 96px;
+        aspect-ratio: 16 / 10;
+        border: 1px solid var(--hairline, #252a35);
+        border-radius: 4px;
+        background: color-mix(in srgb, var(--space, #05070d) 70%, transparent);
+        overflow: hidden;
+      }
+
+      #spaces .sthumb[data-empty]::after {
+        content: '';
+        position: absolute;
+        inset: 30% 38%;
+        border: 1px dashed var(--hairline, #252a35);
+        border-radius: 2px;
+      }
+
+      /* One window. The colour is the one its border is wearing right now, so
+         a failed command shows up in the picture as well as in the window. */
+      #spaces .sthumb i {
+        position: absolute;
+        border: 1px solid var(--label, #6b7384);
+        border-radius: 2px;
+        background: color-mix(in srgb, var(--label, #6b7384) 22%, transparent);
+      }
+
+      #spaces .sthumb i[data-run='busy'] {
+        border-color: var(--yellow, #d9a86c);
+        background: color-mix(in srgb, var(--yellow, #d9a86c) 26%, transparent);
+      }
+
+      #spaces .sthumb i[data-run='ok'] {
+        border-color: var(--green, #93b07a);
+        background: color-mix(in srgb, var(--green, #93b07a) 22%, transparent);
+      }
+
+      #spaces .sthumb i[data-run='err'] {
+        border-color: var(--red, #d4736b);
+        background: color-mix(in srgb, var(--red, #d4736b) 22%, transparent);
+      }
+
+      /* The one keys would go to, if you went there. */
+      #spaces .sthumb i[data-focused] {
+        box-shadow: 0 0 0 1px var(--fg, #d6d9e0) inset;
+      }
+
+      /* In the tray rather than on the screen: where it would be, barely. */
+      #spaces .sthumb i[data-min] {
+        background: none;
+        border-style: dashed;
+        opacity: 0.45;
       }
 
       /* Grey when the screen is idle, and the running colour when something on
@@ -429,6 +488,7 @@
       }
 
       #spaces .stext {
+        flex: 1; /* the rest of the row, so names have room to be read */
         display: flex;
         flex-direction: column;
         min-width: 0;

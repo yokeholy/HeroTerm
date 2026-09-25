@@ -15,9 +15,17 @@ was hidden, not closed.
 - **×** closes a screen and the windows on it. One with something still running
   asks first. The last screen can't be closed — there is always somewhere to be.
 
-Each row shows what's on that screen and a dot that lights up while something
-there is working, which is how a screen you aren't looking at tells you its
-build has finished.
+Each row draws that screen: one box per window, where the window actually is,
+in the colour its border is wearing — grey idle, yellow while something runs,
+green or red for how the last command went. The window keys would go to has a
+light ring; one that's minimized to the tray is dashed. Two windows side by
+side, or one wide one over a short one, is a shape you recognise long before
+you have read three window names.
+
+The picture is drawn from the live layout every time the panel opens, and
+again whenever a window moves, is renamed, or a command starts or finishes —
+so a screen you aren't looking at is how you find out its build has gone
+green.
 
 ## What belongs to a screen
 

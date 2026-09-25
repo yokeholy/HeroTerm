@@ -61,6 +61,29 @@
       dot.className = 'sdot';
       if (screen.busy) dot.dataset.busy = '';
 
+      // A small picture of the screen, drawn from where its windows actually
+      // are: one box per window, in the same colour its border is wearing.
+      // Three names in a row take reading; a shape is recognised.
+      const thumb = document.createElement('span');
+      thumb.className = 'sthumb';
+      const a = screen.area;
+      for (const w of screen.windows) {
+        const box = document.createElement('i');
+        const pct = (v) => `${Math.max(0, Math.min(100, v * 100))}%`;
+        box.style.left = pct((w.rect.x - a.x) / a.w);
+        box.style.top = pct((w.rect.y - a.y) / a.h);
+        // A hairline's worth at least: a window can be smaller than a pixel
+        // of this drawing, and a screen that looks empty is a lie.
+        box.style.width = `max(3px, ${pct(w.rect.w / a.w)})`;
+        box.style.height = `max(3px, ${pct(w.rect.h / a.h)})`;
+        box.dataset.run = w.run;
+        if (w.focused) box.dataset.focused = '';
+        if (w.min) box.dataset.min = '';
+        box.title = w.name;
+        thumb.append(box);
+      }
+      if (!screen.windows.length) thumb.dataset.empty = '';
+
       const label = document.createElement('span');
       label.className = 'slabel';
       label.textContent = screen.name || `Screen ${i + 1}`;
@@ -69,12 +92,17 @@
       note.className = 'snote';
       // What is on it, since the names are the only way to tell two screens
       // apart at a glance once they both have three windows on them.
-      note.textContent = screen.names.slice(0, 3).join(', ') || 'empty';
+      const shown = screen.windows.filter((w) => !w.min).length;
+      const away = screen.windows.length - shown;
+      note.textContent =
+        (screen.names.slice(0, 2).join(', ') || 'empty') +
+        (screen.names.length > 2 ? ` +${screen.names.length - 2}` : '') +
+        (away ? ` · ${away} in the tray` : '');
 
       const text = document.createElement('span');
       text.className = 'stext';
       text.append(label, note);
-      go.append(dot, text);
+      go.append(dot, thumb, text);
       go.addEventListener('click', () => {
         S().go(i);
         shut();
