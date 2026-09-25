@@ -33,10 +33,11 @@ const USAGE = `
     -h, --help       print this
 
   Environment
-    HEROTERM_SHELL     the shell to run (default $SHELL)
-    HEROTERM_GRACE     seconds a shell outlives a closed tab (default 600)
-    HEROTERM_HISTFILE  history file for the stats page
-    HEROTERM_HOME      where a background one keeps its state (default ~/.heroterm)
+    HEROTERM_SHELL         the shell to run (default $SHELL)
+    HEROTERM_GRACE         seconds a shell outlives a closed tab (default 600)
+    HEROTERM_MAX_SESSIONS  shells the server runs at once (default 24, max 64)
+    HEROTERM_HISTFILE      history file for the stats page
+    HEROTERM_HOME          where a background one keeps its state (default ~/.heroterm)
 `;
 
 // One file per port, so a second HeroTerm on another port is its own thing

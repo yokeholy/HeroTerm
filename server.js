@@ -361,7 +361,7 @@ function kill(s) {
 }
 
 // A page can ask for a shell to start somewhere in particular — that is how a
-// saved screen comes back in the directories it was saved in. Anything that
+// saved workspace comes back in the directories it was saved in. Anything that
 // isn't a directory right now is ignored rather than refused: a screen saved
 // months ago may name a folder that has since been moved, and a shell at home
 // is a better answer than no shell at all.

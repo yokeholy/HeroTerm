@@ -37,6 +37,13 @@ Ignore it and the offer lapses after twenty seconds, and the shells are reaped
 then. Only one closure is held at a time: close another workspace and the first
 one is gone for good.
 
+The offer lives in the page, not on the server. **Reload inside those twenty
+seconds and it is gone** — the shells are still reaped on the same timetable,
+there is just nothing left to ask for them back. And until they are reaped they
+are still sessions, so they still count against the server's ceiling (below):
+close a big workspace and open another straight away, and the new one may find
+a few fewer terminals to spare for half a minute.
+
 What the shells' end looks like, when it comes: the shell, whatever it was
 running, and its background jobs all go. Something started with `nohup` — or
 `disown`, or `setsid` — survives, which is what those are for. If you want a
@@ -77,21 +84,57 @@ it again, as does Escape, or switching screens.
 While a sheet is open — settings, help, stats — the edge does nothing: those
 have the screen already.
 
+## Keeping one
+
+A workspace is live: close it and it is gone, and HeroTerm never restarts
+with more than you left it with. To keep one — the four windows you always
+open for a project, in the four folders they belong in — write it down.
+
+- **Save this workspace…** at the foot of the panel names the one you are in
+  and keeps it: how many windows, what each was called, where it sat, and which
+  directory its shell was standing in.
+- Kept ones are listed under **Saved**, each with how many windows it has and
+  the folders they were in, so two for the same project are still telling
+  apart. Click one and it opens as **a workspace of its own**, beside the ones
+  you have — nothing you have is closed to make room. A name you save under
+  becomes that workspace's name.
+- **×** forgets one. Saving under a name you already used replaces it.
+
+Only the arrangement is kept. No scrollback, no output, no running processes:
+opening one starts fresh shells. A window that was minimized comes back
+minimized, in the tray.
+
+### Where the folder comes from
+
+The shell reports it with OSC 7 — `ESC ] 7 ; file://<host><path> BEL` — the
+same sequence iTerm2, VS Code and GNOME Terminal read. HeroTerm's shell
+integration sends it at every prompt (see `shell/zdotdir/.zshrc`), and a good
+many people's own prompts already do. It is also how **＋** knows to open a new
+terminal in the folder you're in.
+
+Two cases give no folder, and those windows simply open at home:
+
+- a shell that never says, because it isn't zsh or the integration isn't in it;
+- anything inside an `ssh`. The directory a remote shell reports is a
+  directory on another machine, so it is ignored rather than acted on here.
+
+A saved folder that no longer exists is not an error either: the window opens
+at home instead. A layout saved months ago is still worth most of what it
+knows.
+
+Kept layouts live in this browser, under `heroterm.screens` — the name is from
+before they moved into this panel, and kept so nothing saved then was lost.
+Nothing is sent anywhere; clearing the browser's site data for HeroTerm forgets
+them.
+
 ## Limits
 
-Six workspaces, eight windows in any one of them, and twenty-four terminals across
-all of them. The last number is the real one: every window in every workspace is a
-live shell on the server, whether you are looking at it or not. `MAX_WORKSPACES`
-and `MAX_SHELLS` are in `public/app.js`, `MAX_SESSIONS` in `server.js`; they are
-meant to agree.
+Six workspaces, and eight windows in any one of them. Those two are the page's
+(`MAX_WORKSPACES` in `public/workspaces.js`, `MAX_CONTAINERS` in
+`public/app.js`).
 
-## Workspaces and saved screens
-
-Different things with a shared word, and worth keeping straight:
-
-| | |
-|---|---|
-| **Workspaces** (this page) | live. Switching between them keeps every shell running. |
-| **Saved screens** (the card button, top right) | a layout written down: how many windows, where, and the folder each shell stood in. Opening one *replaces* the windows you have with fresh shells. |
-
-Saving a screen saves the windows of the workspace you are looking at.
+Across all of them, the ceiling is the server's: every window in every
+workspace is a live shell, whether you are looking at it or not, and the server
+runs at most twenty-four. Set `HEROTERM_MAX_SESSIONS` (1–64) before starting
+it for more or fewer; the page asks the server and holds itself to the same
+number, so ＋ greys out rather than opening a window that could never connect.

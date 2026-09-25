@@ -20,8 +20,7 @@
 - 🔔 **Sounds you can live with:** a ding, a tick-tock, a chime. Each can be switched off.
 - 🔄 **Refresh loses nothing.** Same shell, same folder, same running job — and it reconnects by itself after your laptop sleeps.
 - 🧱 **Several terminals.** Snap, split, or arrange them all with one click.
-- 🗂 **Workspaces.** Several sets of windows, switched from a panel that hides at the left edge. Shells keep running in the ones you're not looking at.
-- 💾 **Saved screens.** Keep a layout — windows, sizes, folders — and open it again in one click.
+- 🗂 **Workspaces.** Several sets of windows, switched from a panel that hides at the left edge. Shells keep running in the ones you're not looking at — and a layout you use often can be saved and opened again, each window in its own folder.
 - 🤖 **Knows when Claude Code is working**, and treats each turn like a command.
 - 🛠 **Your shell, untouched.** zsh, your dotfiles, your prompt and aliases, exactly as they are.
 
@@ -61,7 +60,6 @@ heroterm stop     # end it
 | **＋** | new terminal, in the folder you're in |
 | **▦** | arrange every window to fill the screen; press again to put them back |
 | **⊞** | show every window at once — click one to go to it (a buried window's way back) |
-| **▭** | saved screens — reopen a set of windows, each in its own folder |
 | **⛶** | browser full screen |
 | **⚙︎** | settings |
 
@@ -97,6 +95,8 @@ still running, and three columns](https://raw.githubusercontent.com/yokeholy/Her
 - Closing one can be **undone** for twenty seconds, shells and scrollback intact.
 - Double-click a row's top line to name it; until then, the windows in it are
   its name.
+- **Save this workspace…** keeps its layout — windows, places, folders — to
+  open again later as a workspace of its own.
 
 ## ⌨️ Keys
 
@@ -146,7 +146,6 @@ The details live in the [wiki](docs/wiki/Home.md):
 [Sound & command detection](docs/wiki/Sound-and-command-detection.md) ·
 [Sessions & refreshing](docs/wiki/Sessions-and-refreshing.md) ·
 [Workspaces](docs/wiki/Workspaces.md) ·
-[Saved screens](docs/wiki/Saved-screens.md) ·
 [Command stats](docs/wiki/Command-stats.md) ·
 [Customizing](docs/wiki/Customizing.md) ·
 [Security](docs/wiki/Security.md) ·

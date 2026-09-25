@@ -105,7 +105,7 @@ test('a shell starts in the folder it was asked for', async () => {
   assert.equal(fs.realpathSync(pwd), fs.realpathSync(dir));
 });
 
-// A saved screen can name a folder that has since gone. Home is a better
+// A saved workspace can name a folder that has since gone. Home is a better
 // answer than no shell at all.
 test('a folder that no longer exists falls back to home', async () => {
   const out = path.join(srv.home, 'pwd2.txt');

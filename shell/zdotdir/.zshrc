@@ -94,7 +94,7 @@ __heroterm_precmd() {
 
 # ---------------------------------------------------------------------------
 # OSC 7 — which directory this shell is in. iTerm2, VS Code and GNOME Terminal
-# all report it this way, and here it is what lets a saved screen reopen its
+# all report it this way, and here it is what lets a saved workspace reopen its
 # windows where they were rather than all at home.
 #
 #   ESC ] 7 ; file://<host><path> BEL

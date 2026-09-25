@@ -399,7 +399,7 @@ function freshName() {
   return NAMES.find((n) => !taken.has(n)) || `Terminal ${containers.length + 1}`;
 }
 
-// A layout — or a saved screen — put together on a bigger display would leave
+// A layout — or a saved workspace — put together on a bigger display would leave
 // windows hanging off this one: off the bottom, where the title bar and the
 // three lights go with them. Shrink what doesn't fit and slide the rest back
 // on. Dragging a window half off an edge yourself is still your business;

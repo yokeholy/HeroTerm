@@ -58,6 +58,18 @@ outlive a `stop` should be inside `tmux` or `screen`.
 | `-v`, `--version` | print the version |
 | `-h`, `--help` | print the options |
 
+### Environment
+
+| | |
+|---|---|
+| `HEROTERM_PORT` | the port, when `--port` isn't given (default 7777) |
+| `HEROTERM_SHELL` | the shell to run (default `$SHELL`) |
+| `HEROTERM_GRACE` | seconds a shell outlives its closed tab (default 600; `0` ends it with the tab) |
+| `HEROTERM_MAX_SESSIONS` | how many shells the server runs at once, across every tab and workspace (default 24, 1–64) |
+| `HEROTERM_HISTFILE` | the history file the stats page reads (default `$HISTFILE`, then the usual places) |
+| `HEROTERM_HOME` | where a background one keeps its state and log (default `~/.heroterm`) |
+| `HEROTERM_DEV` | `1` or `0` to force the development chip on or off |
+
 If the port is taken, it says so — usually HeroTerm is already running in
 another terminal, and you can use that one or start another with `--port`.
 

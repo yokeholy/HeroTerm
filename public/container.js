@@ -379,7 +379,7 @@
     };
     // Where this shell is standing, from OSC 7 — our shell integration sends
     // it at every prompt, and so do plenty of other people's. It is what a
-    // saved screen puts back. Ignored inside an ssh: the directory a remote
+    // saved workspace puts back. Ignored inside an ssh: the directory a remote
     // shell reports is a directory on a different machine.
     let cwd = null;
 
