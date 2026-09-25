@@ -108,9 +108,11 @@
       }
       if (!screen.windows.length) thumb.dataset.empty = '';
 
+      // Only a name you gave it. "Screen 2" says nothing the position in the
+      // list doesn't already say; what is on it does.
       const label = document.createElement('span');
       label.className = 'slabel';
-      label.textContent = screen.name || `Screen ${i + 1}`;
+      label.textContent = screen.name || '';
 
       const note = document.createElement('span');
       note.className = 'snote';
@@ -127,6 +129,7 @@
       // the full width of the panel to draw in.
       const head = document.createElement('span');
       head.className = 'shead';
+      if (!screen.name) head.dataset.unnamed = ''; // then the windows are the title
       head.append(dot, label, note);
       go.append(head, thumb);
       go.addEventListener('click', () => {
@@ -134,10 +137,12 @@
         shut();
       });
 
-      // Double-click the name to call it something of your own, the way a
-      // window is renamed.
-      label.addEventListener('dblclick', (e) => {
+      // Double-click the line to call the screen something of your own, the
+      // way a window is renamed. The line rather than the name itself: a
+      // screen you have not named has no name to aim at.
+      head.addEventListener('dblclick', (e) => {
         e.stopPropagation();
+        head.removeAttribute('data-unnamed');
         label.contentEditable = 'true';
         label.focus();
         document.execCommand('selectAll', false, null);
@@ -162,7 +167,7 @@
         const drop = document.createElement('button');
         drop.type = 'button';
         drop.className = 'drop';
-        drop.setAttribute('aria-label', `Close ${screen.name || `screen ${i + 1}`}`);
+        drop.setAttribute('aria-label', `Close the screen with ${screen.names.join(', ') || 'nothing'} on it`);
         drop.dataset.tip = 'Close this screen';
         drop.textContent = '×';
         drop.addEventListener('click', (e) => {

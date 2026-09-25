@@ -10,8 +10,10 @@ come back, standing where you left it, with its scrollback intact — the window
 was hidden, not closed.
 
 - **＋ New screen** makes one, with a terminal on it.
-- **Double-click a name** to call it something of your own. Otherwise they're
-  Screen 1, Screen 2, …
+- **Double-click a row's top line** to call that screen something of your own.
+  Until you do, the windows on it are its title — "git, files" says more than
+  "Screen 2" ever did. A name you give it sits on the left, with the windows
+  alongside.
 - **×** closes a screen and the windows on it, and always asks first — it says
   how many windows go with it, and how many of them are still running. The last
   screen can't be closed; there is always somewhere to be.

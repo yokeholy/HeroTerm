@@ -531,6 +531,11 @@
         padding-right: 18px; /* clear of the × */
       }
 
+      /* Nothing at all when the screen has no name of its own. */
+      #spaces .slabel:empty {
+        display: none;
+      }
+
       #spaces .slabel {
         flex: none;
         max-width: 45%;
@@ -540,7 +545,8 @@
       }
 
       /* What is on it, off to the right where it reads as a caption rather
-         than as part of the name. */
+         than as part of the name — and in its place, reading as the title,
+         when there is no name. */
       #spaces .snote {
         flex: 1;
         overflow: hidden;
@@ -549,7 +555,14 @@
         white-space: nowrap;
       }
 
+      #spaces .shead[data-unnamed] .snote {
+        color: var(--fg, #d6d9e0);
+        text-align: left;
+      }
+
       #spaces .slabel[contenteditable='true'] {
+        display: block;
+        min-width: 60px;
         outline: 1px solid var(--yellow, #d9a86c);
         border-radius: 4px;
       }
