@@ -133,6 +133,9 @@
       head.append(dot, label, note);
       go.append(head, thumb);
       go.addEventListener('click', () => {
+        // The one you are already in: not a switch, and not worth closing the
+        // panel over either. Double-clicking its line to rename it still is.
+        if (space.here) return;
         S().go(i);
         shut();
       });
