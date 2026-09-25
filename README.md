@@ -81,6 +81,22 @@ of them for a second and it says what it does.
   </tr>
 </table>
 
+## 🗂 Workspaces
+
+Rest the pointer on the left edge and the panel slides out: several sets of
+windows, each drawn as it really is, with the running ones lit.
+
+![The workspaces panel open down the left edge: three rows, each with the name
+of the workspace, the windows in it, and a small drawing of where those windows
+sit — two columns, a wide window over a short one with a dot showing something
+still running, and three columns](https://raw.githubusercontent.com/yokeholy/HeroTerm/main/docs/workspaces.png)
+
+- Switching **restarts nothing** — a build left running in another workspace
+  keeps going, and its dot lights up in the panel when it lands.
+- Closing one can be **undone** for twenty seconds, shells and scrollback intact.
+- Double-click a row's top line to name it; until then, the windows in it are
+  its name.
+
 ## ⌨️ Keys
 
 | Keys | Action |
