@@ -642,55 +642,65 @@
         color: var(--label, #6b7384);
       }
 
-      #spaces .sask button:hover,
-      #spaces-add:not(:disabled):hover {
+      #spaces-save {
+        padding: 5px 9px;
+        border: 0;
+        border-radius: 7px;
+        background: none;
+        color: var(--label, #6b7384);
+        font: inherit;
+        text-align: center;
+        cursor: pointer;
+      }
+
+      #spaces-save:hover,
+      #spaces-save:focus-visible {
         background: var(--hairline, #252a35);
         color: var(--fg, #d6d9e0);
       }
 
-      #spaces-add:disabled {
-        opacity: 0.45;
-        cursor: default;
-      }
-
-      /* ---------- saved screens ---------- */
-
-      /* Hung under its button, like the help sheet under the ?. */
-      #screens {
-        position: fixed;
-        top: 40px;
-        right: 8px;
-        z-index: 90;
-        box-sizing: border-box;
-        width: min(340px, calc(100vw - 16px));
-        max-height: calc(100vh - 56px);
-        overflow: auto;
-        padding: 8px;
-        border: 1px solid var(--hairline, #252a35);
-        border-radius: 12px;
-        background: var(--bg, #171b24);
-        box-shadow: 0 24px 70px var(--shadow, rgba(0, 0, 0, 0.75));
-        color: var(--fg, #d6d9e0);
-        font: calc(12px * var(--ui-scale, 1))/1.5 var(--font, monospace);
-      }
-
-      #screens[hidden] {
+      #spaces-name[hidden],
+      #spaces-saved[hidden] {
         display: none;
       }
 
-      #screens .screen {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        align-items: center;
-        gap: 4px;
+      #spaces-name input {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 5px 9px;
+        border: 1px solid var(--yellow, #d9a86c);
+        border-radius: 7px;
+        background: none;
+        color: var(--fg, #d6d9e0);
+        font: inherit;
+        outline: none;
       }
 
-      #screens .go {
+      /* Kept workspaces: quieter than the live ones above them, since they
+         are not running anything. */
+      #spaces-saved {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin-top: 6px;
+        max-height: 40%;
+        overflow-y: auto;
+      }
+
+      #spaces .kept {
+        position: relative;
+        display: flex;
+        align-items: center;
+        border-radius: 8px;
+      }
+
+      #spaces .kept .open {
+        flex: 1;
         display: flex;
         flex-direction: column;
         gap: 1px;
         min-width: 0;
-        padding: 7px 9px;
+        padding: 6px 28px 6px 9px;
         border: 0;
         border-radius: 8px;
         background: none;
@@ -700,135 +710,46 @@
         cursor: pointer;
       }
 
-      #screens .go:hover,
-      #screens .go:focus-visible {
+      #spaces .kept .open:hover:not(:disabled),
+      #spaces .kept .open:focus-visible {
         background: var(--hairline, #252a35);
       }
 
-      #screens .sname {
+      #spaces .kept .open:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+
+      #spaces .kname,
+      #spaces .knote {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
 
-      #screens .snote {
+      #spaces .knote {
         color: var(--label, #6b7384);
-        font-size: calc(11px * var(--ui-scale, 1));
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        font-size: calc(10.5px * var(--ui-scale, 1));
       }
 
-      #screens .drop {
-        width: 24px;
-        height: 24px;
-        border: 0;
-        border-radius: 7px;
-        background: none;
-        color: var(--label, #6b7384);
-        font: inherit;
-        cursor: pointer;
+      #spaces .kept .drop {
+        top: 50%;
+        transform: translateY(-50%);
       }
 
-      #screens .drop:hover,
-      #screens .drop:focus-visible {
+      #spaces .kept:hover .drop {
+        opacity: 1;
+      }
+
+      #spaces .sask button:hover,
+      #spaces-add:not(:disabled):hover {
         background: var(--hairline, #252a35);
-        color: var(--red, #d4736b);
-      }
-
-      /* Where one just closed: the offer to have it back, in its old place. */
-      #spaces .gone {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 7px 8px;
-        border: 1px dashed var(--hairline, #252a35);
-        border-radius: 8px;
-        color: var(--label, #6b7384);
-        font-size: calc(11px * var(--ui-scale, 1));
-      }
-
-      #spaces .gsaid {
-        flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      #spaces .gundo {
-        flex: none;
-        padding: 4px 9px;
-        border: 1px solid var(--hairline, #252a35);
-        border-radius: 7px;
-        background: none;
         color: var(--fg, #d6d9e0);
-        font: inherit;
-        cursor: pointer;
       }
 
-      #spaces .gundo:hover {
-        background: var(--hairline, #252a35);
-      }
-
-      /* The question a workspace asks before it closes. */
-      #screens .sask {
-        grid-column: 1 / -1;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 9px 8px;
-        color: var(--yellow, #d9a86c);
-        font-size: calc(11px * var(--ui-scale, 1));
-      }
-
-      #screens .sask span {
-        flex: 1;
-      }
-
-      #screens .sask button,
-      #screens form button {
-        flex: none; /* the label is the width; the field takes what's left */
-        padding: 4px 9px;
-        border: 1px solid var(--hairline, #252a35);
-        border-radius: 7px;
-        background: none;
-        color: var(--fg, #d6d9e0);
-        font: inherit;
-        cursor: pointer;
-      }
-
-      #screens .sask button:hover,
-      #screens form button:hover {
-        background: var(--hairline, #252a35);
-      }
-
-      #screens .none {
-        margin: 0;
-        padding: 10px 9px;
-        color: var(--label, #6b7384);
-      }
-
-      #screens form {
-        display: flex;
-        gap: 6px;
-        margin-top: 6px;
-        padding-top: 8px;
-        border-top: 1px solid var(--hairline, #252a35);
-      }
-
-      #screens input {
-        flex: 1;
-        min-width: 0;
-        padding: 5px 9px;
-        border: 1px solid var(--hairline, #252a35);
-        border-radius: 7px;
-        background: none;
-        color: var(--fg, #d6d9e0);
-        font: inherit;
-      }
-
-      #screens input::placeholder {
-        color: var(--label, #6b7384);
+      #spaces-add:disabled {
+        opacity: 0.45;
+        cursor: default;
       }
 
       /* ---------- tooltips ---------- */
@@ -2445,15 +2366,6 @@
       </button>
 
 
-      <button id="screensbtn" class="chip" type="button" aria-expanded="false"
-              aria-label="Saved screens" data-tip="Saved screens">
-        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
-          <g fill="none" stroke="currentColor" stroke-width="1.35">
-            <rect x="2.2" y="4.6" width="11.6" height="8.4" rx="1.4" />
-            <path d="M4.4 2.4h7.2M3.3 3.5h9.4" stroke-linecap="round" />
-          </g>
-        </svg>
-      </button>
 
       <button id="expand" class="chip" type="button" aria-pressed="false" aria-label="Full screen">
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
@@ -2524,17 +2436,6 @@
     <!-- Every window at once. The backdrop sits under the windows and catches
          a click on nothing; the tags sit over them, since a window shrunk to a
          thumbnail can't show its own name legibly. -->
-    <!-- Saved screens: the windows you had, where they were, and which
-         directory each shell was in. See screens.js. -->
-    <div id="screens" hidden aria-label="Saved screens">
-      <div id="screens-list"></div>
-      <form id="screens-save">
-        <input id="screens-name" type="text" maxlength="40" placeholder="Save this screen as…"
-               aria-label="Name for this screen" autocomplete="off" spellcheck="false" />
-        <button type="submit" aria-label="Save this screen" data-tip="Save this screen">Save</button>
-      </form>
-    </div>
-
     <!-- Workspaces: the strip you rest the pointer on, and what it brings
          out. See spaces.js; the windows themselves belong to app.js. -->
     <div id="edge" aria-hidden="true"></div>
@@ -2542,6 +2443,16 @@
       <h2>Workspaces</h2>
       <div id="spaces-list"></div>
       <button id="spaces-add" type="button" aria-label="New workspace">＋ New workspace</button>
+      <!-- Keeping one: a button that becomes a name field in place. -->
+      <button id="spaces-save" type="button" aria-label="Save this workspace">Save this workspace…</button>
+      <form id="spaces-name" hidden>
+        <input type="text" maxlength="40" aria-label="Name to save this workspace as" autocomplete="off" spellcheck="false" />
+      </form>
+      <!-- What has been kept, opened into a workspace of its own. -->
+      <section id="spaces-saved" hidden aria-label="Saved workspaces">
+        <h2>Saved</h2>
+        <div id="spaces-saved-list"></div>
+      </section>
     </nav>
 
     <div id="ov-back" hidden></div>
@@ -2623,6 +2534,10 @@
             in another workspace keeps going</dd>
           <dt>⌘⌥← ⌘⌥→</dt>
           <dd>one workspace to the left, one to the right</dd>
+          <dt>save</dt>
+          <dd>Save this workspace…, at the bottom of the panel, keeps its windows,
+            where they sit and the folder each shell was in. Saved ones are listed
+            under it; opening one gives it a workspace of its own</dd>
           <dt>⌘⌥↑</dt>
           <dd>the panel, from the keyboard — ↑ ↓ to choose, Enter to go, Esc to put it
             away</dd>
@@ -2645,9 +2560,6 @@
           <dt>windows</dt>
           <dd>show every window at once, minimized ones included — click one to go
             to it, Escape to leave them as they were</dd>
-          <dt>card</dt>
-          <dd>saved screens — the windows you had, where they were, and the folder
-            each shell was in; click one to lay it out again</dd>
           <dt>expand</dt>
           <dd>browser full screen</dd>
           <dt>sliders</dt>
@@ -2973,7 +2885,6 @@
     <script src="/settings.js"></script>
     <script src="/workspaces.js"></script>
     <script src="/app.js"></script>
-    <script src="/screens.js"></script>
     <script src="/spaces.js"></script>
     <script src="/tips.js"></script>
   </body>

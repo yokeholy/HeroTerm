@@ -1064,9 +1064,9 @@ let previewed = null;
 window.HEROTERM_WINDOWS = {
   limits: { windows: MAX_CONTAINERS }, // for settings' System tab
 
-  /* ---------- saved screens ---------- */
+  /* ---------- kept workspaces ---------- */
 
-  // Everything screens.js needs to put this screen back: where each window
+  // Everything spaces.js needs to write a workspace down: where each window
   // is, what it is called, and where its shell is standing. The directory
   // comes from OSC 7 and may be missing — a shell that never said, or one
   // inside an ssh, where the answer would be a directory on another machine.
@@ -1079,15 +1079,12 @@ window.HEROTERM_WINDOWS = {
     }));
   },
 
-  // How many windows have something running in them, which is what a screen
-  // about to replace them ought to say out loud.
-  busy() {
-    return containers.filter((c) => c.session.running).length;
-  },
-
-  // Open a saved screen. The windows on it replace the ones here, shells and
-  // all: a screen is a screen, not something to add to one. Each new shell is
-  // asked to start in the directory its window was saved in.
+  // Replace the windows of the workspace in front with these, shells and all,
+  // each new shell asked to start in the folder given. Nothing in the page
+  // calls it any more — a kept workspace opens into a workspace of its own,
+  // see openSaved in workspaces.js — but it is the quickest way to lay out a
+  // known arrangement, which is what the tests and the screenshot scripts
+  // use it for.
   open(windows) {
     if (!Array.isArray(windows) || !windows.length) return;
     closeOverview(null);

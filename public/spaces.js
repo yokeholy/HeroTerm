@@ -28,6 +28,11 @@
   const panel = document.getElementById('spaces');
   const list = document.getElementById('spaces-list');
   const adder = document.getElementById('spaces-add');
+  const saver = document.getElementById('spaces-save');
+  const nameForm = document.getElementById('spaces-name');
+  const nameField = nameForm.querySelector('input');
+  const savedBox = document.getElementById('spaces-saved');
+  const savedList = document.getElementById('spaces-saved-list');
 
   const S = () => window.HEROTERM_SPACES;
 
@@ -56,6 +61,7 @@
     clearTimeout(openTimer);
     clearTimeout(shutTimer);
     asking = null;
+    if (!nameForm.hidden) stopSaving({ refocus: false });
     const hadKeys = panel.contains(document.activeElement);
     panel.hidden = true;
     // Straight back to the terminal it came from, so typing goes on where it
@@ -263,7 +269,136 @@
     adder.dataset.tip = adder.disabled
       ? `${limits.workspaces} workspaces is the limit`
       : 'Another workspace, with a terminal on it';
+    paintKept(list_.length >= limits.workspaces);
   }
+
+  /* ---------- kept ---------- */
+
+  // A workspace written down: how many windows, what each was called, where
+  // it sat, and which folder its shell was standing in. Only the arrangement —
+  // no scrollback, no processes. Opening one makes a workspace of its own for
+  // it, with fresh shells started in those folders, beside the ones you have.
+  //
+  // The key is the one the saved-screens button used before this panel took
+  // the idea over, so everything kept that way is still here.
+  const KEY = 'heroterm.screens';
+  const MAX_NAME = 40;
+
+  let kept = {};
+  try {
+    kept = JSON.parse(localStorage.getItem(KEY) || '{}') || {};
+  } catch {
+    /* nothing usable stored; nothing kept yet */
+  }
+
+  function store() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(kept));
+    } catch {
+      /* not persisted; it holds for this tab */
+    }
+  }
+
+  // "3 windows · heroterm, docs" — the folders are the useful part, and the
+  // last segment of each is enough to tell them apart.
+  function describe(entry) {
+    const n = entry.windows.length;
+    const where = entry.windows
+      .map((w) => {
+        if (!w.cwd) return null;
+        if (entry.home && w.cwd === entry.home) return '~';
+        return w.cwd.replace(/\/$/, '').split('/').pop() || '/';
+      })
+      .filter(Boolean);
+    return [`${n} window${n === 1 ? '' : 's'}`, [...new Set(where)].slice(0, 3).join(', ')].filter(Boolean).join(' · ');
+  }
+
+  function paintKept(full) {
+    const names = Object.keys(kept).sort((a, b) => a.localeCompare(b));
+    savedBox.hidden = !names.length;
+    savedList.replaceChildren(
+      ...names.map((name) => {
+        const entry = kept[name];
+        const row = document.createElement('div');
+        row.className = 'kept';
+
+        const open = document.createElement('button');
+        open.type = 'button';
+        open.className = 'open';
+        open.disabled = full;
+        open.dataset.tip = full ? 'Close a workspace to make room for it' : 'Open it as a workspace of its own';
+        const title = document.createElement('span');
+        title.className = 'kname';
+        title.textContent = name;
+        const note = document.createElement('span');
+        note.className = 'knote';
+        note.textContent = describe(entry);
+        open.append(title, note);
+        open.addEventListener('click', () => {
+          returnTo = null; // the new workspace has its own terminal
+          if (S().openSaved(entry.windows, name)) shut();
+        });
+
+        const drop = document.createElement('button');
+        drop.type = 'button';
+        drop.className = 'drop';
+        drop.textContent = '×';
+        drop.setAttribute('aria-label', `Forget ${name}`);
+        drop.dataset.tip = 'Forget this one';
+        drop.addEventListener('click', (e) => {
+          e.stopPropagation();
+          delete kept[name];
+          store();
+          paint();
+        });
+
+        row.append(open, drop);
+        return row;
+      })
+    );
+  }
+
+  // Saving: the button becomes a name field in place, offered the workspace's
+  // own name, or what is in it. Enter keeps it; Escape changes nothing.
+  function startSaving() {
+    const here = S().list().find((w) => w.here);
+    nameField.value = (here && (here.name || here.names.join(', '))) || '';
+    saver.hidden = true;
+    nameForm.hidden = false;
+    nameField.focus();
+    nameField.select();
+  }
+
+  function stopSaving({ refocus = true } = {}) {
+    nameForm.hidden = true;
+    saver.hidden = false;
+    if (refocus && !panel.hidden) saver.focus();
+  }
+
+  saver.addEventListener('mousedown', (e) => e.preventDefault());
+  saver.addEventListener('click', startSaving);
+
+  nameForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = nameField.value.trim().slice(0, MAX_NAME);
+    if (!name) return;
+    kept[name] = {
+      saved: Date.now(),
+      home: window.HEROTERM_CONFIG && window.HEROTERM_CONFIG.home,
+      windows: window.HEROTERM_WINDOWS.snapshot(),
+    };
+    store();
+    stopSaving();
+    paint();
+  });
+
+  // Escape in the field is about the field, not the whole panel.
+  nameField.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    e.preventDefault();
+    e.stopPropagation();
+    stopSaving();
+  });
 
   S().paint = paint;
 
@@ -304,6 +439,16 @@
     'keydown',
     (e) => {
       if (panel.hidden) return;
+      // Typing a name: Escape puts the field away rather than the panel, and
+      // the arrows move the caret, not between rows.
+      if (e.target === nameField) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          stopSaving();
+        }
+        return;
+      }
       if (e.key === 'Escape') {
         if (asking !== null) {
           asking = null;
@@ -318,7 +463,9 @@
       // Up and down between the rows, and on to ＋ at the bottom. Only while
       // the panel has the keys: arrows otherwise belong to the terminal.
       if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && panel.contains(document.activeElement)) {
-        const stops = [...panel.querySelectorAll('.go'), adder].filter((b) => !b.disabled);
+        const stops = [...panel.querySelectorAll('.go'), adder, saver, ...panel.querySelectorAll('.kept .open')].filter(
+          (b) => !b.disabled && !b.hidden
+        );
         const at = stops.indexOf(document.activeElement);
         const next = stops[(at + (e.key === 'ArrowDown' ? 1 : -1) + stops.length) % stops.length];
         if (next) next.focus();

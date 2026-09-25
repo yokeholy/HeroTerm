@@ -216,6 +216,65 @@ test('the panel works from the keyboard', { skip }, async () => {
   await page.until("document.activeElement && document.activeElement.classList.contains('xterm-helper-textarea')", 'the keys to come back');
 });
 
+// Keeping a workspace, from the panel, and having it back as one of its own.
+test('a workspace can be kept, and opened again beside the others', { skip }, async () => {
+  assert.equal(await page.ev("!!document.getElementById('screensbtn')"), false, 'the old toolbar button is still there');
+
+  await page.ev(`HEROTERM_WINDOWS.open([
+    { name: 'left', x: 40, y: 60, w: 600, h: 500 },
+    { name: 'right', x: 700, y: 60, w: 600, h: 500 },
+  ]), 1`);
+  await page.until("HEROTERM_WINDOWS.snapshot().length === 2 && " + connected);
+
+  await page.focusWindow();
+  await page.key('ArrowUp', { code: 'ArrowUp', keyCode: 38, modifiers: CMD_ALT });
+  await page.until("!document.getElementById('spaces').hidden");
+  await page.ev("document.getElementById('spaces-save').click(), 1");
+  await page.until("!document.getElementById('spaces-name').hidden", 'the name field');
+  assert.equal(await page.ev("document.querySelector('#spaces-name input').value"), 'left, right', 'offered the windows as a name');
+
+  // Escape in the field puts the field away, not the panel
+  await page.key('Escape', { code: 'Escape', keyCode: 27 });
+  await page.until("document.getElementById('spaces-name').hidden", 'Escape to close the field');
+  assert.equal(await page.ev("document.getElementById('spaces').hidden"), false, 'Escape closed the whole panel');
+
+  await page.ev("document.getElementById('spaces-save').click(), 1");
+  await page.until("!document.getElementById('spaces-name').hidden");
+  // typed over the offered name (it arrives selected), and Enter
+  await page.cmd('Input.insertText', { text: 'pair' });
+  await page.key('Enter', { code: 'Enter', keyCode: 13, text: '\r' });
+  await page.until("[...document.querySelectorAll('#spaces .kname')].some(k => k.textContent === 'pair')", 'the kept row');
+  assert.match(await page.ev("document.querySelector('#spaces .knote').textContent"), /^2 windows/);
+
+  // opening it makes a new workspace, rather than replacing this one
+  await page.ev("document.querySelector('#spaces .kept .open').click(), 1");
+  await page.until('HEROTERM_SPACES.list().length === 2 && HEROTERM_SPACES.list()[1].here', 'a workspace of its own');
+  assert.deepEqual(await page.ev('HEROTERM_SPACES.list()[1].names'), ['left', 'right']);
+  assert.equal(await page.ev('HEROTERM_SPACES.list()[1].name'), 'pair');
+  assert.deepEqual(await page.ev('HEROTERM_SPACES.list()[0].names'), ['left', 'right'], 'the one it was saved from was touched');
+
+  // and forgetting it
+  await page.move(700, 400);
+  await page.move(4, 420);
+  await page.until("!document.getElementById('spaces').hidden");
+  await page.ev("document.querySelector('#spaces .kept .drop').click(), 1");
+  await page.until("document.getElementById('spaces-saved').hidden", 'the Saved section to empty');
+  assert.equal(await page.ev("localStorage.getItem('heroterm.screens')"), '{}');
+});
+
+// Kept by the toolbar button that came before the panel: same key, still here.
+test('screens saved by the old toolbar button are still there', { skip }, async () => {
+  await page.ev(`localStorage.setItem('heroterm.screens', JSON.stringify({
+    Morning: { saved: 1, windows: [{ name: 'a', x: 40, y: 60, w: 600, h: 400 }, { name: 'b', x: 700, y: 60, w: 600, h: 400 }] }
+  })), 1`);
+  await page.reload();
+  await page.until(connected);
+  await page.move(700, 400);
+  await page.move(4, 420);
+  await page.until("!document.getElementById('spaces').hidden");
+  await page.until("[...document.querySelectorAll('#spaces .kname')].some(k => k.textContent === 'Morning')", 'the old save');
+});
+
 // MAX_SHELLS in the page and MAX_SESSIONS on the server used to agree only
 // because a comment said so. The page reads the server's now; 57 is here so
 // that a number typed into the page by hand could not pass by coincidence.
