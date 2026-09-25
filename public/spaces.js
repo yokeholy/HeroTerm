@@ -1,9 +1,9 @@
 'use strict';
 
-// The screens panel: a strip down the left edge that stays out of the way
+// The workspaces panel: a strip down the left edge that stays out of the way
 // until you put the pointer on it.
 //
-// A screen is a set of windows with their shells still running — see the
+// A workspace is a set of windows with their shells still running — see the
 // model in app.js. This file is only the panel: it lists them, switches
 // between them, makes new ones and closes old ones. Everything it knows comes
 // from HEROTERM_SPACES.
@@ -33,7 +33,7 @@
 
   let openTimer = null;
   let shutTimer = null;
-  let asking = null; // the screen whose "something is running" question is up
+  let asking = null; // the workspace whose "something is running" question is up
 
   const open = () => {
     clearTimeout(shutTimer);
@@ -53,42 +53,42 @@
 
   function paint() {
     if (panel.hidden) return;
-    const screens = S().list();
-    const rows = screens.map((screen, i) => {
+    const list_ = S().list();
+    const rows = list_.map((space, i) => {
       const row = document.createElement('div');
       row.className = 'space';
-      if (screen.here) row.dataset.here = '';
+      if (space.here) row.dataset.here = '';
 
       const go = document.createElement('button');
       go.type = 'button';
       go.className = 'go';
-      go.setAttribute('aria-current', String(screen.here));
+      go.setAttribute('aria-current', String(space.here));
 
       const dot = document.createElement('span');
       dot.className = 'sdot';
-      if (screen.busy) dot.dataset.busy = '';
+      if (space.busy) dot.dataset.busy = '';
 
-      // A small picture of the screen, drawn from where its windows actually
-      // are: one box per window, in the same colour its border is wearing.
+      // A small picture of the workspace, drawn from where its windows
+      // actually are: one box per window, in the colour its border wears.
       // Three names in a row take reading; a shape is recognised.
       const thumb = document.createElement('span');
       thumb.className = 'sthumb';
       // The shape of the work area itself, so a window drawn in it has the
       // proportions it really has.
-      thumb.style.aspectRatio = `${screen.area.w} / ${screen.area.h}`;
+      thumb.style.aspectRatio = `${space.area.w} / ${space.area.h}`;
       // The windows are drawn inside this rather than against the frame, so
       // the picture has air around it; see .sfield for how much.
       const field = document.createElement('span');
       field.className = 'sfield';
       thumb.append(field);
-      const a = screen.area;
-      for (const w of screen.windows) {
+      const a = space.area;
+      for (const w of space.windows) {
         const box = document.createElement('i');
         const pct = (v) => `${Math.max(0, Math.min(100, v * 100))}%`;
         box.style.left = pct((w.rect.x - a.x) / a.w);
         box.style.top = pct((w.rect.y - a.y) / a.h);
         // A hairline's worth at least: a window can be smaller than a pixel
-        // of this drawing, and a screen that looks empty is a lie.
+        // of this drawing, and a workspace that looks empty is a lie.
         box.style.width = `max(3px, ${pct(w.rect.w / a.w)})`;
         box.style.height = `max(3px, ${pct(w.rect.h / a.h)})`;
         box.dataset.run = w.run;
@@ -106,30 +106,30 @@
         }
         field.append(box);
       }
-      if (!screen.windows.length) thumb.dataset.empty = '';
+      if (!space.windows.length) thumb.dataset.empty = '';
 
-      // Only a name you gave it. "Screen 2" says nothing the position in the
-      // list doesn't already say; what is on it does.
+      // Only a name you gave it. "Workspace 2" says nothing the position in
+      // the list doesn't already say; what is in it does.
       const label = document.createElement('span');
       label.className = 'slabel';
-      label.textContent = screen.name || '';
+      label.textContent = space.name || '';
 
       const note = document.createElement('span');
       note.className = 'snote';
-      // What is on it, since the names are the only way to tell two screens
-      // apart at a glance once they both have three windows on them.
-      const shown = screen.windows.filter((w) => !w.min).length;
-      const away = screen.windows.length - shown;
+      // What is in it, since the names are the only way to tell two
+      // workspaces apart once they both hold three windows.
+      const shown = space.windows.filter((w) => !w.min).length;
+      const away = space.windows.length - shown;
       note.textContent =
-        (screen.names.slice(0, 2).join(', ') || 'empty') +
-        (screen.names.length > 2 ? ` +${screen.names.length - 2}` : '') +
+        (space.names.slice(0, 2).join(', ') || 'empty') +
+        (space.names.length > 2 ? ` +${space.names.length - 2}` : '') +
         (away ? ` · ${away} in the tray` : '');
 
       // Name and windows on a line of their own, the picture under it with
       // the full width of the panel to draw in.
       const head = document.createElement('span');
       head.className = 'shead';
-      if (!screen.name) head.dataset.unnamed = ''; // then the windows are the title
+      if (!space.name) head.dataset.unnamed = ''; // then the windows are the title
       head.append(dot, label, note);
       go.append(head, thumb);
       go.addEventListener('click', () => {
@@ -137,9 +137,9 @@
         shut();
       });
 
-      // Double-click the line to call the screen something of your own, the
-      // way a window is renamed. The line rather than the name itself: a
-      // screen you have not named has no name to aim at.
+      // Double-click the line to call the workspace something of your own,
+      // the way a window is renamed. The line rather than the name itself: a
+      // workspace you have not named has no name to aim at.
       head.addEventListener('dblclick', (e) => {
         e.stopPropagation();
         head.removeAttribute('data-unnamed');
@@ -163,18 +163,18 @@
 
       row.append(go);
 
-      if (screens.length > 1) {
+      if (list_.length > 1) {
         const drop = document.createElement('button');
         drop.type = 'button';
         drop.className = 'drop';
-        drop.setAttribute('aria-label', `Close the screen with ${screen.names.join(', ') || 'nothing'} on it`);
-        drop.dataset.tip = 'Close this screen';
+        drop.setAttribute('aria-label', `Close the workspace with ${space.names.join(', ') || 'nothing'} in it`);
+        drop.dataset.tip = 'Close this workspace';
         drop.textContent = '×';
         drop.addEventListener('click', (e) => {
           e.stopPropagation();
-          // Always ask. A screen is several windows and their shells; there
-          // is no undo for that, and the × is a small target next to the one
-          // that switches screens.
+          // Always ask. A workspace is several windows and their shells;
+          // there is no undo for that, and the × is a small target next to
+          // the one that switches workspaces.
           asking = i;
           paint();
         });
@@ -186,7 +186,7 @@
         ask.className = 'sask';
         const why = document.createElement('span');
         const busy = S().busyOn(i);
-        const n = screen.windows.length;
+        const n = space.windows.length;
         // What goes with it, and the part worth hesitating over.
         if (busy) ask.dataset.busy = '';
         why.textContent =
@@ -216,10 +216,10 @@
 
     list.replaceChildren(...rows);
     const limits = S().limits;
-    adder.disabled = screens.length >= limits.screens;
+    adder.disabled = list_.length >= limits.workspaces;
     adder.dataset.tip = adder.disabled
-      ? `${limits.screens} screens is the limit`
-      : 'Another screen, with a terminal on it';
+      ? `${limits.workspaces} workspaces is the limit`
+      : 'Another workspace, with a terminal on it';
   }
 
   S().paint = paint;

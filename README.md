@@ -20,7 +20,7 @@
 - 🔔 **Sounds you can live with:** a ding, a tick-tock, a chime. Each can be switched off.
 - 🔄 **Refresh loses nothing.** Same shell, same folder, same running job — and it reconnects by itself after your laptop sleeps.
 - 🧱 **Several terminals.** Snap, split, or arrange them all with one click.
-- 🗂 **Screens.** Several sets of windows, switched from a panel that hides at the left edge. Shells keep running on the ones you're not looking at.
+- 🗂 **Workspaces.** Several sets of windows, switched from a panel that hides at the left edge. Shells keep running in the ones you're not looking at.
 - 💾 **Saved screens.** Keep a layout — windows, sizes, folders — and open it again in one click.
 - 🤖 **Knows when Claude Code is working**, and treats each turn like a command.
 - 🛠 **Your shell, untouched.** zsh, your dotfiles, your prompt and aliases, exactly as they are.
@@ -86,7 +86,7 @@ of them for a second and it says what it does.
 | Keys | Action |
 |---|---|
 | `⌘D` | new terminal |
-| `⌘⌥←` / `⌘⌥→` | the screen to the left / right |
+| `⌘⌥←` / `⌘⌥→` | the workspace to the left / right |
 | `⌘[` / `⌘]` | older / newer command |
 | `⌘←` / `⌘→` | start / end of the line |
 | `⌘⌫` | clear the line |
@@ -125,7 +125,7 @@ The details live in the [wiki](docs/wiki/Home.md):
 [Settings](docs/wiki/Settings.md) ·
 [Sound & command detection](docs/wiki/Sound-and-command-detection.md) ·
 [Sessions & refreshing](docs/wiki/Sessions-and-refreshing.md) ·
-[Screens](docs/wiki/Screens.md) ·
+[Workspaces](docs/wiki/Workspaces.md) ·
 [Saved screens](docs/wiki/Saved-screens.md) ·
 [Command stats](docs/wiki/Command-stats.md) ·
 [Customizing](docs/wiki/Customizing.md) ·

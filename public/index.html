@@ -321,7 +321,7 @@
         opacity: 0.75;
       }
 
-      /* ---------- screens, down the left edge ---------- */
+      /* ---------- workspaces, down the left edge ---------- */
 
       /* Thin on purpose: a panel that opens whenever the pointer drifts left
          is one that opens while you are reaching for a window's close button.
@@ -335,8 +335,8 @@
         z-index: 70;
       }
 
-      /* A window that belongs to a screen you are not looking at. Its shell
-         is still running; display:none is the whole of "not looking". */
+      /* A window that belongs to a workspace you are not looking at. Its
+         shell is still running; display:none is the whole of "not looking". */
       .deck[data-away] {
         display: none;
       }
@@ -419,9 +419,9 @@
         background: color-mix(in srgb, var(--hairline, #252a35) 60%, transparent);
       }
 
-      /* The screen in miniature: the work area as a box, and a window in it
-         wherever the real one is. Same proportions as the page, so a layout
-         you arranged is recognisable at 96px wide. */
+      /* The workspace in miniature: the work area as a box, and a window in
+         it wherever the real one is. Same proportions as the page, so a
+         layout you arranged is recognisable at a glance. */
       #spaces .sthumb {
         position: relative;
         width: 100%; /* the panel's width; the aspect comes from the work area */
@@ -505,9 +505,9 @@
         opacity: 0.45;
       }
 
-      /* Grey when the screen is idle, and the running colour when something on
-         it is working — which is how a screen you are not looking at tells you
-         its build has finished. */
+      /* Grey when the workspace is idle, and the running colour when
+         something in it is working — which is how a workspace you are not
+         looking at tells you its build has finished. */
       #spaces .sdot {
         flex: none;
         align-self: center;
@@ -531,7 +531,7 @@
         padding-right: 18px; /* clear of the × */
       }
 
-      /* Nothing at all when the screen has no name of its own. */
+      /* Nothing at all when the workspace has no name of its own. */
       #spaces .slabel:empty {
         display: none;
       }
@@ -725,7 +725,7 @@
         color: var(--red, #d4736b);
       }
 
-      /* The question a screen asks before it closes something still working. */
+      /* The question a workspace asks before it closes. */
       #screens .sask {
         grid-column: 1 / -1;
         display: flex;
@@ -2490,13 +2490,13 @@
       </form>
     </div>
 
-    <!-- Screens: the strip you rest the pointer on, and what it brings out.
-         See spaces.js; the windows themselves belong to app.js. -->
+    <!-- Workspaces: the strip you rest the pointer on, and what it brings
+         out. See spaces.js; the windows themselves belong to app.js. -->
     <div id="edge" aria-hidden="true"></div>
-    <nav id="spaces" hidden aria-label="Screens">
-      <h2>Screens</h2>
+    <nav id="spaces" hidden aria-label="Workspaces">
+      <h2>Workspaces</h2>
       <div id="spaces-list"></div>
-      <button id="spaces-add" type="button" aria-label="New screen">＋ New screen</button>
+      <button id="spaces-add" type="button" aria-label="New workspace">＋ New workspace</button>
     </nav>
 
     <div id="ov-back" hidden></div>
@@ -2569,15 +2569,15 @@
           failed.
         </p>
 
-        <h2>Screens</h2>
+        <h2>Workspaces</h2>
         <dl>
           <dt>left edge</dt>
-          <dd>rest the pointer on the left edge of the screen: the panel that slides
-            out holds your screens, each with its own windows and shells. Switching
-            hides one set and shows another — nothing restarts, and a build left
-            running on another screen keeps going</dd>
+          <dd>rest the pointer on the left edge: the panel that slides out holds
+            your workspaces, each with its own windows and shells. Switching hides
+            one set and shows another — nothing restarts, and a build left running
+            in another workspace keeps going</dd>
           <dt>⌘⌥← ⌘⌥→</dt>
-          <dd>the screen to the left, the screen to the right</dd>
+          <dd>one workspace to the left, one to the right</dd>
         </dl>
 
         <h2>Buttons, top left</h2>

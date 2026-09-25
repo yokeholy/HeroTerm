@@ -1,8 +1,9 @@
 # Saved screens
 
-> Not to be confused with [Screens](Screens.md), which are live: several sets of
-> windows you switch between with their shells still running. A *saved* screen
-> is a layout written down, and opening one replaces the windows you have.
+> Not to be confused with [Workspaces](Workspaces.md), which are live: several
+> sets of windows you switch between with their shells still running. A *saved*
+> screen is a layout written down, and opening one replaces the windows you
+> have.
 
 A screen is the set of windows you had: how many, what each was called, where
 it sat, and which directory its shell was standing in. Save one under a name

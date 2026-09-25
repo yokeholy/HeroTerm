@@ -65,9 +65,9 @@ function readLayout() {
   try {
     const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) || 'null');
     if (!saved) return null;
-    // Two shapes: screens, each with its windows, and — from before there were
-    // screens — one set of windows at the top level.
-    if (Array.isArray(saved.screens) && saved.screens.length) return saved;
+    // Two shapes: workspaces, each with its windows, and — from before there were
+    // workspaces — one set of windows at the top level.
+    if (Array.isArray(saved.workspaces) && saved.workspaces.length) return saved;
     if (Array.isArray(saved.containers) && saved.containers.length) return saved;
   } catch {
     /* nothing usable stored; start fresh */
@@ -87,42 +87,42 @@ const containers = [];
 let focused = null;
 let dragging = null;
 
-/* ---------- screens ---------- */
+/* ---------- workspaces ---------- */
 
-// A screen is a set of windows and the shells inside them. Switching hides one
-// set and shows another: nothing restarts, and a build left running on the
-// screen you walked away from is still running when you come back.
+// A workspace is a set of windows and the shells inside them. Switching hides
+// one set and shows another: nothing restarts, and a build left running on the
+// workspace you walked away from is still running when you come back.
 //
-// `containers` is always the screen you are looking at, which is why the rest
-// of this file can go on saying `containers` and mean it — arranging, snapping,
-// the tray, the star field. The screens you are not looking at keep their
-// windows in `screens[i].windows`, alive and out of sight.
-const MAX_SCREENS = 6;
-const MAX_SHELLS = 24; // across every screen; the server has the same ceiling
+// `containers` is always the workspace you are looking at, which is why the
+// rest of this file can go on saying `containers` and mean it — arranging,
+// snapping, the tray, the star field. The workspaces you are not looking at
+// keep their windows in `workspaces[i].windows`, alive and out of sight.
+const MAX_WORKSPACES = 6;
+const MAX_SHELLS = 24; // across every workspace; the server has the same ceiling
 
-let screens = [{ id: 's1', name: '', windows: [], focused: null, arrangement: null }];
-let at = 0; // which screen is on screen
+let workspaces = [{ id: 's1', name: '', windows: [], focused: null, arrangement: null }];
+let at = 0; // which workspace is in front
 
 const totalWindows = () =>
-  screens.reduce((n, s, i) => n + (i === at ? containers.length : s.windows.length), 0);
+  workspaces.reduce((n, s, i) => n + (i === at ? containers.length : s.windows.length), 0);
 
-// What the current screen holds, written back to it before we look away.
-function rememberScreen() {
-  const s = screens[at];
+// What the current workspace holds, written back to it before we look away.
+function rememberWorkspace() {
+  const s = workspaces[at];
   if (!s) return;
   s.windows = [...containers];
   s.focused = focused;
   s.arrangement = arrangement;
 }
 
-function showScreen(i) {
-  if (i === at || !screens[i]) return;
+function showWorkspace(i) {
+  if (i === at || !workspaces[i]) return;
   closeOverview(null);
-  rememberScreen();
+  rememberWorkspace();
   for (const c of containers) c.el.toggleAttribute('data-away', true);
 
   at = i;
-  const s = screens[at];
+  const s = workspaces[at];
   containers.length = 0;
   containers.push(...s.windows);
   arrangement = s.arrangement || null;
@@ -179,7 +179,7 @@ const page = {
     });
     writeLayout({
       at,
-      screens: screens.map((s, i) => {
+      workspaces: workspaces.map((s, i) => {
         const here = i === at;
         const windows = here ? containers : s.windows;
         const its = here ? focused : s.focused;
@@ -194,7 +194,7 @@ const page = {
     });
     paintTray(); // names and minimized windows both end up here
     paintTitle(); // ...and a rename is one of those
-    // The panel draws each screen from where its windows are, so a move, a
+    // The panel draws each workspace from where its windows are, so a move, a
     // resize or a rename is a new picture. It only paints when it is open.
     if (window.HEROTERM_SPACES) window.HEROTERM_SPACES.paint();
     // Every move, resize, split and close ends up here, so this is where the
@@ -341,9 +341,9 @@ const page = {
 
   runStateChanged() {
     // The sky warps and the clock ticks while anything at all is running, not
-    // just the container you happen to be looking at — on this screen, that
-    // is: the stars fly from a window you can see, and a build on a screen
-    // you are not looking at says so in the panel instead.
+    // just the container you happen to be looking at — in this workspace,
+    // that is: the stars fly from a window you can see, and a build in a
+    // workspace you are not looking at says so in the panel instead.
     if (window.HEROTERM_SPACES) window.HEROTERM_SPACES.paint();
     const busy = containers.some((c) => c.session.running);
     document.body.dataset.run = busy ? 'busy' : 'idle';
@@ -508,7 +508,7 @@ function spawn(id, box, name, cwd, away) {
     cwd: cwd || undefined,
     page,
   });
-  // A window made for a screen you are not looking at: its shell connects and
+  // A window made for a workspace you are not looking at: its shell connects and
   // its scrollback fills, out of sight, until you go there.
   if (away) c.el.toggleAttribute('data-away', true);
   else containers.push(c);
@@ -1047,8 +1047,8 @@ function paintControls() {
   els.add.dataset.tip = !els.add.disabled
     ? 'New terminal ⌘D'
     : containers.length >= MAX_CONTAINERS
-      ? `${MAX_CONTAINERS} windows is the limit for one screen`
-      : `${MAX_SHELLS} terminals is the limit across every screen`;
+      ? `${MAX_CONTAINERS} windows is the limit for one workspace`
+      : `${MAX_SHELLS} terminals is the limit across every workspace`;
   // One window is already arranged, and can't be behind anything.
   els.arrange.disabled = containers.length < 2;
   paintArrange();
@@ -1065,26 +1065,26 @@ function paintControls() {
 
 const saved = readLayout();
 
-// A layout from before screens is one screen; one from before windows were the
+// A layout from before workspaces is one screen; one from before windows were the
 // only kind has boxes that were never real boxes. Either way it comes back.
 const legacy = saved && saved.windowed === false;
 const stored = saved
-  ? saved.screens || [{ id: 's1', focused: saved.focused, arrangement: saved.arrangement, containers: saved.containers }]
+  ? saved.workspaces || [{ id: 's1', focused: saved.focused, arrangement: saved.arrangement, containers: saved.containers }]
   : [{ id: 's1', containers: [defaultBox(0)] }];
 
-screens = stored.slice(0, MAX_SCREENS).map((s, i) => ({
+workspaces = stored.slice(0, MAX_WORKSPACES).map((s, i) => ({
   id: s.id || `s${i + 1}`,
   name: s.name || '',
   windows: [],
   focused: null,
   arrangement: s.arrangement || null,
 }));
-at = Math.max(0, Math.min(screens.length - 1, saved ? saved.at || 0 : 0));
+at = Math.max(0, Math.min(workspaces.length - 1, saved ? saved.at || 0 : 0));
 
-// Every screen's shells start now, not when you first look at one: a screen
+// Every workspace's shells start now, not when you first look at one: a screen
 // you switch to should be where you left it, not still connecting.
 let budget = MAX_SHELLS;
-stored.slice(0, MAX_SCREENS).forEach((s, i) => {
+stored.slice(0, MAX_WORKSPACES).forEach((s, i) => {
   const boxes = (s.containers || []).slice(0, Math.min(MAX_CONTAINERS, budget));
   budget -= boxes.length;
   const made = boxes.map((box, n) => {
@@ -1098,8 +1098,8 @@ stored.slice(0, MAX_SCREENS).forEach((s, i) => {
     arrangement = s.arrangement || null;
     if (its) page.focus(its);
   } else {
-    screens[i].windows = made;
-    screens[i].focused = its || null;
+    workspaces[i].windows = made;
+    workspaces[i].focused = its || null;
   }
 });
 
@@ -1117,17 +1117,17 @@ paintStatus();
 // remembered, so it's that one that goes back.
 let previewed = null;
 
-// The screens, for the panel down the left-hand edge. See spaces.js.
+// The workspaces, for the panel down the left-hand edge. See spaces.js.
 window.HEROTERM_SPACES = {
-  limits: { screens: MAX_SCREENS, shells: MAX_SHELLS },
+  limits: { workspaces: MAX_WORKSPACES, shells: MAX_SHELLS },
 
-  // One row per screen: what to call it, what is on it, and where each of
-  // those windows sits — the panel draws a small picture of the screen from
+  // One row per workspace: what to call it, what is on it, and where each of
+  // those windows sits — the panel draws a small picture of the workspace from
   // this, which is a faster way to recognise one than reading three names.
   // Rects are in page coordinates; `area` is what to scale them against.
   list() {
     const area = workArea();
-    return screens.map((s, i) => {
+    return workspaces.map((s, i) => {
       const here = i === at;
       const windows = here ? containers : s.windows;
       const its = here ? focused : s.focused;
@@ -1150,25 +1150,25 @@ window.HEROTERM_SPACES = {
   },
 
   go(i) {
-    showScreen(i);
+    showWorkspace(i);
   },
 
   // Left and right of the one you are on, for the keys.
   step(by) {
-    if (screens.length < 2) return;
-    showScreen((at + by + screens.length) % screens.length);
+    if (workspaces.length < 2) return;
+    showWorkspace((at + by + workspaces.length) % workspaces.length);
   },
 
   add() {
-    if (screens.length >= MAX_SCREENS || totalWindows() >= MAX_SHELLS) return;
-    rememberScreen();
+    if (workspaces.length >= MAX_WORKSPACES || totalWindows() >= MAX_SHELLS) return;
+    rememberWorkspace();
     for (const c of containers) c.el.toggleAttribute('data-away', true);
-    screens.push({ id: newId(), name: '', windows: [], focused: null, arrangement: null });
-    at = screens.length - 1;
+    workspaces.push({ id: newId(), name: '', windows: [], focused: null, arrangement: null });
+    at = workspaces.length - 1;
     containers.length = 0;
     arrangement = null;
     focused = null;
-    const c = spawn(null, defaultBox(0)); // a screen with nothing on it is not a screen
+    const c = spawn(null, defaultBox(0)); // a workspace with nothing on it is not a workspace
     page.focus(c);
     c.focus();
     paintControls();
@@ -1178,8 +1178,8 @@ window.HEROTERM_SPACES = {
   },
 
   rename(i, name) {
-    if (!screens[i]) return;
-    screens[i].name = String(name || '').trim().slice(0, 24);
+    if (!workspaces[i]) return;
+    workspaces[i].name = String(name || '').trim().slice(0, 24);
     page.save();
     window.HEROTERM_SPACES.paint();
   },
@@ -1187,20 +1187,20 @@ window.HEROTERM_SPACES = {
   // How many windows on a screen have something running, which is what a
   // question about closing it should say out loud.
   busyOn(i) {
-    const windows = i === at ? containers : screens[i].windows;
+    const windows = i === at ? containers : workspaces[i].windows;
     return windows.filter((c) => c.session.running).length;
   },
 
-  // Closing a screen closes its windows, shells and all. The last screen
+  // Closing a workspace closes its windows, shells and all. The last workspace
   // standing stays: there is always somewhere to be.
   close(i) {
-    if (screens.length < 2 || !screens[i]) return;
-    const going = i === at ? [...containers] : [...screens[i].windows];
-    screens.splice(i, 1);
+    if (workspaces.length < 2 || !workspaces[i]) return;
+    const going = i === at ? [...containers] : [...workspaces[i].windows];
+    workspaces.splice(i, 1);
     if (i === at) {
       containers.length = 0;
-      at = Math.min(i, screens.length - 1);
-      const s = screens[at];
+      at = Math.min(i, workspaces.length - 1);
+      const s = workspaces[at];
       containers.push(...s.windows);
       arrangement = s.arrangement || null;
       focused = null;
@@ -1231,7 +1231,7 @@ window.HEROTERM_SPACES = {
 window.HEROTERM_WINDOWS = {
   limits: { windows: MAX_CONTAINERS }, // for settings' System tab
 
-  /* ---------- saved screens ---------- */
+  /* ---------- saved workspaces ---------- */
 
   // Everything profiles.js needs to put this screen back: where each window
   // is, what it is called, and where its shell is standing. The directory
@@ -1423,7 +1423,7 @@ window.addEventListener(
   (e) => {
     // A name being renamed is a text field; Cmd-K there should not wipe a grid.
     if (document.activeElement && document.activeElement.isContentEditable) return;
-    // Screens, the way a Mac moves between desktops: one to the left, one to
+    // Workspaces, the way a Mac moves between desktops: one to the left, one to
     // the right. Alt as well as Cmd, because Cmd-arrow is the line-editing
     // pair and a terminal wants those far more often than this.
     if (e.metaKey && e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
