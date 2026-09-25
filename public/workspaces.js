@@ -45,8 +45,8 @@
     const limits = {
       workspaces: MAX_WORKSPACES,
       // Every window in every workspace is a live shell on the server, so the
-      // real ceiling is the server's. It says what that is in /config; until
-      // it has, this is what it has always been.
+      // real ceiling is the server's. app.js sets this from /config; until the
+      // answer arrives, it is the server's default.
       shells: 24,
       windows: host.maxWindows,
     };

@@ -19,7 +19,10 @@ let page;
 before(async () => {
   if (skip) return;
   // A grace long enough to outlive a reload: that is how shells survive one.
-  srv = await startServer({ grace: 60 });
+  // An odd ceiling, so the test below can tell it was read rather than typed;
+  // and a roomy one, because every test abandons its shells to the grace
+  // period on its way out, and those add up.
+  srv = await startServer({ grace: 60, env: { HEROTERM_MAX_SESSIONS: '57' } });
   // At 2x, because that is a retina Mac and the sky has been wrong there.
   page = await launch({ width: 1440, height: 900, scale: 2 });
   await page.open(srv.url);
@@ -211,6 +214,13 @@ test('the panel works from the keyboard', { skip }, async () => {
   await page.key('Escape', { code: 'Escape', keyCode: 27 });
   await page.until("document.getElementById('spaces').hidden", 'Escape to close it');
   await page.until("document.activeElement && document.activeElement.classList.contains('xterm-helper-textarea')", 'the keys to come back');
+});
+
+// MAX_SHELLS in the page and MAX_SESSIONS on the server used to agree only
+// because a comment said so. The page reads the server's now; 57 is here so
+// that a number typed into the page by hand could not pass by coincidence.
+test("the page takes its shell ceiling from the server", { skip }, async () => {
+  await page.until('HEROTERM_SPACES.limits.shells === 57', 'the ceiling from /config');
 });
 
 test('nothing threw along the way', { skip }, () => {

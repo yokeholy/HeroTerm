@@ -1143,7 +1143,14 @@ window.HEROTERM_WINDOWS = {
     const token = new URLSearchParams(location.search).get('token') || '';
     const res = await fetch(`/config?token=${encodeURIComponent(token)}`, { cache: 'no-store' });
     if (!res.ok) return;
-    const { version, dev, home } = await res.json();
+    const { version, dev, home, maxSessions } = await res.json();
+    // The server's ceiling on shells is the real one, since every window in
+    // every workspace is a live shell there. Until this answers, the model
+    // uses the number it has always been.
+    if (Number.isInteger(maxSessions) && maxSessions > 0) {
+      WS.limits.shells = maxSessions;
+      paintControls();
+    }
     if (version) document.getElementById('version').textContent = version;
     // A development copy says so, so it's never mistaken for the one you work in.
     document.getElementById('devchip').hidden = !dev;

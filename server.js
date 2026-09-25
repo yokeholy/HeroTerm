@@ -224,10 +224,12 @@ function rememberExit(id, code) {
   exited.set(id, code);
   if (exited.size > MAX_EXITED) exited.delete(exited.keys().next().value);
 }
-// Across every screen, not per screen: a page can hold several sets of
-// windows now, each with its shells still running while you are looking at
-// another. Eight was the old ceiling when there was only ever one set.
-const MAX_SESSIONS = 24;
+// Across every workspace, not per workspace: a page holds several sets of
+// windows, each with its shells still running while you look at another.
+// This is the one ceiling — the page reads it from /config rather than
+// keeping a copy that has to be kept in step by hand. HEROTERM_MAX_SESSIONS
+// moves it, within reason.
+const MAX_SESSIONS = Math.max(1, Math.min(64, Number(process.env.HEROTERM_MAX_SESSIONS) || 24));
 const PROTOCOL = 3; // the wire contract's version; see the 'hello' below
 const FG_POLL = 1000; // ms between looks at which program has the terminal
 const MAX_GRACE = 24 * 60 * 60; // seconds; the longest a page may ask to keep a shell
