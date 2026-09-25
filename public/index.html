@@ -585,13 +585,17 @@
       }
 
       #spaces .sask {
-        grid-column: 1 / -1;
         display: flex;
         align-items: center;
         gap: 6px;
-        padding: 4px 8px 8px;
-        color: var(--yellow, #d9a86c);
+        padding: 0 7px 7px;
+        color: var(--label, #6b7384);
         font-size: calc(10.5px * var(--ui-scale, 1));
+      }
+
+      /* Something on it is working: the one case worth a colour. */
+      #spaces .sask[data-busy] {
+        color: var(--yellow, #d9a86c);
       }
 
       #spaces .sask span {

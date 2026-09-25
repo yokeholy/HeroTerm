@@ -167,12 +167,11 @@
         drop.textContent = '×';
         drop.addEventListener('click', (e) => {
           e.stopPropagation();
-          if (S().busyOn(i) > 0) {
-            asking = i;
-            paint();
-            return;
-          }
-          S().close(i);
+          // Always ask. A screen is several windows and their shells; there
+          // is no undo for that, and the × is a small target next to the one
+          // that switches screens.
+          asking = i;
+          paint();
         });
         row.append(drop);
       }
@@ -182,7 +181,11 @@
         ask.className = 'sask';
         const why = document.createElement('span');
         const busy = S().busyOn(i);
-        why.textContent = `${busy} still running.`;
+        const n = screen.windows.length;
+        // What goes with it, and the part worth hesitating over.
+        if (busy) ask.dataset.busy = '';
+        why.textContent =
+          `Close ${n} window${n === 1 ? '' : 's'}` + (busy ? `, ${busy} still running?` : '?');
         const yes = document.createElement('button');
         yes.type = 'button';
         yes.textContent = 'Close';

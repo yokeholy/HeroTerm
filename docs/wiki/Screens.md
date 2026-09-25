@@ -12,8 +12,9 @@ was hidden, not closed.
 - **＋ New screen** makes one, with a terminal on it.
 - **Double-click a name** to call it something of your own. Otherwise they're
   Screen 1, Screen 2, …
-- **×** closes a screen and the windows on it. One with something still running
-  asks first. The last screen can't be closed — there is always somewhere to be.
+- **×** closes a screen and the windows on it, and always asks first — it says
+  how many windows go with it, and how many of them are still running. The last
+  screen can't be closed; there is always somewhere to be.
 
 Each row is the screen's name and what's on it, with a picture of the screen
 under it, the full width of the panel: one box per window, where the window
