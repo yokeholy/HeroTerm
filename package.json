@@ -7,7 +7,7 @@
   "homepage": "https://github.com/yokeholy/heroterm#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yokeholy/heroterm.git"
+    "url": "git+https://github.com/yokeholy/HeroTerm.git"
   },
   "bugs": {
     "url": "https://github.com/yokeholy/heroterm/issues"
@@ -21,7 +21,8 @@
     "osc-133",
     "web-terminal",
     "claude-code",
-    "browser-terminal"
+    "browser-terminal",
+    "workspaces"
   ],
   "bin": {
     "heroterm": "bin/heroterm.js"

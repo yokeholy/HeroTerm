@@ -66,7 +66,8 @@ heroterm stop     # end it
 | **⚙︎** | settings |
 
 **?** and the stats live top left; the rest, top right. Rest the pointer on any
-of them for a second and it says what it does.
+of them for a second and it says what it does. Rest it on the **left edge** of
+the page and your [workspaces](#-workspaces) slide out.
 
 **Windows:** 🔴 close · 🟡 minimize to the status bar · 🟢 fill the screen · drag by the title bar · resize from any edge · drag to a screen edge to snap · drop onto another window to split · double-click the name to rename.
 
@@ -128,9 +129,11 @@ Changes preview live on the window beside the panel.
 
 ## 🔒 Safe by default
 
-- Listens on `127.0.0.1` only, never the network.
+- Listens on loopback only — `127.0.0.1` and `::1` — never the network.
 - A random token per launch, so other web pages can't reach your shell.
 - Nothing is sent anywhere. Settings stay in your browser.
+- Your shells get your environment, not HeroTerm's plumbing — no stray `PORT`
+  for a dev server to trip over.
 
 ## 📚 Learn more
 
