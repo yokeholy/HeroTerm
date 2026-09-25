@@ -58,7 +58,7 @@ heroterm stop     # end it
 |:---:|---|
 | **?** | help |
 | **▮▮▮** | the commands you type most |
-| **＋** | new terminal |
+| **＋** | new terminal, in the folder you're in |
 | **▦** | arrange every window to fill the screen; press again to put them back |
 | **⊞** | show every window at once — click one to go to it (a buried window's way back) |
 | **▭** | saved screens — reopen a set of windows, each in its own folder |
@@ -104,6 +104,7 @@ still running, and three columns](https://raw.githubusercontent.com/yokeholy/Her
 |---|---|
 | `⌘D` | new terminal |
 | `⌘⌥←` / `⌘⌥→` | the workspace to the left / right |
+| `⌘⌥↑` | the workspaces panel — `↑` `↓` to choose, `Enter` to go |
 | `⌘[` / `⌘]` | older / newer command |
 | `⌘←` / `⌘→` | start / end of the line |
 | `⌘⌫` | clear the line |

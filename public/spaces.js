@@ -34,20 +34,38 @@
   let openTimer = null;
   let shutTimer = null;
   let asking = null; // the workspace whose "something is running" question is up
+  let returnTo = null; // what had the keyboard before the panel took it
 
-  const open = () => {
+  // From the edge, the panel just appears: the pointer is the thing in use.
+  // From the keyboard it takes the keys as well, starting on the workspace
+  // you are in, and gives them back when it closes.
+  const open = ({ keyboard = false } = {}) => {
     clearTimeout(shutTimer);
-    if (!panel.hidden) return;
-    panel.hidden = false; // before painting: paint() leaves a hidden panel alone
-    paint();
+    if (panel.hidden) {
+      panel.hidden = false; // before painting: paint() leaves a hidden panel alone
+      paint();
+    }
+    if (keyboard) {
+      if (!panel.contains(document.activeElement)) returnTo = document.activeElement;
+      const here = panel.querySelector('.space[data-here] .go') || panel.querySelector('.go');
+      if (here) here.focus();
+    }
   };
 
   const shut = () => {
     clearTimeout(openTimer);
     clearTimeout(shutTimer);
     asking = null;
+    const hadKeys = panel.contains(document.activeElement);
     panel.hidden = true;
+    // Straight back to the terminal it came from, so typing goes on where it
+    // stopped — unless a switch has put a different one in front, which will
+    // have taken the keyboard itself.
+    if (hadKeys && returnTo && returnTo.isConnected) returnTo.focus();
+    returnTo = null;
   };
+
+  const toggle = (opts) => (panel.hidden ? open(opts) : shut());
 
   /* ---------- the list ---------- */
 
@@ -136,6 +154,7 @@
         // The one you are already in: not a switch, and not worth closing the
         // panel over either. Double-clicking its line to rename it still is.
         if (space.here) return;
+        returnTo = null; // the workspace we are going to has its own terminal
         S().go(i);
         shut();
       });
@@ -284,15 +303,28 @@
   document.addEventListener(
     'keydown',
     (e) => {
-      if (panel.hidden || e.key !== 'Escape') return;
-      if (asking !== null) {
-        asking = null;
-        paint();
-      } else {
-        shut();
+      if (panel.hidden) return;
+      if (e.key === 'Escape') {
+        if (asking !== null) {
+          asking = null;
+          paint();
+        } else {
+          shut();
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        return;
       }
-      e.preventDefault();
-      e.stopPropagation();
+      // Up and down between the rows, and on to ＋ at the bottom. Only while
+      // the panel has the keys: arrows otherwise belong to the terminal.
+      if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && panel.contains(document.activeElement)) {
+        const stops = [...panel.querySelectorAll('.go'), adder].filter((b) => !b.disabled);
+        const at = stops.indexOf(document.activeElement);
+        const next = stops[(at + (e.key === 'ArrowDown' ? 1 : -1) + stops.length) % stops.length];
+        if (next) next.focus();
+        e.preventDefault();
+        e.stopPropagation();
+      }
     },
     true
   );
@@ -300,5 +332,5 @@
   adder.addEventListener('mousedown', (e) => e.preventDefault());
   adder.addEventListener('click', () => S().add());
 
-  window.HEROTERM_EDGE = { open, close: shut };
+  window.HEROTERM_EDGE = { open, close: shut, toggle };
 })();

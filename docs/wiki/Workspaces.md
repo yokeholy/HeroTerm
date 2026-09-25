@@ -2,7 +2,10 @@
 
 A workspace is a set of windows and the shells inside them. Rest the pointer on
 the left edge of the page and a panel slides out with one row per workspace; click
-one to go there. `⌘⌥←` and `⌘⌥→` step between them without the panel.
+one to go there. `⌘⌥←` and `⌘⌥→` step between them without the panel, and `⌘⌥↑` opens it from the
+keyboard: it starts on the workspace you're in, `↑` and `↓` move, `Enter` goes
+there, and `Esc` puts it away and hands the keys straight back to the terminal
+you were typing in.
 
 Switching hides one set of windows and shows another. **Nothing restarts.** A
 build left running on the workspace you walked away from is still running when you

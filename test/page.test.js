@@ -165,6 +165,54 @@ test('a layout that stored its workspaces as "screens" still loads', { skip }, a
   assert.ok(list[1].here);
 });
 
+// CDP modifier bits: Alt 1, Ctrl 2, Meta 4, Shift 8.
+const CMD = 4;
+const CMD_ALT = 5;
+const cwds = "HEROTERM_WINDOWS.snapshot().map(w => w.cwd || '')";
+
+test('a new window starts in the folder of the one you were in', { skip }, async () => {
+  await page.focusWindow();
+  await page.type('mkdir -p ~/proj/deep && cd ~/proj/deep');
+  await page.until(`${cwds}[0].endsWith('/proj/deep')`, 'the first shell to report its folder');
+
+  await page.key('d', { code: 'KeyD', keyCode: 68, modifiers: CMD }); // ⌘D
+  await page.until(`${cwds}.length === 2`, 'a second window');
+  await page.until(`${cwds}[1].endsWith('/proj/deep')`, 'the new shell to start in the same folder');
+
+  // and a new workspace's first window, the same way
+  await page.ev('HEROTERM_SPACES.add(), 1');
+  await page.until('HEROTERM_SPACES.list().length === 2');
+  await page.until(`${cwds}[0] && ${cwds}[0].endsWith('/proj/deep')`, "the new workspace's shell to start there too");
+});
+
+test('the panel works from the keyboard', { skip }, async () => {
+  await page.ev('HEROTERM_SPACES.add(), 1');
+  await page.until('HEROTERM_SPACES.list().length === 2 && HEROTERM_SPACES.list()[1].here');
+  await page.focusWindow();
+
+  await page.key('ArrowUp', { code: 'ArrowUp', keyCode: 38, modifiers: CMD_ALT }); // ⌘⌥↑
+  await page.until("!document.getElementById('spaces').hidden", 'the panel to open');
+  assert.ok(
+    await page.ev("document.activeElement === document.querySelector('#spaces .space[data-here] .go')"),
+    'the keys should start on the workspace you are in'
+  );
+
+  await page.key('ArrowUp', { code: 'ArrowUp', keyCode: 38 });
+  assert.ok(await page.ev("document.activeElement === document.querySelectorAll('#spaces .go')[0]"), '↑ went nowhere');
+
+  await page.key('Enter', { code: 'Enter', keyCode: 13, text: '\r' });
+  await page.until('HEROTERM_SPACES.list()[0].here', 'Enter to switch');
+  await page.until("document.getElementById('spaces').hidden", 'the panel to close');
+  await page.until("document.activeElement && document.activeElement.classList.contains('xterm-helper-textarea')", 'the keys to land in a terminal');
+
+  // Escape hands the keys straight back to the terminal they came from.
+  await page.key('ArrowUp', { code: 'ArrowUp', keyCode: 38, modifiers: CMD_ALT });
+  await page.until("!document.getElementById('spaces').hidden");
+  await page.key('Escape', { code: 'Escape', keyCode: 27 });
+  await page.until("document.getElementById('spaces').hidden", 'Escape to close it');
+  await page.until("document.activeElement && document.activeElement.classList.contains('xterm-helper-textarea')", 'the keys to come back');
+});
+
 test('nothing threw along the way', { skip }, () => {
   assert.deepEqual(page.errors, []);
 });

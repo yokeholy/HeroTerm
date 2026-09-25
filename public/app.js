@@ -529,10 +529,16 @@ function spawn(id, box, name, cwd, away) {
   return c;
 }
 
+// Where a new window's shell should start: wherever the one you are working
+// in is standing, the way a new tab in Terminal or iTerm does. Known from OSC 7
+// (see container.js), so it can be unknown — a shell that never said, or one
+// inside an ssh, whose folder is on another machine — and then it is home.
+const hereCwd = () => (focused && focused.cwd) || undefined;
+
 function add() {
   if (containers.length >= MAX_CONTAINERS || totalWindows() >= MAX_SHELLS) return;
   closeOverview(null); // a new window shouldn't arrive behind a grid of thumbnails
-  const c = spawn(null, defaultBox(containers.length));
+  const c = spawn(null, defaultBox(containers.length), undefined, hereCwd());
   page.focus(c);
   c.focus();
   paintControls();
@@ -1176,6 +1182,7 @@ window.HEROTERM_SPACES = {
 
   add() {
     if (workspaces.length >= MAX_WORKSPACES || totalWindows() >= MAX_SHELLS) return;
+    const from = hereCwd(); // asked now, while the window it comes from is still in front
     rememberWorkspace();
     for (const c of containers) c.el.toggleAttribute('data-away', true);
     workspaces.push({ id: newId(), name: '', windows: [], focused: null, arrangement: null });
@@ -1183,7 +1190,7 @@ window.HEROTERM_SPACES = {
     containers.length = 0;
     arrangement = null;
     focused = null;
-    const c = spawn(null, defaultBox(0)); // a workspace with nothing on it is not a workspace
+    const c = spawn(null, defaultBox(0), undefined, from); // a workspace with nothing on it is not a workspace
     page.focus(c);
     c.focus();
     paintControls();
@@ -1504,6 +1511,14 @@ window.addEventListener(
     // pair and a terminal wants those far more often than this.
     if (e.metaKey && e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
       window.HEROTERM_SPACES.step(e.key === 'ArrowRight' ? 1 : -1);
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    // ...and up, for all of them at once: the panel, without reaching for the
+    // edge of the screen. Mission Control is "up" as well.
+    if (e.metaKey && e.altKey && e.key === 'ArrowUp') {
+      window.HEROTERM_EDGE.toggle({ keyboard: true });
       e.preventDefault();
       e.stopPropagation();
       return;

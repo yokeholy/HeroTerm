@@ -152,8 +152,13 @@ async function launch({ width = 1440, height = 900, scale = 1 } = {}) {
       await cmd('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
     },
 
-    async key(key, { code = key, keyCode = 0, modifiers = 0 } = {}) {
-      await cmd('Input.dispatchKeyEvent', { type: 'rawKeyDown', key, code, windowsVirtualKeyCode: keyCode, modifiers });
+    // A key as a person presses it. One that types a character — Enter
+    // included — has to say so, or the browser sees a bare key-down and never
+    // does what that key does: a focused button is not pressed by Enter
+    // without it.
+    async key(key, { code = key, keyCode = 0, modifiers = 0, text } = {}) {
+      const down = text ? { type: 'keyDown', text } : { type: 'rawKeyDown' };
+      await cmd('Input.dispatchKeyEvent', { ...down, key, code, windowsVirtualKeyCode: keyCode, modifiers });
       await cmd('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode: keyCode, modifiers });
     },
 

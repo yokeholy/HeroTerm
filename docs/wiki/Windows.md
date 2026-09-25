@@ -45,7 +45,10 @@ of the layout. The list is `NAMES` in `public/app.js`, and once it runs out the
 windows are numbered.
 
 The `+` gives you another container: its own shell, its own deck, its own
-position, up to eight of them. Click one to bring it forward — that's the one
+position, up to eight of them. Its shell starts in the folder of the window you
+were working in, the way a new tab does in Terminal or iTerm — or at home, when
+that window hasn't said where it is (a shell inside `ssh` reports a folder on
+another machine, so it doesn't count). Click one to bring it forward — that's the one
 keys go to, and taking hold of one to move or resize it brings it forward too — and close it with the red button in its title bar, or by exiting its
 shell; close the last one and a fresh one takes its place.
 

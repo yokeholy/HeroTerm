@@ -420,6 +420,12 @@
         cursor: pointer;
       }
 
+      #spaces .go:focus-visible,
+      #spaces-add:focus-visible {
+        outline: 1px solid var(--yellow, #d9a86c);
+        outline-offset: -1px;
+      }
+
       #spaces .space:not([data-here]) .go:hover {
         background: color-mix(in srgb, var(--hairline, #252a35) 60%, transparent);
       }
@@ -2617,6 +2623,9 @@
             in another workspace keeps going</dd>
           <dt>⌘⌥← ⌘⌥→</dt>
           <dd>one workspace to the left, one to the right</dd>
+          <dt>⌘⌥↑</dt>
+          <dd>the panel, from the keyboard — ↑ ↓ to choose, Enter to go, Esc to put it
+            away</dd>
         </dl>
 
         <h2>Buttons, top left</h2>
