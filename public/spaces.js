@@ -19,8 +19,8 @@
 
   // The drawing, in pixels — .sthumb and .sfield in index.html. Only used to
   // work out whether a window's box is big enough to hold its name.
-  const FIELD_W = 86;
-  const FIELD_H = 50;
+  const FIELD_W = 234; // the drawing inside the frame; see .sfield
+  const FIELD_H = 132;
   const NAME_W = 26; // narrower than this and a name is a smear
   const NAME_H = 13;
 
@@ -73,6 +73,9 @@
       // Three names in a row take reading; a shape is recognised.
       const thumb = document.createElement('span');
       thumb.className = 'sthumb';
+      // The shape of the work area itself, so a window drawn in it has the
+      // proportions it really has.
+      thumb.style.aspectRatio = `${screen.area.w} / ${screen.area.h}`;
       // The windows are drawn inside this rather than against the frame, so
       // the picture has air around it; see .sfield for how much.
       const field = document.createElement('span');
@@ -120,10 +123,12 @@
         (screen.names.length > 2 ? ` +${screen.names.length - 2}` : '') +
         (away ? ` · ${away} in the tray` : '');
 
-      const text = document.createElement('span');
-      text.className = 'stext';
-      text.append(label, note);
-      go.append(dot, thumb, text);
+      // Name and windows on a line of their own, the picture under it with
+      // the full width of the panel to draw in.
+      const head = document.createElement('span');
+      head.className = 'shead';
+      head.append(dot, label, note);
+      go.append(head, thumb);
       go.addEventListener('click', () => {
         S().go(i);
         shut();

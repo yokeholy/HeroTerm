@@ -371,6 +371,15 @@
         }
       }
 
+      #spaces-list {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
       #spaces h2 {
         margin: 2px 0 6px 6px;
         color: var(--label, #6b7384);
@@ -381,10 +390,7 @@
       }
 
       #spaces .space {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        align-items: center;
-        gap: 2px;
+        position: relative; /* the × hangs over the top-right of the row */
         border-radius: 8px;
       }
 
@@ -394,10 +400,11 @@
 
       #spaces .go {
         display: flex;
-        align-items: center;
-        gap: 8px;
-        /* The picture sets the height; the text sits beside it. */
-        padding: 6px 8px;
+        flex-direction: column; /* the line of text, then the picture */
+        align-items: stretch;
+        gap: 5px;
+        width: 100%;
+        padding: 6px 7px 7px;
         min-width: 0;
         border: 0;
         border-radius: 8px;
@@ -417,9 +424,7 @@
          you arranged is recognisable at 96px wide. */
       #spaces .sthumb {
         position: relative;
-        flex: none;
-        width: 96px;
-        aspect-ratio: 16 / 10;
+        width: 100%; /* the panel's width; the aspect comes from the work area */
         border: 1px solid var(--hairline, #252a35);
         border-radius: 4px;
         background: color-mix(in srgb, var(--space, #05070d) 70%, transparent);
@@ -477,7 +482,7 @@
         padding: 0 2px;
         overflow: hidden;
         color: var(--fg, #d6d9e0);
-        font: calc(7.5px * var(--ui-scale, 1)) / 1 var(--font, monospace);
+        font: calc(9px * var(--ui-scale, 1)) / 1 var(--font, monospace);
         font-weight: 500;
         letter-spacing: -0.02em;
         white-space: nowrap;
@@ -505,6 +510,7 @@
          its build has finished. */
       #spaces .sdot {
         flex: none;
+        align-self: center;
         width: 7px;
         height: 7px;
         border-radius: 50%;
@@ -517,16 +523,28 @@
         opacity: 1;
       }
 
-      #spaces .stext {
-        flex: 1; /* the rest of the row, so names have room to be read */
+      #spaces .shead {
         display: flex;
-        flex-direction: column;
+        align-items: baseline;
+        gap: 6px;
         min-width: 0;
+        padding-right: 18px; /* clear of the × */
       }
 
-      #spaces .slabel,
-      #spaces .snote {
+      #spaces .slabel {
+        flex: none;
+        max-width: 45%;
         overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* What is on it, off to the right where it reads as a caption rather
+         than as part of the name. */
+      #spaces .snote {
+        flex: 1;
+        overflow: hidden;
+        text-align: right;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
@@ -542,9 +560,11 @@
       }
 
       #spaces .drop {
-        width: 22px;
-        height: 22px;
-        margin-right: 4px;
+        position: absolute;
+        top: 3px;
+        right: 3px;
+        width: 20px;
+        height: 20px;
         border: 0;
         border-radius: 6px;
         background: none;
@@ -590,7 +610,7 @@
       }
 
       #spaces-add {
-        margin-top: auto;
+        margin-top: 8px;
         color: var(--label, #6b7384);
       }
 

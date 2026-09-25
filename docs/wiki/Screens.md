@@ -15,8 +15,9 @@ was hidden, not closed.
 - **×** closes a screen and the windows on it. One with something still running
   asks first. The last screen can't be closed — there is always somewhere to be.
 
-Each row draws that screen: one box per window, where the window actually is,
-with its name in the middle of it, in the colour its border is wearing — grey
+Each row is the screen's name and what's on it, with a picture of the screen
+under it, the full width of the panel: one box per window, where the window
+actually is, with its name in the middle of it, in the colour its border is wearing — grey
 idle, yellow while something runs, green or red for how the last command went.
 The window keys would go to has a light ring; one that's minimized to the tray
 is dashed. A window too small to hold its name is drawn without one rather than
