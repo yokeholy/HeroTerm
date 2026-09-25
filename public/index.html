@@ -426,6 +426,14 @@
         overflow: hidden;
       }
 
+      /* 90% of the frame's width, and the same number of pixels of margin top
+         and bottom as left and right — which is a larger share of a box this
+         shallow, so the two percentages differ. */
+      #spaces .sfield {
+        position: absolute;
+        inset: 8% 5%;
+      }
+
       #spaces .sthumb[data-empty]::after {
         content: '';
         position: absolute;

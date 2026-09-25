@@ -66,6 +66,11 @@
       // Three names in a row take reading; a shape is recognised.
       const thumb = document.createElement('span');
       thumb.className = 'sthumb';
+      // The windows are drawn inside this rather than against the frame, so
+      // the picture has air around it; see .sfield for how much.
+      const field = document.createElement('span');
+      field.className = 'sfield';
+      thumb.append(field);
       const a = screen.area;
       for (const w of screen.windows) {
         const box = document.createElement('i');
@@ -80,7 +85,7 @@
         if (w.focused) box.dataset.focused = '';
         if (w.min) box.dataset.min = '';
         box.title = w.name;
-        thumb.append(box);
+        field.append(box);
       }
       if (!screen.windows.length) thumb.dataset.empty = '';
 
