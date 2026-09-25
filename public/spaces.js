@@ -214,6 +214,27 @@
       return row;
     });
 
+    // One that was just closed, offered back where it stood.
+    const back = S().pending();
+    if (back) {
+      const row = document.createElement('div');
+      row.className = 'space gone';
+      const said = document.createElement('span');
+      said.className = 'gsaid';
+      said.textContent = `Closed ${back.name || back.names.join(', ') || 'a workspace'}`;
+      const again = document.createElement('button');
+      again.type = 'button';
+      again.className = 'gundo';
+      again.textContent = 'Undo';
+      again.dataset.tip = 'Bring it back, shells and all';
+      again.addEventListener('click', (e) => {
+        e.stopPropagation();
+        S().undo();
+      });
+      row.append(said, again);
+      rows.splice(Math.max(0, Math.min(rows.length, back.index)), 0, row);
+    }
+
     list.replaceChildren(...rows);
     const limits = S().limits;
     adder.disabled = list_.length >= limits.workspaces;

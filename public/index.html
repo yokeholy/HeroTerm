@@ -725,6 +725,40 @@
         color: var(--red, #d4736b);
       }
 
+      /* Where one just closed: the offer to have it back, in its old place. */
+      #spaces .gone {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 8px;
+        border: 1px dashed var(--hairline, #252a35);
+        border-radius: 8px;
+        color: var(--label, #6b7384);
+        font-size: calc(11px * var(--ui-scale, 1));
+      }
+
+      #spaces .gsaid {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      #spaces .gundo {
+        flex: none;
+        padding: 4px 9px;
+        border: 1px solid var(--hairline, #252a35);
+        border-radius: 7px;
+        background: none;
+        color: var(--fg, #d6d9e0);
+        font: inherit;
+        cursor: pointer;
+      }
+
+      #spaces .gundo:hover {
+        background: var(--hairline, #252a35);
+      }
+
       /* The question a workspace asks before it closes. */
       #screens .sask {
         grid-column: 1 / -1;

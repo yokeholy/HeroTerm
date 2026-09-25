@@ -892,6 +892,29 @@
 
       // Closing a container is unambiguous in a way that the tab going away is
       // not, so this is the only place that ends a shell early.
+      // Let go of the shell without ending it. The server keeps a session
+      // alive when a socket simply goes away — that is how a refresh works —
+      // so a closed workspace can be handed back with everything still
+      // running. The grace asked for here is short: if nobody undoes it, the
+      // shells should not hang about.
+      detach(seconds) {
+        closed = true;
+        clearTimeout(retryTimer);
+        document.removeEventListener('visibilitychange', wake);
+        window.removeEventListener('online', wake);
+        window.removeEventListener('focus', wake);
+        if (cancelAsk) cancelAsk();
+        try {
+          send({ t: 'g', s: seconds });
+          if (ws) ws.close();
+        } catch {
+          /* already gone; the server's own grace applies */
+        }
+        stack.dispose();
+        term.dispose();
+        el.remove();
+      },
+
       destroy() {
         closed = true;
         clearTimeout(retryTimer);

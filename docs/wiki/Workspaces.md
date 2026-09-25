@@ -18,6 +18,27 @@ was hidden, not closed.
   how many windows go with it, and how many of them are still running. The last
   workspace can't be closed; there is always somewhere to be.
 
+## Closing one, and taking it back
+
+Closing doesn't kill the shells. It lets go of them, and the server keeps the
+sessions for a few seconds the same way it does across a refresh — so the panel
+offers the workspace back where it stood:
+
+> Closed build · **Undo**
+
+Take it and the whole thing returns: same windows in the same places, same
+names, shells still running, scrollback and all. A `sleep` that was half way
+through is still half way through.
+
+Ignore it and the offer lapses after twenty seconds, and the shells are reaped
+then. Only one closure is held at a time: close another workspace and the first
+one is gone for good.
+
+What the shells' end looks like, when it comes: the shell, whatever it was
+running, and its background jobs all go. Something started with `nohup` — or
+`disown`, or `setsid` — survives, which is what those are for. If you want a
+long build to outlive its window, that is still how.
+
 Each row is the workspace's name and what's in it, with a picture of it
 under that, the full width of the panel: one box per window, where the window
 actually is, with its name in the middle of it, in the colour its border is wearing — grey

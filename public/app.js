@@ -100,6 +100,16 @@ let dragging = null;
 const MAX_WORKSPACES = 6;
 const MAX_SHELLS = 24; // across every workspace; the server has the same ceiling
 
+// Closing one is the most destructive thing on the page — several shells at
+// once, and the × is a few pixels from the row that merely switches. So it
+// doesn't kill them: it lets go, and the server keeps the sessions for a
+// moment, the same way it does across a refresh. Undo inside that moment and
+// the whole workspace comes back with its shells still running. Ignore it and
+// they are reaped, only a little later than they would have been.
+const UNDO = 20; // seconds the offer stands
+let undone = null; // { index, name, windows: [...] } — one at a time
+let undoTimer = null;
+
 let workspaces = [{ id: 's1', name: '', windows: [], focused: null, arrangement: null }];
 let at = 0; // which workspace is in front
 
@@ -1191,11 +1201,70 @@ window.HEROTERM_SPACES = {
     return windows.filter((c) => c.session.running).length;
   },
 
-  // Closing a workspace closes its windows, shells and all. The last workspace
-  // standing stays: there is always somewhere to be.
+  // What could still be brought back, for the panel to offer.
+  pending() {
+    if (!undone) return null;
+    return { index: undone.index, name: undone.name, names: undone.windows.map((w) => w.name) };
+  },
+
+  // The offer taken up: the workspace goes back where it was, its windows
+  // asking for the same session ids, which the server still has — so they
+  // come back mid-command with their scrollback behind them.
+  undo() {
+    if (!undone) return;
+    const back = undone;
+    undone = null;
+    clearTimeout(undoTimer);
+    closeOverview(null);
+    rememberWorkspace();
+    for (const c of containers) c.el.toggleAttribute('data-away', true);
+
+    const w = { id: newId(), name: back.name, windows: [], focused: null, arrangement: null };
+    at = Math.max(0, Math.min(workspaces.length, back.index));
+    workspaces.splice(at, 0, w);
+    containers.length = 0;
+    arrangement = null;
+    focused = null;
+    for (const spec of back.windows) {
+      const c = spawn(spec.id, { ...spec.box, zoom: spec.zoom }, spec.name, spec.cwd);
+      if (spec.min) c.setMinimized(true);
+    }
+    const shown = visible();
+    if (shown.length) {
+      page.focus(shown[0]);
+      shown[0].focus();
+    }
+    paintControls();
+    page.runStateChanged();
+    page.save();
+    window.HEROTERM_SPACES.paint();
+  },
+
+  // Closing a workspace takes its windows off the page and lets go of their
+  // shells — see UNDO. The last workspace standing stays: there is always
+  // somewhere to be.
   close(i) {
     if (workspaces.length < 2 || !workspaces[i]) return;
     const going = i === at ? [...containers] : [...workspaces[i].windows];
+    // Everything needed to build it again, while the windows are still here
+    // to be asked.
+    undone = {
+      index: i,
+      name: workspaces[i].name,
+      windows: going.map((c) => ({
+        id: c.id,
+        name: c.name,
+        box: { ...c.box },
+        zoom: c.zoom || undefined,
+        min: c.minimized,
+        cwd: c.cwd || undefined,
+      })),
+    };
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(() => {
+      undone = null;
+      window.HEROTERM_SPACES.paint();
+    }, UNDO * 1000);
     workspaces.splice(i, 1);
     if (i === at) {
       containers.length = 0;
@@ -1217,7 +1286,9 @@ window.HEROTERM_SPACES = {
     } else if (i < at) {
       at -= 1;
     }
-    for (const c of going) c.destroy();
+    // A little longer than the offer stands, so the last second of it is not
+    // a race with the server.
+    for (const c of going) c.detach(UNDO + 5);
     paintControls();
     page.runStateChanged();
     page.save();
