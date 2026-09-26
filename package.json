@@ -1,6 +1,6 @@
 {
   "name": "heroterm",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "A terminal in your browser where every command gets its own window. Your real shell, told to explain itself.",
   "license": "MIT",
   "author": "Jin Wang",
