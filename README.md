@@ -105,7 +105,9 @@ still running, and three columns](https://raw.githubusercontent.com/yokeholy/Her
 - Double-click a row's top line to name it; until then, the windows in it are
   its name.
 - **Save this workspace…** keeps its layout — windows, places, folders — to
-  open again later as a workspace of its own.
+  open again later as a workspace of its own. It keeps each window's **command
+  history** too, by itself as you work: open it again and every window has its
+  earlier commands stacked behind it, and on ↑.
 
 ## ⌨️ Keys
 

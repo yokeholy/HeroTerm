@@ -274,6 +274,69 @@ test('a workspace can be kept, and opened again beside the others', { skip }, as
   assert.equal(await page.ev("localStorage.getItem('heroterm.screens')"), '{}');
 });
 
+// A profile keeps each window's commands: as they finish, without saving, and
+// back on the deck and on ↑ when it's opened again.
+test('a kept workspace keeps its history, and brings it back', { skip }, async () => {
+  const P = 'HEROTERM_PROFILES';
+  const W = 'HEROTERM_SPACES';
+  const runOk = `${W}.list()[${W}.at].windows[0].run === 'ok'`;
+  const history = `${P}.get('proj').windows[0].history.map(h => h.cmd)`;
+
+  await page.ev(`HEROTERM_WINDOWS.open([{ name: 'api', x: 60, y: 70, w: 700, h: 500 }]), 1`);
+  await page.until(`HEROTERM_WINDOWS.snapshot().length === 1 && ${connected}`);
+  await page.focusWindow();
+  await page.type('echo fir""st');
+  await page.until(runOk, 'the first command to finish');
+
+  // Kept: what the window has run so far comes with it, output and all.
+  assert.equal(await page.ev(`${W}.keep(${W}.at, 'proj')`), true);
+  assert.deepEqual(await page.ev(history), ['echo fir""st']);
+  assert.match(await page.ev(`${P}.get('proj').windows[0].history[0].tail`), /first/);
+  const keyBefore = await page.ev(`${P}.get('proj').windows[0].key`);
+
+  // And from then on it keeps itself, with no save.
+  await page.type('echo sec""ond');
+  await page.until(`${history}.length === 2`, 'the second command to be recorded');
+  assert.deepEqual(await page.ev(history), ['echo fir""st', 'echo sec""ond']);
+
+  // The panel says it's kept, and Save leaves the history where it was.
+  await page.ev('HEROTERM_EDGE.open(), 1');
+  await page.until("!!document.querySelector('#spaces .space[data-kept] .slink')", 'the kept marker');
+  await page.ev("document.querySelector('#spaces .space[data-kept] .ssave').click(), 1");
+  await page.until("document.querySelector('#spaces .ssave').textContent === 'Saved'", 'Save to say so');
+  assert.deepEqual(await page.ev(history), ['echo fir""st', 'echo sec""ond'], 'Save lost the history');
+  assert.equal(await page.ev(`${P}.get('proj').windows[0].key`), keyBefore, 'Save cut the window off its history');
+  await page.ev('HEROTERM_EDGE.close(), 1');
+
+  // Opened again: a workspace of its own, its window's commands on the deck...
+  await page.ev(`${W}.openSaved(${P}.get('proj').windows, 'proj'), 1`);
+  await page.until(`${W}.list().length === 2 && ${W}.list()[1].here && ${connected}`, 'the reopened workspace');
+  assert.equal(await page.ev(`${W}.list()[1].profile`), 'proj');
+  await page.until(
+    `(c => c.includes('echo fir""st') && c.includes('echo sec""ond'))([...${here}.querySelectorAll('.card .cmd')].map(e => e.textContent))`,
+    'the earlier commands on the deck'
+  );
+
+  // ...and on ↑, newest last, so they're the first ↑ reaches.
+  const up = require('path').join(srv.home, 'up-profile.txt');
+  await page.focusWindow();
+  await page.type(`fc -ln 1 > ${up}`);
+  await page.until(runOk, 'the listing');
+  const listed = require('fs').readFileSync(up, 'utf8').trim().split('\n').map((l) => l.trim());
+  assert.deepEqual(listed.slice(-2), ['echo fir""st', 'echo sec""ond']);
+
+  // The reopened window records into the same place — and still does after
+  // a reload, since the link is part of the layout.
+  await page.until(`${history}.length === 3`, 'the reopened window to record');
+  await page.reload();
+  await page.until(connected);
+  assert.equal(await page.ev(`${W}.list()[${W}.at].profile`), 'proj', 'the link did not survive a reload');
+  await page.focusWindow();
+  await page.type('echo th""ird');
+  await page.until(`${history}.length === 4`, 'recording after a reload');
+  assert.equal(await page.ev(`${history}[3]`), 'echo th""ird');
+});
+
 // Kept by the toolbar button that came before the panel: same key, still here.
 test('screens saved by the old toolbar button are still there', { skip }, async () => {
   await page.ev(`localStorage.setItem('heroterm.screens', JSON.stringify({

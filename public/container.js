@@ -100,6 +100,9 @@
       session,
       windowName: () => name,
       onChange: (pos) => page.deckMoved(self, pos),
+      // Over ssh the command belongs to another machine: still worth a card,
+      // not worth putting in this machine's shell history.
+      onFinished: (rec) => page.finished && page.finished(self, { ...rec, remote: session.remote || undefined }),
     });
 
     let settingSize = T.fontSize;
@@ -335,9 +338,43 @@
       retryTimer = setTimeout(connect, wait);
     }
 
+    // A window of a kept profile hands the server its history before it asks
+    // for a shell, so a new one starts with its earlier commands on the deck
+    // and on ↑ (see /seed in server.js). First from what it was opened with;
+    // after a drop, from the profile as it is now — a restarted server has
+    // lost the shell, and the new one should start where the old one got to.
+    // A server that still has the shell ignores it. Either way, it connects.
+    let firstSeed = opts.seed || null;
+    let seeding = false;
+
+    function seedThen(go) {
+      const seed = firstSeed || (hadShell && page.seedFor ? page.seedFor(self) : null);
+      firstSeed = null;
+      if (!seed) {
+        go();
+        return;
+      }
+      seeding = true;
+      fetch(`/seed?token=${encodeURIComponent(token)}&id=${encodeURIComponent(id)}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(seed),
+      })
+        .catch(() => {})
+        .finally(() => {
+          seeding = false;
+          go();
+        });
+    }
+
     function connect() {
-      if (ended || closed) return;
+      if (ended || closed || seeding) return;
       clearTimeout(retryTimer);
+      seedThen(openSocket);
+    }
+
+    function openSocket() {
+      if (ended || closed) return;
       ws = new WebSocket(socketUrl());
       // Terminal output arrives as text frames, anything structural as binary.
       ws.binaryType = 'arraybuffer';

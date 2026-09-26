@@ -17,6 +17,7 @@ fi
 ZDOTDIR="$USER_ZDOTDIR"
 [[ -r "$ZDOTDIR/.zshrc" ]] && source "$ZDOTDIR/.zshrc"
 
+
 # ---------------------------------------------------------------------------
 # OSC 133 "semantic prompts" — the same sequences iTerm2 and VS Code use.
 #
@@ -110,6 +111,28 @@ __heroterm_cwd() {
 
 add-zsh-hook preexec __heroterm_preexec
 add-zsh-hook precmd __heroterm_precmd
+
+# A window reopened from a kept workspace brings its own commands back, so ↑
+# offers what was run in that window first, and everything else after it, as
+# usual. The server wrote them to a file for this shell alone.
+#
+# Read at the first prompt, not here: zsh loads your history file only after
+# the rc files have run, and whatever is read last is what ↑ reaches first.
+# `fc -R` only reads — they're in your history file already, from when they
+# ran, and they aren't written there again.
+if [[ -n $HEROTERM_HISTORY_SEED ]]; then
+  typeset -g __heroterm_seed=$HEROTERM_HISTORY_SEED
+  unset HEROTERM_HISTORY_SEED
+  __heroterm_seed_history() {
+    local ret=$? # handed back, as __heroterm_precmd does, for the hooks after
+    add-zsh-hook -d precmd __heroterm_seed_history
+    [[ -r $__heroterm_seed ]] && fc -R "$__heroterm_seed"
+    command rm -f -- "$__heroterm_seed"
+    unset __heroterm_seed
+    return $ret
+  }
+  add-zsh-hook precmd __heroterm_seed_history
+fi
 add-zsh-hook precmd __heroterm_cwd
 __heroterm_cwd # this shell's first prompt hasn't been drawn yet
 

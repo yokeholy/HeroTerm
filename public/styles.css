@@ -631,6 +631,51 @@ body[data-overview] .deck:hover .card[data-front] {
   color: var(--red, #d4736b);
 }
 
+/* A workspace kept as a profile: a small bookmark before its name, and a
+   Save that puts its layout back into the profile — beside the ×, and
+   only there on hover, like it. */
+#spaces .slink {
+  flex: none;
+  align-self: center;
+  display: inline-flex;
+  color: var(--green, #93b07a);
+}
+
+#spaces .space[data-kept] .shead {
+  padding-right: 58px; /* clear of Save and the × */
+}
+
+#spaces .ssave {
+  position: absolute;
+  top: 3px;
+  right: 26px;
+  height: 20px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--label, #6b7384);
+  font: inherit;
+  font-size: calc(10.5px * var(--ui-scale, 1));
+  cursor: pointer;
+  opacity: 0;
+}
+
+#spaces .space:hover .ssave,
+#spaces .ssave:focus-visible,
+#spaces .ssave[data-done] {
+  opacity: 1;
+}
+
+#spaces .ssave:hover {
+  background: var(--hairline, #252a35);
+  color: var(--fg, #d6d9e0);
+}
+
+#spaces .ssave[data-done] {
+  color: var(--green, #93b07a);
+}
+
 #spaces .sask {
   display: flex;
   align-items: center;

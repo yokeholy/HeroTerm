@@ -91,8 +91,8 @@ with more than you left it with. To keep one — the four windows you always
 open for a project, in the four folders they belong in — write it down.
 
 - **Save this workspace…** at the foot of the panel names the one you are in
-  and keeps it: how many windows, what each was called, where it sat, and which
-  directory its shell was standing in.
+  and keeps it: how many windows, what each was called, where it sat, which
+  directory its shell was standing in — and what each window has run so far.
 - Kept ones are listed under **Saved**, each with how many windows it has and
   the folders they were in, so two for the same project are still telling
   apart. Click one and it opens as **a workspace of its own**, beside the ones
@@ -100,9 +100,52 @@ open for a project, in the four folders they belong in — write it down.
   becomes that workspace's name.
 - **×** forgets one. Saving under a name you already used replaces it.
 
-Only the arrangement is kept. No scrollback, no output, no running processes:
-opening one starts fresh shells. A window that was minimized comes back
-minimized, in the tray.
+Opening one starts fresh shells — running processes can't be kept — and a
+window that was minimized comes back minimized, in the tray.
+
+### Its history keeps itself
+
+A workspace you save, or open from **Saved**, stays linked to it: its row in
+the panel has a small green bookmark. From then on, every command that
+finishes in one of its windows is written into that window's history in the
+profile, as it happens. Nothing to save; close the workspace, the tab, or
+HeroTerm itself and nothing is lost.
+
+Open the profile again and each window comes back with its history:
+
+- **on the deck** — its last dozen commands stacked behind it, each with how it
+  went, how long it took, and the end of what it printed, to walk back through
+  with ⌘[ the way you would on the day;
+- **on ↑** in its shell — its last fifty commands, newest first, before the
+  rest of your history. They're read into that shell only: your history file
+  isn't touched, and the stats page counts each command once, when it ran.
+
+The **layout** is another matter: it changes only when you say. Move windows
+around, open an extra one for something quick, and the profile still has the
+shape you saved — until you press **Save** on the workspace's row (it appears
+on hover, beside the ×), which puts the windows as they are now back into it.
+Each window keeps its history through a Save; one you've added starts with
+whatever is on its deck.
+
+A few details:
+
+- A workspace you made from scratch isn't linked, so nothing is kept until you
+  save it. Saving it then keeps what its windows have already run.
+- A window added to a linked workspace and not yet saved into it isn't
+  recorded: the profile has no place for it.
+- Open the same profile twice and both workspaces add to its history.
+- Commands run over `ssh` are kept for the deck but not for ↑ — they belong to
+  another machine's history.
+- It survives a reload, a restart of HeroTerm, and a shell that ended while
+  you were away (a laptop asleep past the grace period): a window whose shell
+  has gone gets a new one, started with its history again.
+- Only zsh gets the ↑ part; the deck works with any shell that reports its
+  commands.
+
+Each window keeps its last fifty commands, and the output of the last twelve,
+trimmed to the end of each — about a screenful. Browser storage for a site is
+around 5 MB in all, so that's the budget; if a profile ever outgrew it, its
+outputs are dropped before its commands are.
 
 ### Where the folder comes from
 
@@ -122,10 +165,11 @@ A saved folder that no longer exists is not an error either: the window opens
 at home instead. A layout saved months ago is still worth most of what it
 knows.
 
-Kept layouts live in this browser, under `heroterm.screens` — the name is from
-before they moved into this panel, and kept so nothing saved then was lost.
-Nothing is sent anywhere; clearing the browser's site data for HeroTerm forgets
-them.
+Kept workspaces live in this browser, under `heroterm.screens` — the name is
+from before they moved into this panel, and kept so nothing saved then was
+lost. Nothing is sent anywhere; clearing the browser's site data for HeroTerm
+forgets them. That includes their history, output and all: see
+[Security](Security.md#what-stays-in-the-browser).
 
 ## Limits
 

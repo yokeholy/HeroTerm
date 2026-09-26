@@ -49,6 +49,15 @@ Everything above about the token, plus what it doesn't cover:
 Found something worse? Open an issue, or mail the address on the GitHub
 profile if you'd rather not do it in public.
 
+## What stays in the browser
+
+Settings, layouts, and kept workspaces live in this browser's storage for the
+HeroTerm address, and nowhere else. A kept workspace holds each window's
+recent command lines and the end of their output — so if a command printed a
+secret, a kept workspace may have it. Forgetting the workspace (× under
+Saved) deletes it; so does clearing the site's data. Workspaces you haven't
+kept store no commands or output at all.
+
 ## Which addresses it listens on
 
 Two sockets, both loopback: `127.0.0.1` and `::1`. Never `0.0.0.0`, never

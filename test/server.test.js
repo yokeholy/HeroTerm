@@ -137,6 +137,72 @@ test('the commands kept for a refresh are named after themselves', async () => {
   assert.deepEqual(named.slice(-2), ['echo fir""st', 'echo sec""ond']);
 });
 
+// A window reopened from a kept profile hands its history over first: the new
+// shell starts with the earlier commands on its deck, and on ↑ — read at the
+// first prompt, from a file that is then gone.
+test('a seeded shell starts with its history, on the deck and on ↑', async () => {
+  const id = `s${Math.random().toString(36).slice(2)}`;
+  const t0 = Date.now();
+  const seed = {
+    cards: [{ cmd: 'echo be""fore', bytes: 'before\r\n', ok: true, code: 0, started: 1790000000000, ended: 1790000001000 }],
+    history: [
+      { cmd: 'echo be""fore', at: 1790000000000 },
+      { cmd: 'git st""atus', at: 1790000002000 },
+    ],
+  };
+  const res = await fetch(`http://127.0.0.1:${srv.port}/seed?token=${srv.token}&id=${id}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(seed),
+  });
+  assert.deepEqual(await res.json(), { ok: true, used: true });
+
+  const ws = new WebSocket(`ws://127.0.0.1:${srv.port}/pty?token=${srv.token}&id=${id}`);
+  let seen = '';
+  let restore = null;
+  ws.on('message', (m, binary) => {
+    if (!binary) seen += m.toString();
+    else if (JSON.parse(m.toString()).t === 'restore') restore = JSON.parse(m.toString());
+  });
+  await new Promise((r) => ws.once('open', r));
+  await waitFor(() => restore, { what: 'the seeded deck' });
+  assert.deepEqual(restore.cards.map((c) => c.cmd), ['echo be""fore']);
+  assert.equal(restore.cards[0].bytes, 'before\r\n');
+
+  const out = path.join(srv.home, `up-${id}.txt`);
+  await waitFor(() => /[%$#] $/m.test(seen.replace(/\x1b\[[0-9;?]*[a-zA-Z]|\x1b\][^\x07]*\x07/g, '')), { what: 'a prompt' });
+  ws.send(JSON.stringify({ t: 'i', d: `{ fc -ln 1; echo "seed=[\${HEROTERM_HISTORY_SEED-unset}]"; } > ${out}\r` }));
+  const said = await waitFor(() => fs.existsSync(out) && /seed=/.test(fs.readFileSync(out, 'utf8')) && fs.readFileSync(out, 'utf8'), {
+    what: 'the history listing',
+  });
+  ws.send(JSON.stringify({ t: 'bye' }));
+  ws.close();
+
+  const lines = said.trim().split('\n').map((l) => l.trim());
+  // Newest last: ↑ reaches the seeded commands first.
+  assert.deepEqual(lines.slice(0, 2), ['echo be""fore', 'git st""atus']);
+  assert.match(said, /seed=\[unset\]/, 'the variable was left in the shell');
+  const tmp = require('os').tmpdir();
+  const leftover = fs
+    .readdirSync(tmp)
+    .filter((f) => f.startsWith('heroterm-history-') && fs.statSync(path.join(tmp, f)).mtimeMs >= t0 - 1000);
+  assert.deepEqual(leftover, [], 'the history file was left behind');
+});
+
+test('a shell that already exists ignores a seed', async () => {
+  const id = `x${Math.random().toString(36).slice(2)}`;
+  const sh = await inShell('true', { id });
+  const res = await fetch(`http://127.0.0.1:${srv.port}/seed?token=${srv.token}&id=${id}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ cards: [{ cmd: 'nope' }], history: [{ cmd: 'nope' }] }),
+  });
+  assert.deepEqual(await res.json(), { ok: true, used: false });
+  const bad = await fetch(`http://127.0.0.1:${srv.port}/seed?token=wrong&id=${id}`, { method: 'POST' });
+  assert.equal(bad.status, 403);
+  sh.bye();
+});
+
 // A saved workspace can name a folder that has since gone. Home is a better
 // answer than no shell at all.
 test('a folder that no longer exists falls back to home', async () => {

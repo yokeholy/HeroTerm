@@ -12,6 +12,11 @@
 // holds, and asks the page (the `host`) to focus, save and repaint.
 //
 // The panel down the left edge is spaces.js; it reads the list from here.
+//
+// A workspace opened from a kept profile (profiles.js) stays linked to it:
+// each of its windows knows which of the profile's windows it is (its
+// `slot`), and every command that finishes in one is written into that
+// window's history there. Its layout is only written back when you save.
 
 (function () {
   const MAX_WORKSPACES = 6;
@@ -31,6 +36,7 @@
     const blank = (extra = {}) => ({
       id: host.newId(),
       name: '',
+      profile: null, // the kept profile this one records into; see above
       windows: [],
       focused: null,
       arrangement: null,
@@ -56,6 +62,39 @@
     const windowsOf = (i) => (i === at ? host.containers : spaces[i].windows);
 
     const total = () => spaces.reduce((n, _s, i) => n + windowsOf(i).length, 0);
+
+    const P = () => window.HEROTERM_PROFILES;
+
+    // Which profile a window records into: the one its workspace is linked to.
+    function profileOf(c) {
+      for (let i = 0; i < spaces.length; i += 1) {
+        if (windowsOf(i).includes(c)) return spaces[i].profile || null;
+      }
+      return null;
+    }
+
+    // The windows of workspace i as a profile keeps them — see profiles.save.
+    function describe(i) {
+      const from = spaces[i].profile;
+      return windowsOf(i).map((c) => ({
+        name: c.name,
+        ...c.box,
+        min: c.minimized || undefined,
+        cwd: c.cwd || undefined,
+        from,
+        slot: c.slot,
+        deck: c.stack.records(),
+      }));
+    }
+
+    // A window of a linked workspace, spawned with the part of the profile
+    // that is its own: which slot it records into, and — if the server makes
+    // it a new shell — the history it starts with.
+    function spawnFrom(entry, key, args) {
+      const w = entry && entry.windows.find((x) => x.key === key);
+      const [id, box, name, cwd, away] = args;
+      return host.spawn(id, box, name, cwd, away, { slot: key, seed: w ? P().seedFor(w) : null });
+    }
 
     /* ---------- the one path in and out ---------- */
 
@@ -114,6 +153,7 @@
       // Rects are in page coordinates; `area` is what to scale them against.
       list() {
         const area = host.workArea();
+        const kept = P() ? P().list() : {};
         return spaces.map((s, i) => {
           const here = i === at;
           const windows = windowsOf(i);
@@ -121,6 +161,8 @@
           return {
             id: s.id,
             name: s.name,
+            // Only while the profile is still there to record into.
+            profile: s.profile && kept[s.profile] ? s.profile : null,
             here,
             area,
             busy: windows.some((c) => c.session.running),
@@ -164,21 +206,46 @@
       // A saved layout, opened into a workspace of its own rather than over
       // the one you are in: the windows it had, where they were, each shell
       // started in the folder it was saved in.
+      //
+      // It stays linked to the profile (see the top of this file), and each
+      // window starts with its own history: earlier commands behind it on the
+      // deck, and on ↑ in its shell.
       openSaved(windows, name) {
         if (!Array.isArray(windows) || !windows.length) return false;
         if (spaces.length >= limits.workspaces) return false;
         const fits = windows.slice(0, Math.min(limits.windows, limits.shells - total()));
         if (!fits.length) return false;
         leave();
-        spaces.push(blank({ name: name || '' }));
+        spaces.push(blank({ name: name || '', profile: name || null }));
         swapIn(spaces.length - 1);
         for (const w of fits) {
-          const c = host.spawn(null, host.fitToScreen({ x: w.x, y: w.y, w: w.w, h: w.h }), w.name, w.cwd);
+          const box = host.fitToScreen({ x: w.x, y: w.y, w: w.w, h: w.h });
+          const c = host.spawn(null, box, w.name, w.cwd, false, { slot: w.key, seed: P() && P().seedFor(w) });
           if (w.min) c.setMinimized(true);
         }
         settle(null);
         return true;
       },
+
+      // Keep workspace i under a name — the layout as it is now, and each
+      // window's history so far — and link it, so its history keeps itself
+      // from here on. Saving under the name it is already linked to is how
+      // its layout is updated.
+      keep(i, name) {
+        if (!spaces[i] || !P()) return false;
+        const clean = String(name || '').trim().slice(0, P().MAX_NAME);
+        if (!clean) return false;
+        const keys = P().save(clean, describe(i), { home: host.home && host.home() });
+        windowsOf(i).forEach((c, n) => {
+          c.slot = keys[n];
+        });
+        spaces[i].profile = clean;
+        if (!spaces[i].name) spaces[i].name = clean.slice(0, 24);
+        host.changed();
+        return true;
+      },
+
+      profileOf,
 
       rename(i, name) {
         if (!spaces[i]) return;
@@ -208,8 +275,10 @@
         undone = {
           index: i,
           name: spaces[i].name,
+          profile: spaces[i].profile,
           windows: going.map((c) => ({
             id: c.id,
+            slot: c.slot,
             name: c.name,
             box: { ...c.box },
             zoom: c.zoom || undefined,
@@ -247,10 +316,10 @@
         clearTimeout(undoTimer);
         leave();
         const index = Math.max(0, Math.min(spaces.length, back.index));
-        spaces.splice(index, 0, blank({ name: back.name }));
+        spaces.splice(index, 0, blank({ name: back.name, profile: back.profile }));
         swapIn(index);
         for (const spec of back.windows) {
-          const c = host.spawn(spec.id, { ...spec.box, zoom: spec.zoom }, spec.name, spec.cwd);
+          const c = host.spawn(spec.id, { ...spec.box, zoom: spec.zoom }, spec.name, spec.cwd, false, { slot: spec.slot });
           if (spec.min) c.setMinimized(true);
         }
         settle(null);
@@ -269,6 +338,7 @@
             return {
               id: s.id,
               name: s.name || undefined,
+              profile: s.profile || undefined,
               focused: its && windows.includes(its) ? its.id : null,
               arrangement: i === at ? host.arrangement : s.arrangement,
               containers: windows.map(boxOf),
@@ -294,7 +364,13 @@
           : [{ id: 's1', containers: [host.defaultBox(0)] }];
         const list = stored.slice(0, limits.workspaces);
 
-        spaces = list.map((s, i) => blank({ id: s.id || `s${i + 1}`, name: s.name || '', arrangement: s.arrangement || null }));
+        spaces = list.map((s, i) =>
+          blank({ id: s.id || `s${i + 1}`, name: s.name || '', profile: s.profile || null, arrangement: s.arrangement || null })
+        );
+        // A linked workspace's windows are offered their history again: the
+        // server keeps a shell it still has and ignores it, but a shell it lost
+        // — HeroTerm was restarted — starts over with it rather than empty.
+        const kept = P() ? P().list() : {};
         at = Math.max(0, Math.min(spaces.length - 1, saved ? saved.at || 0 : 0));
 
         let budget = limits.shells;
@@ -303,7 +379,8 @@
           budget -= boxes.length;
           const made = boxes.map((box, n) => {
             const usable = !legacy && box.w > 200 && box.h > 150;
-            const c = host.spawn(box.id, usable ? host.fitToScreen(box) : host.defaultBox(n), box.name, box.cwd, i !== at);
+            const args = [box.id, usable ? host.fitToScreen(box) : host.defaultBox(n), box.name, box.cwd, i !== at];
+            const c = s.profile && box.slot ? spawnFrom(kept[s.profile], box.slot, args) : host.spawn(...args);
             if (box.min) c.setMinimized(true);
             return c;
           });

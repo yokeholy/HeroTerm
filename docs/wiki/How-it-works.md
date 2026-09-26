@@ -38,7 +38,9 @@ ANSI escape sequences coming back and paints them.
 Beyond the terminal itself the server hands out three things, all behind the
 same token: your shell history counted up for the stats sheet (`/stats`, see
 [Command stats](Command-stats.md)), the installed fonts for the font picker (`/fonts`),
-the limits it's running with for the System tab (`/config`), and whether
+the limits it's running with for the System tab (`/config`), a kept window's
+history to start its new shell with (`POST /seed`, see `public/profiles.js`),
+and whether
 there's a newer version (`/update`, see `update.js`). A background one can also
 be asked to restart itself (`POST /restart`), which it does by running
 `heroterm restart` detached, handing over its token.

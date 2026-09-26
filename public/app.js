@@ -126,6 +126,7 @@ const page = {
       // Only used if the server has forgotten the shell — it was restarted —
       // so the new one starts where the old one was standing.
       cwd: c.cwd || undefined,
+      slot: c.slot || undefined, // which window of its workspace's profile
     });
     writeLayout(WS.serialize(boxOf));
     paintTray(); // names and minimized windows both end up here
@@ -225,6 +226,24 @@ const page = {
   // way a terminal tab closes when its shell does.
   exited(c) {
     remove(c);
+  },
+
+  // What a window of a kept profile starts a new shell with, as the profile
+  // has it now; see container.js. Null for any other window.
+  seedFor(c) {
+    const P = window.HEROTERM_PROFILES;
+    const name = c.slot && WS && P ? WS.profileOf(c) : null;
+    const entry = name && P.get(name);
+    const w = entry && entry.windows.find((x) => x.key === c.slot);
+    return w ? P.seedFor(w) : null;
+  },
+
+  // A command finished. In a workspace opened from a kept profile, it goes
+  // into that window's history there; see profiles.js.
+  finished(c, rec) {
+    if (!c.slot || !WS || !window.HEROTERM_PROFILES) return;
+    const name = WS.profileOf(c);
+    if (name) window.HEROTERM_PROFILES.record(name, c.slot, rec);
   },
 
   // A container's deck moved, or its size changed, or its shell said something.
@@ -436,14 +455,18 @@ function defaultBox(n) {
   };
 }
 
-function spawn(id, box, name, cwd, away) {
+// `more`, for a window of a kept profile: which of the profile's windows it
+// is (`slot`), and the history its shell starts with (`seed`).
+function spawn(id, box, name, cwd, away, more = {}) {
   const c = window.HEROTERM_CONTAINER.create({
     id: id || newId(),
     name: name || freshName(),
     zoom: box && box.zoom,
     cwd: cwd || undefined,
+    seed: more.seed || null,
     page,
   });
+  c.slot = more.slot || null;
   // A window made for a workspace you are not looking at: its shell connects and
   // its scrollback fills, out of sight, until you go there.
   if (away) c.el.toggleAttribute('data-away', true);
@@ -1021,6 +1044,7 @@ const host = {
     arrangement = a;
   },
   maxWindows: MAX_CONTAINERS,
+  home: () => window.HEROTERM_CONFIG && window.HEROTERM_CONFIG.home,
   spawn,
   visible,
   newId,

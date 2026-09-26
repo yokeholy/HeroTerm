@@ -26,6 +26,8 @@ function createStack(opts) {
   // The page owns the status bar, so the deck reports its position rather than
   // writing it: only the focused container's numbers belong down there.
   const onChange = opts.onChange || (() => {});
+  // Told of each command as it finishes — a kept workspace writes it down.
+  const onFinished = opts.onFinished || (() => {});
 
   // term.write() parses on its own schedule, so the OSC handlers fire *after*
   // feed() has already seen the bytes that contain them. Left alone that makes
@@ -198,6 +200,20 @@ function createStack(opts) {
     }
   }
 
+  // A record as it can leave this page: times against the wall clock rather
+  // than performance.now(), which means nothing anywhere else.
+  function wallClock(rec) {
+    const skew = Date.now() - now();
+    return {
+      cmd: rec.cmd || '',
+      ok: rec.ok,
+      code: rec.code,
+      started: rec.started != null ? Math.round(rec.started + skew) : null,
+      ended: rec.ended != null ? Math.round(rec.ended + skew) : null,
+      bytes: rec.bytes || '',
+    };
+  }
+
   // Promote whatever the live terminal is currently showing into a card of its
   // own, so the live terminal can be wiped for the command about to run.
   function promote() {
@@ -299,6 +315,15 @@ function createStack(opts) {
       current.ok = ok;
       current.code = code == null ? (ok ? 0 : 1) : code;
       paintHead(liveEl, current);
+      onFinished(wallClock(current));
+    },
+
+    // Every finished command this deck holds, oldest first, with wall-clock
+    // times — what a kept workspace starts its history from.
+    records() {
+      const all = cards.map((c) => c.rec).reverse(); // cards are newest-first
+      if (current && !current.running) all.push(current);
+      return all.map(wallClock);
     },
 
     // Put the deck back after a refresh, from what the server kept. The server

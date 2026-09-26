@@ -35,11 +35,14 @@
   const savedList = document.getElementById('spaces-saved-list');
 
   const S = () => window.HEROTERM_SPACES;
+  const P = () => window.HEROTERM_PROFILES;
 
   let openTimer = null;
   let shutTimer = null;
   let asking = null; // the workspace whose "something is running" question is up
   let returnTo = null; // what had the keyboard before the panel took it
+  let justSaved = null; // the row whose Save just worked, to say so for a moment
+  let savedTimer = null;
 
   // From the edge, the panel just appears: the pointer is the thing in use.
   // From the keyboard it takes the keys as well, starting on the workspace
@@ -154,7 +157,21 @@
       const head = document.createElement('span');
       head.className = 'shead';
       if (!space.name) head.dataset.unnamed = ''; // then the windows are the title
-      head.append(dot, label, note);
+      head.append(dot);
+      // Opened from a kept profile, or saved as one: its history is being
+      // written down as it goes. A bookmark, the colour of a command that
+      // went well, says so.
+      if (space.profile) {
+        row.dataset.kept = '';
+        const mark = document.createElement('span');
+        mark.className = 'slink';
+        mark.innerHTML =
+          '<svg viewBox="0 0 10 12" width="8" height="10" aria-hidden="true"><path d="M1 1h8v10L5 8 1 11z" fill="currentColor"/></svg>';
+        mark.dataset.tip = `Kept as “${space.profile}” — its history saves itself`;
+        mark.setAttribute('aria-label', `Kept as ${space.profile}`);
+        head.append(mark);
+      }
+      head.append(label, note);
       go.append(head, thumb);
       go.addEventListener('click', () => {
         // The one you are already in: not a switch, and not worth closing the
@@ -190,6 +207,32 @@
       });
 
       row.append(go);
+
+      // The layout of a kept workspace changes only when you say: this puts
+      // the windows as they are now back into the profile. (Its history needs
+      // no button; that is written as each command finishes.)
+      if (space.profile) {
+        const keep = document.createElement('button');
+        keep.type = 'button';
+        keep.className = 'ssave';
+        const done = justSaved === space.id;
+        if (done) keep.dataset.done = '';
+        keep.textContent = done ? 'Saved' : 'Save';
+        keep.dataset.tip = `Save this layout into “${space.profile}”`;
+        keep.setAttribute('aria-label', `Save this layout into ${space.profile}`);
+        keep.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (!S().keep(i, space.profile)) return;
+          justSaved = space.id;
+          clearTimeout(savedTimer);
+          savedTimer = setTimeout(() => {
+            justSaved = null;
+            paint();
+          }, 1400);
+          paint();
+        });
+        row.append(keep);
+      }
 
       if (list_.length > 1) {
         const drop = document.createElement('button');
@@ -274,30 +317,10 @@
 
   /* ---------- kept ---------- */
 
-  // A workspace written down: how many windows, what each was called, where
-  // it sat, and which folder its shell was standing in. Only the arrangement —
-  // no scrollback, no processes. Opening one makes a workspace of its own for
-  // it, with fresh shells started in those folders, beside the ones you have.
-  //
-  // The key is the one the saved-screens button used before this panel took
-  // the idea over, so everything kept that way is still here.
-  const KEY = 'heroterm.screens';
-  const MAX_NAME = 40;
-
-  let kept = {};
-  try {
-    kept = JSON.parse(localStorage.getItem(KEY) || '{}') || {};
-  } catch {
-    /* nothing usable stored; nothing kept yet */
-  }
-
-  function store() {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(kept));
-    } catch {
-      /* not persisted; it holds for this tab */
-    }
-  }
+  // Profiles: workspaces written down — see profiles.js. Opening one makes a
+  // workspace of its own for it, with fresh shells started in the folders it
+  // kept and each window's earlier commands behind it; saving one links the
+  // workspace to it, so its history keeps itself from then on.
 
   // "3 windows · heroterm, docs" — the folders are the useful part, and the
   // last segment of each is enough to tell them apart.
@@ -314,6 +337,7 @@
   }
 
   function paintKept(full) {
+    const kept = P().list();
     const names = Object.keys(kept).sort((a, b) => a.localeCompare(b));
     savedBox.hidden = !names.length;
     savedList.replaceChildren(
@@ -347,8 +371,7 @@
         drop.dataset.tip = 'Forget this one';
         drop.addEventListener('click', (e) => {
           e.stopPropagation();
-          delete kept[name];
-          store();
+          P().forget(name);
           paint();
         });
 
@@ -362,7 +385,7 @@
   // own name, or what is in it. Enter keeps it; Escape changes nothing.
   function startSaving() {
     const here = S().list().find((w) => w.here);
-    nameField.value = (here && (here.name || here.names.join(', '))) || '';
+    nameField.value = (here && (here.profile || here.name || here.names.join(', '))) || '';
     saver.hidden = true;
     nameForm.hidden = false;
     nameField.focus();
@@ -380,14 +403,9 @@
 
   nameForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const name = nameField.value.trim().slice(0, MAX_NAME);
+    const name = nameField.value.trim().slice(0, P().MAX_NAME);
     if (!name) return;
-    kept[name] = {
-      saved: Date.now(),
-      home: window.HEROTERM_CONFIG && window.HEROTERM_CONFIG.home,
-      windows: window.HEROTERM_WINDOWS.snapshot(),
-    };
-    store();
+    S().keep(S().at, name);
     stopSaving();
     paint();
   });

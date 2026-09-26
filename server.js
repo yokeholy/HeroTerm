@@ -4,6 +4,7 @@ const fs = require('fs');
 const http = require('http');
 const path = require('path');
 const crypto = require('crypto');
+const os = require('os');
 const express = require('express');
 const { WebSocketServer } = require('ws');
 const pty = require('node-pty');
@@ -223,6 +224,80 @@ app.get('/update', async (req, res) => {
     shells: sessions.size,
   });
 });
+
+// A window of a kept profile, about to ask for a shell, hands over the history
+// it should start with: its last commands, with their output, for the deck,
+// and its command lines for the shell's ↑. Held here until the socket for that
+// id arrives and makes the shell (see createSession), and only then used —
+// for a shell that already exists, a refresh, it's ignored.
+const seeds = new Map(); // id -> { cards, history, at }
+const SEED_KEEP = 60 * 1000; // a seed nobody came for is dropped after this
+const SEED_MAX = 64;
+const SEED_HISTORY = 200; // command lines at most
+
+function cleanSeed(body) {
+  const cards = (Array.isArray(body.cards) ? body.cards : []).slice(-MAX_CARDS).map((c) => {
+    const code = Number.isInteger(c.code) ? c.code : 0;
+    const time = (t) => (Number.isFinite(t) ? t : null);
+    return {
+      cmd: String(c.cmd || '').slice(0, 400),
+      bytes: String(c.bytes || '').slice(-MAX_CARD_BYTES),
+      started: time(c.started),
+      ended: time(c.ended),
+      running: false,
+      ok: code === 0,
+      code,
+    };
+  });
+  const history = (Array.isArray(body.history) ? body.history : [])
+    .slice(-SEED_HISTORY)
+    .map((h) => ({ cmd: String(h.cmd || '').slice(0, 4000), at: Number.isFinite(h.at) ? h.at : null }))
+    .filter((h) => h.cmd.trim());
+  return { cards, history };
+}
+
+app.post('/seed', express.json({ limit: '4mb' }), (req, res) => {
+  const origin = req.headers.origin;
+  if (req.query.token !== TOKEN || (origin && !ALLOWED_ORIGINS.has(origin))) {
+    res.sendStatus(403);
+    return;
+  }
+  const id = String(req.query.id || '').slice(0, 64);
+  if (!id || !req.body || typeof req.body !== 'object') {
+    res.status(400).json({ ok: false });
+    return;
+  }
+  // Already running: it has a history of its own, and that one is true.
+  if (sessions.has(id)) {
+    res.json({ ok: true, used: false });
+    return;
+  }
+  const now = Date.now();
+  for (const [key, seed] of seeds) if (now - seed.at > SEED_KEEP) seeds.delete(key);
+  while (seeds.size >= SEED_MAX) seeds.delete(seeds.keys().next().value);
+  seeds.set(id, { ...cleanSeed(req.body), at: now });
+  res.json({ ok: true, used: true });
+});
+
+// The command lines, as a zsh history file — extended format, so each keeps
+// when it ran — for this one shell to read at startup (shell/zdotdir/.zshrc)
+// and then delete. Only this user can read it; it is removed when the shell
+// ends if the shell never got to it.
+function writeHistorySeed(history) {
+  if (!history.length) return null;
+  const file = path.join(os.tmpdir(), `heroterm-history-${process.pid}-${crypto.randomBytes(6).toString('hex')}`);
+  const lines = history.map((h) => {
+    const at = Math.floor((h.at || Date.now()) / 1000);
+    // zsh stores a line break inside a command as a backslash before it.
+    return `: ${at}:0;${h.cmd.replace(/\r?\n/g, '\\\n')}`;
+  });
+  try {
+    fs.writeFileSync(file, `${lines.join('\n')}\n`, { mode: 0o600 });
+    return file;
+  } catch {
+    return null; // no ↑ for this one; the deck still has them
+  }
+}
 
 // Stop, and start again from whatever is on disk now — which, after an
 // update, is the new version. The shells end: they are this process's
@@ -456,6 +531,9 @@ function startingIn(want) {
 
 function createSession(id, cwd) {
   const shellName = path.basename(SHELL);
+  const seed = seeds.get(id) || null;
+  seeds.delete(id);
+  const historySeed = seed && shellName === 'zsh' ? writeHistorySeed(seed.history) : null;
   const shellArgs = shellName === 'fish' ? ['--login'] : ['-l'];
 
   // Shell integration. The sounds and the deck need to know when a command
@@ -492,6 +570,7 @@ function createSession(id, cwd) {
       COLORTERM: 'truecolor',
       HEROTERM: '1', // so your rc files can branch on this if you want
       ...integration,
+      ...(historySeed ? { HEROTERM_HISTORY_SEED: historySeed } : {}),
     },
   });
 
@@ -509,7 +588,9 @@ function createSession(id, cwd) {
     alt: false,
     fg: null, // the foreground program's name; see the poll below
     grace: GRACE, // the page may ask for a different one; see the 'g' message
-    records: [],
+    records: seed ? seed.cards : [], // a kept window's past, as if it had run here
+    seeded: Boolean(seed && seed.cards.length),
+    historySeed,
     current: null,
   };
 
@@ -546,6 +627,7 @@ function createSession(id, cwd) {
 
   term.onExit(({ exitCode }) => {
     clearInterval(s.fgTimer);
+    if (s.historySeed) fs.rm(s.historySeed, { force: true }, () => {}); // unread, if the shell never started
     sessions.delete(s.id);
     if (s.reaped) return; // we ended it; see detach() and 'bye'
     rememberExit(s.id, exitCode);
@@ -656,7 +738,10 @@ wss.on('connection', (ws, req) => {
   //      older page just ignores it
   control(ws, { t: 'hello', protocol: PROTOCOL, resumed, grace: GRACE });
 
-  if (resumed) {
+  // A resumed shell puts the page back as it was; a new one seeded from a kept
+  // profile starts with that profile's deck, the same way.
+  if (resumed || s.seeded) {
+    s.seeded = false;
     control(ws, {
       t: 'restore',
       cards: s.records,
