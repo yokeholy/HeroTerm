@@ -398,6 +398,28 @@ test('the panel says which workspaces have something running', { skip }, async (
   await page.ev('HEROTERM_EDGE.close(), 1');
 });
 
+// A quiet command — a dev server, say — is still quiet after a refresh: the
+// page puts it back as running from the server's record, and that used to
+// skip the quiet list, so the sky flew and the clock ticked again.
+test('a quiet command stays quiet across a refresh', { skip }, async () => {
+  await page.ev(`localStorage.setItem('heroterm.settings', JSON.stringify({ hush: 'sleep' })), 1`);
+  await page.reload();
+  await page.until(connected);
+  await page.focusWindow();
+  await page.type('sleep 30');
+  // It runs — its window says so — but nothing counts it as running.
+  await page.until(`${here}.querySelector('.card[data-front] .cmd').textContent === 'sleep 30'`, 'the command to start');
+  assert.equal(await page.ev('document.body.dataset.run'), 'idle', 'quiet before the refresh');
+
+  await page.reload();
+  await page.until(connected);
+  await page.until(`${here}.querySelector('.card[data-front] .cmd').textContent === 'sleep 30'`, 'the restored command');
+  await new Promise((r) => setTimeout(r, 300));
+  assert.equal(await page.ev('document.body.dataset.run'), 'idle', 'the sky flies for a quiet command after a refresh');
+  assert.equal(await page.ev('HEROTERM_SPACES.list()[0].busy'), false);
+  await page.key('c', { code: 'KeyC', keyCode: 67, modifiers: 2 }); // Ctrl-C
+});
+
 test('nothing threw along the way', { skip }, () => {
   assert.deepEqual(page.errors, []);
 });

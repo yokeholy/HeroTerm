@@ -303,8 +303,12 @@ function createSession() {
       agent = null; // the replayed screen will say, if it can
       if (live && live.running) {
         depth = 1;
-        running = true;
-        emit({ type: 'start', restored: true });
+        // Quiet or not is decided from the command line, as markerStart does —
+        // the server's record has it — or a quiet dev server would fly the sky
+        // and tick again after every refresh.
+        hush = hushed(live.cmd);
+        running = !hush;
+        emit({ type: 'start', restored: true, hush });
       } else {
         depth = 0;
         running = false;
