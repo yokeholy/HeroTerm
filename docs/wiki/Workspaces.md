@@ -49,6 +49,11 @@ running, and its background jobs all go. Something started with `nohup` — or
 `disown`, or `setsid` — survives, which is what those are for. If you want a
 long build to outlive its window, that is still how.
 
+A workspace with anything running says so on its row: **2 running**, in
+yellow, after the window names — hover it for which windows — and its dot
+pulses. Both go when the last of them finishes, so a workspace you aren't
+looking at can't be working unnoticed.
+
 Each row is the workspace's name and what's in it, with a picture of it
 under that, the full width of the panel: one box per window, where the window
 actually is, with its name in the middle of it, in the colour its border is wearing — grey

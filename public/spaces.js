@@ -172,6 +172,16 @@
         head.append(mark);
       }
       head.append(label, note);
+      // Something is running in it: said in words, not just by the dot's
+      // colour, so a workspace you aren't in can't be working unnoticed.
+      if (space.running.length) {
+        row.dataset.busy = '';
+        const run = document.createElement('span');
+        run.className = 'srun';
+        run.textContent = `${space.running.length} running`;
+        run.dataset.tip = `Running in ${space.running.join(', ')}`;
+        head.append(run);
+      }
       go.append(head, thumb);
       go.addEventListener('click', () => {
         // The one you are already in: not a switch, and not worth closing the

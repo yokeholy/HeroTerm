@@ -100,7 +100,7 @@ sit — two columns, a wide window over a short one with a dot showing something
 still running, and three columns](https://raw.githubusercontent.com/yokeholy/HeroTerm/main/docs/workspaces.png)
 
 - Switching **restarts nothing** — a build left running in another workspace
-  keeps going, and its dot lights up in the panel when it lands.
+  keeps going, and its row in the panel says **1 running** until it's done.
 - Closing one can be **undone** for twenty seconds, shells and scrollback intact.
 - Double-click a row's top line to name it; until then, the windows in it are
   its name.

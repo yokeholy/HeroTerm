@@ -555,6 +555,36 @@ body[data-overview] .deck:hover .card[data-front] {
 #spaces .sdot[data-busy] {
   background: var(--yellow, #d9a86c);
   opacity: 1;
+  animation: sbusy 1.6s ease-out infinite;
+}
+
+/* A ring that grows off the dot and fades, for as long as it runs. */
+@keyframes sbusy {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--yellow, #d9a86c) 70%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #spaces .sdot[data-busy] {
+    animation: none;
+  }
+}
+
+/* "2 running", after the window names: the same news as the dot, in words,
+   and a list of which windows on hover. */
+#spaces .srun {
+  flex: none;
+  align-self: center;
+  padding: 1px 7px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--yellow, #d9a86c) 18%, transparent);
+  color: var(--yellow, #d9a86c);
+  font-size: calc(10px * var(--ui-scale, 1));
+  white-space: nowrap;
 }
 
 #spaces .shead {

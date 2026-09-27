@@ -166,6 +166,7 @@
             here,
             area,
             busy: windows.some((c) => c.session.running),
+            running: windows.filter((c) => c.session.running).map((c) => c.name),
             names: windows.map((c) => c.name),
             windows: windows.map((c) => ({
               name: c.name,

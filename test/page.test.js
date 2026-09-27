@@ -377,6 +377,27 @@ test('a newer HeroTerm shows in the status bar, and in Settings', { skip }, asyn
   await page.ev('HEROTERM_SETTINGS.close(), 1');
 });
 
+// A workspace with something running says so in the panel, in words — and
+// stops saying so when it's done.
+test('the panel says which workspaces have something running', { skip }, async () => {
+  await page.ev(`HEROTERM_WINDOWS.open([{ name: 'build', x: 60, y: 70, w: 600, h: 400 }]), 1`);
+  await page.until(`HEROTERM_WINDOWS.snapshot().length === 1 && ${connected}`);
+  await page.focusWindow();
+  await page.type('sleep 2');
+  await page.until('HEROTERM_SPACES.list()[0].busy', 'the command to start');
+  await page.ev('HEROTERM_SPACES.add(), 1');
+  await page.until(connected);
+  await page.ev('HEROTERM_EDGE.open(), 1');
+
+  const labels = "[...document.querySelectorAll('#spaces .space')].map(r => (r.querySelector('.srun') || {}).textContent || '')";
+  await page.until(`${labels}[0] === '1 running'`, 'the running label');
+  assert.deepEqual(await page.ev(labels), ['1 running', '']);
+  assert.equal(await page.ev("document.querySelector('#spaces .srun').dataset.tip"), 'Running in build');
+
+  await page.until(`${labels}.every(t => !t)`, 'the label to go when it finishes', 10000);
+  await page.ev('HEROTERM_EDGE.close(), 1');
+});
+
 test('nothing threw along the way', { skip }, () => {
   assert.deepEqual(page.errors, []);
 });
