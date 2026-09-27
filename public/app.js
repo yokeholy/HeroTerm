@@ -238,6 +238,13 @@ const page = {
     return w ? P.seedFor(w) : null;
   },
 
+  // A window lost its connection. Usually the server is down or restarting,
+  // and the window keeps trying; but a socket turned away for its token looks
+  // exactly the same from here, so ask the server plainly. See checkToken.
+  connectionLost() {
+    checkToken();
+  },
+
   // A command finished. In a workspace opened from a kept profile, it goes
   // into that window's history there; see profiles.js.
   finished(c, rec) {
@@ -1178,6 +1185,59 @@ window.HEROTERM_WINDOWS = {
   },
 };
 
+/* ---------- a token the server won't take ---------- */
+
+// Every launch mints a new token, so a link from before a restart — a
+// bookmark, a tab left open — stops working. A refused socket can't say why:
+// to the page it looks like a server that's down, and every window would sit
+// on "Reconnecting…" for ever. A plain request can: /config answers 403 to a
+// wrong token, and nothing at all when the server is down. So when that's
+// the answer, the windows stop trying and the page says what's wrong.
+const deniedEl = document.getElementById('denied');
+let refused = false;
+let lastCheck = 0;
+
+function refuse() {
+  if (refused) return;
+  refused = true;
+  const missing = !new URLSearchParams(location.search).get('token');
+  document.getElementById('denied-title').textContent = missing
+    ? 'This link has no token'
+    : "This link's token isn't valid";
+  document.getElementById('denied-why').textContent = missing
+    ? "HeroTerm only lets in a page that carries its token, and this one doesn't have one — it was opened as a bare address."
+    : 'HeroTerm makes a new token each time it starts, so a link from before a restart — a bookmark, a tab left open — stops working.';
+  // Every window in every workspace: the ones out of sight are trying too.
+  for (const c of WS.everyWindow()) c.halt('Token not accepted');
+  deniedEl.hidden = false;
+  document.getElementById('denied-retry').focus();
+}
+
+async function checkToken(force) {
+  if (refused) return true;
+  const now = Date.now();
+  if (!force && now - lastCheck < 3000) return false; // a dozen windows drop at once
+  lastCheck = now;
+  try {
+    const token = new URLSearchParams(location.search).get('token') || '';
+    const res = await fetch(`/config?token=${encodeURIComponent(token)}`, { cache: 'no-store' });
+    if (res.status === 403) {
+      refuse();
+      return true;
+    }
+  } catch {
+    /* no answer at all: the server is down, and the windows keep trying */
+  }
+  return false;
+}
+
+document.getElementById('denied-retry').addEventListener('click', async () => {
+  // The server may have come back with this page's token (a restart from the
+  // page carries it over), so ask again; a reload starts everything afresh.
+  refused = false;
+  if (!(await checkToken(true))) location.reload();
+});
+
 /* ---------- page furniture ---------- */
 
 // The version in the footer is the server's — it's the server that serves
@@ -1187,6 +1247,7 @@ window.HEROTERM_WINDOWS = {
   try {
     const token = new URLSearchParams(location.search).get('token') || '';
     const res = await fetch(`/config?token=${encodeURIComponent(token)}`, { cache: 'no-store' });
+    if (res.status === 403) refuse(); // see checkToken
     if (!res.ok) return;
     const { version, dev, home, maxSessions } = await res.json();
     // The server's ceiling on shells is the real one, since every window in

@@ -191,6 +191,20 @@
       <button id="updchip" type="button" hidden></button>
     </footer>
 
+    <!-- The server turned the page's token away: say so, rather than let every
+         window go on "Reconnecting…" as if the server were down. -->
+    <section id="denied" hidden role="alertdialog" aria-modal="true" aria-labelledby="denied-title" aria-describedby="denied-why">
+      <div class="pop">
+        <h1 id="denied-title">This link's token isn't valid</h1>
+        <p id="denied-why"></p>
+        <p>
+          Open HeroTerm with the link it printed when it started. If it's
+          running in the background, <code>heroterm status</code> prints it again.
+        </p>
+        <button id="denied-retry" type="button">Try again</button>
+      </div>
+    </section>
+
     <script src="/vendor/xterm/lib/xterm.js"></script>
     <script src="/vendor/addon-fit/lib/addon-fit.js"></script>
     <script src="/vendor/addon-webgl/lib/addon-webgl.js"></script>

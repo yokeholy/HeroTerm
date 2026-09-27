@@ -163,6 +163,11 @@ WebSockets aren't protected by CORS. Because it changes every launch, a
 bookmarked URL stops working when you restart; the `heroterm` command opens the
 new one for you, and `npm start` prints it.
 
+A page whose token the server won't take — an old tab, a bookmark, or the bare
+address with no token at all — says so, and points at `heroterm status` for the
+current link. Its windows stop trying to connect rather than sitting on
+"Reconnecting…", which is what a server that's merely down looks like.
+
 **Editing `server.js` needs a restart.** Everything under `public/` is read off
 disk on every request, so a reload picks it up — but `server.js` is read once,
 when the process starts. Leave a server running across an edit and you get a

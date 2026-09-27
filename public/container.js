@@ -317,8 +317,11 @@
         return;
       }
       // Anything else is the connection, not the shell: a sleeping laptop, a
-      // restarted server, a moment of nothing. Keep trying, and say so.
+      // restarted server, a moment of nothing. Keep trying, and say so — and
+      // let the page find out whether it's the token that was turned away,
+      // which a socket can't be told (see halt, and app.js).
       setState('no', connected ? 'Reconnecting…' : ev.reason || 'Connecting…');
+      if (page.connectionLost) page.connectionLost();
       retry();
     }
 
@@ -346,6 +349,7 @@
     // A server that still has the shell ignores it. Either way, it connects.
     let firstSeed = opts.seed || null;
     let seeding = false;
+    let halted = false; // the page found the token turned away; see halt()
 
     function seedThen(go) {
       const seed = firstSeed || (hadShell && page.seedFor ? page.seedFor(self) : null);
@@ -368,7 +372,7 @@
     }
 
     function connect() {
-      if (ended || closed || seeding) return;
+      if (ended || closed || seeding || halted) return;
       clearTimeout(retryTimer);
       seedThen(openSocket);
     }
@@ -928,6 +932,14 @@
 
       focus() {
         term.focus();
+      },
+
+      // Stop trying to connect: the server won't take this page's token, and
+      // retrying won't change that. The status line says why.
+      halt(text) {
+        halted = true;
+        clearTimeout(retryTimer);
+        setState('no', text);
       },
 
       // Straight to the shell, as if typed. The shell decides what it means,

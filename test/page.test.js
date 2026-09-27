@@ -420,6 +420,28 @@ test('a quiet command stays quiet across a refresh', { skip }, async () => {
   await page.key('c', { code: 'KeyC', keyCode: 67, modifiers: 2 }); // Ctrl-C
 });
 
+// A link whose token the server won't take — one from before a restart, or
+// none at all — says so, instead of every window reconnecting for ever.
+test('a wrong or missing token is said plainly', { skip }, async () => {
+  const shown = "!document.getElementById('denied').hidden";
+  const title = "document.getElementById('denied-title').textContent";
+  try {
+    await page.open(`http://127.0.0.1:${srv.port}/?token=${'0'.repeat(48)}`);
+    await page.until(shown, 'the message', 10000);
+    assert.equal(await page.ev(title), "This link's token isn't valid");
+    // and the windows have stopped trying
+    await page.until("document.getElementById('state-text').textContent === 'Token not accepted'", 'the windows to stop');
+
+    await page.open(`http://127.0.0.1:${srv.port}/`);
+    await page.until(shown, 'the message, for a bare address', 10000);
+    assert.equal(await page.ev(title), 'This link has no token');
+  } finally {
+    await page.open(srv.url);
+  }
+  await page.until(connected);
+  assert.equal(await page.ev(shown), false, 'shown with the right token');
+});
+
 test('nothing threw along the way', { skip }, () => {
   assert.deepEqual(page.errors, []);
 });

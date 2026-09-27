@@ -248,6 +248,11 @@
 
       profileOf,
 
+      // Every window, in every workspace, in front or not.
+      everyWindow() {
+        return spaces.flatMap((_s, i) => windowsOf(i));
+      },
+
       rename(i, name) {
         if (!spaces[i]) return;
         spaces[i].name = String(name || '').trim().slice(0, 24);
