@@ -20,6 +20,10 @@ It runs a shell, so the question is a fair one. The short version:
 - The one request HeroTerm makes itself is to `registry.npmjs.org`, for its
   latest version — nothing about you or your machine goes with it beyond what
   any HTTP request carries. Settings → System turns it off.
+- **Send feedback** sends nothing: it opens a filled-in GitHub issue in your
+  browser, for you to read and send yourself. The system details it offers to
+  include are versions only — HeroTerm, macOS, browser, Node, shell — and are
+  shown in the form before anything goes; no paths, commands, output or token.
 - A restart from the page hands the token to the server replacing it, in that
   process's environment, so the open tab can reconnect. It's taken out of the
   environment as soon as it's read; no shell ever sees it.

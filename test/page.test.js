@@ -442,6 +442,54 @@ test('a wrong or missing token is said plainly', { skip }, async () => {
   assert.equal(await page.ev(shown), false, 'shown with the right token');
 });
 
+// Feedback fills in a GitHub issue and opens it; nothing is sent from here.
+test('feedback opens a filled-in GitHub issue', { skip }, async () => {
+  await page.ev('window.__opened = null; window.open = (u) => { window.__opened = u; }; 1');
+  await page.ev("document.getElementById('helpbtn').click(), 1");
+  await page.ev("document.getElementById('help-feedback').click(), 1");
+  await page.until("!document.getElementById('feedback').hidden && document.getElementById('help').hidden", 'the form, in place of help');
+  assert.equal(await page.ev("document.getElementById('fb-send').disabled"), true, 'sendable with nothing written');
+
+  // The system details are shown before they're sent, and say what's true.
+  await page.until("/^HeroTerm \\d/.test(document.getElementById('fb-details').textContent)", 'the system details');
+  const shown = await page.ev("document.getElementById('fb-details').textContent");
+  assert.match(shown, /^HeroTerm \d+\.\d+\.\d+/);
+  assert.match(shown, process.platform === 'darwin' ? /\nmacOS \d+/ : new RegExp(`\n${process.platform} `));
+  assert.match(shown, /\nNode v\d+/);
+
+  const parse = (u) => {
+    const url = new URL(u);
+    return { at: url.origin + url.pathname, ...Object.fromEntries(url.searchParams) };
+  };
+  await page.ev("(t => { t.value = 'Windows flicker when I resize\\nsteps: drag a corner'; t.dispatchEvent(new Event('input')); })(document.getElementById('fb-text')), 1");
+  let issue = parse(await page.ev('HEROTERM_FEEDBACK.issueUrl()'));
+  assert.equal(issue.at, 'https://github.com/yokeholy/HeroTerm/issues/new');
+  assert.equal(issue.title, 'Bug: Windows flicker when I resize');
+  assert.equal(issue.labels, 'bug');
+  assert.match(issue.body, /^Windows flicker when I resize\nsteps: drag a corner\n\n---\n\n\*\*System\*\*\n\n- HeroTerm /);
+
+  // An idea, without the details.
+  await page.ev("document.querySelector('#fb-kind [data-v=idea]').click(), 1");
+  await page.ev("document.getElementById('fb-sys').click(), 1");
+  assert.equal(await page.ev("document.getElementById('fb-details').hidden"), true);
+  issue = parse(await page.ev('HEROTERM_FEEDBACK.issueUrl()'));
+  assert.equal(issue.title, 'Idea: Windows flicker when I resize');
+  assert.equal(issue.labels, 'enhancement');
+  assert.doesNotMatch(issue.body, /System/);
+
+  // Too long for a link: cut, and it says so.
+  await page.ev("(t => { t.value = 'x'.repeat(20000); t.dispatchEvent(new Event('input')); })(document.getElementById('fb-text')), 1");
+  const long = await page.ev('HEROTERM_FEEDBACK.issueUrl()');
+  assert.ok(long.length <= 7000, `a ${long.length}-character link`);
+  assert.match(parse(long).body, /Cut short to fit in a link/);
+
+  // Sent: GitHub opens, the form goes, and what was written with it.
+  await page.ev("document.getElementById('fb-send').click(), 1");
+  assert.match(await page.ev('window.__opened'), /^https:\/\/github\.com\/yokeholy\/HeroTerm\/issues\/new\?/);
+  assert.equal(await page.ev("document.getElementById('feedback').hidden"), true);
+  assert.equal(await page.ev("document.getElementById('fb-text').value"), '');
+});
+
 test('nothing threw along the way', { skip }, () => {
   assert.deepEqual(page.errors, []);
 });

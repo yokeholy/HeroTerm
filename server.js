@@ -8,7 +8,7 @@ const os = require('os');
 const express = require('express');
 const { WebSocketServer } = require('ws');
 const pty = require('node-pty');
-const { spawn } = require('child_process');
+const { spawn, execFileSync } = require('child_process');
 const history = require('./history');
 const fixSpawnHelper = require('./scripts/fix-spawn-helper');
 const fonts = require('./fonts');
@@ -174,6 +174,26 @@ app.get('/fonts', (req, res) => {
   }
 });
 
+// Which system this is, for a bug report: "macOS 26.0" rather than the kernel's
+// "darwin 25.0.0" — and asked here because a browser won't say any more (they
+// all report macOS 10.15.7 now, whatever it really is). Once, when first
+// asked; sw_vers doesn't change while we run.
+let osName = null;
+function systemName() {
+  if (osName) return osName;
+  if (process.platform === 'darwin') {
+    try {
+      const v = execFileSync('sw_vers', ['-productVersion'], { encoding: 'utf8', timeout: 2000 }).trim();
+      osName = `macOS ${v}`;
+    } catch {
+      osName = `macOS (Darwin ${os.release()})`;
+    }
+  } else {
+    osName = `${process.platform} ${os.release()}`;
+  }
+  return osName;
+}
+
 // What this server is running with, for the settings sheet's System tab —
 // the values after environment overrides, so it shows what's true now rather
 // than what the source says by default.
@@ -200,6 +220,7 @@ app.get('/config', (req, res) => {
     version: require('./package.json').version,
     dev: DEV,
     node: process.version,
+    os: systemName(),
     protocol: PROTOCOL,
   });
 });

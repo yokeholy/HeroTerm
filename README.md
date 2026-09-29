@@ -165,6 +165,14 @@ The details live in the [wiki](docs/wiki/Home.md):
 [How it works](docs/wiki/How-it-works.md) ·
 [FAQ](docs/wiki/FAQ.md)
 
+## 💬 Feedback
+
+Something wrong, or an idea? **?** → **Send feedback…** fills in a GitHub
+issue — what you write, and, if you leave the box ticked, the HeroTerm, macOS,
+browser and Node versions, shown before anything goes — and opens it for you to
+send from your own account. Nothing is sent from HeroTerm itself. Or open an
+[issue](https://github.com/yokeholy/HeroTerm/issues) directly.
+
 ## 📄 Licence
 
 MIT. See [LICENSE](LICENSE).

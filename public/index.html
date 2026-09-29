@@ -191,6 +191,39 @@
       <button id="updchip" type="button" hidden></button>
     </footer>
 
+    <!-- Feedback: filled in here, sent from GitHub. See feedback.js. -->
+    <section id="feedback" hidden aria-label="Send feedback">
+      <form class="pop" role="dialog" aria-labelledby="fb-title" novalidate>
+        <button id="fb-close" class="chip close" type="button" aria-label="Close">
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+            <path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </button>
+        <h1 id="fb-title">Send feedback</h1>
+        <p class="fb-lead">
+          This opens a new issue on GitHub, filled in from what's here. You see
+          it there, and send it from your own account — nothing is sent from
+          HeroTerm.
+        </p>
+        <div id="fb-kind" class="fb-kind" role="group" aria-label="What kind of feedback">
+          <button type="button" data-v="bug" aria-pressed="true">Something's wrong</button>
+          <button type="button" data-v="idea" aria-pressed="false">An idea</button>
+        </div>
+        <label id="fb-label" for="fb-text">What happened?</label>
+        <textarea id="fb-text" rows="6" spellcheck="true"></textarea>
+        <label class="fb-check">
+          <input id="fb-sys" type="checkbox" checked />
+          Include these system details
+        </label>
+        <pre id="fb-details"></pre>
+        <div class="fb-row">
+          <button id="fb-send" class="primary" type="submit" disabled>Open on GitHub</button>
+          <button id="fb-cancel" type="button">Cancel</button>
+          <span class="fb-keys">⌘↩</span>
+        </div>
+      </form>
+    </section>
+
     <!-- The server turned the page's token away: say so, rather than let every
          window go on "Reconnecting…" as if the server were down. -->
     <section id="denied" hidden role="alertdialog" aria-modal="true" aria-labelledby="denied-title" aria-describedby="denied-why">
@@ -225,6 +258,10 @@
 
         <h1>HeroTerm</h1>
         <p>Your real shell, in a browser tab.</p>
+        <p class="fb-invite">
+          Something wrong, or an idea?
+          <button id="help-feedback" type="button">Send feedback…</button>
+        </p>
 
         <h2>Each command gets a window</h2>
         <p>
@@ -613,6 +650,7 @@
     <script src="/app.js"></script>
     <script src="/spaces.js"></script>
     <script src="/updates.js"></script>
+    <script src="/feedback.js"></script>
     <script src="/tips.js"></script>
   </body>
 </html>
