@@ -417,6 +417,37 @@ body[data-overview] .deck:hover .card[data-front] {
   border-radius: 8px;
 }
 
+/* A window being carried here: say what to do, light up where it would
+   land, and grey out where it can't — the workspace it's already in, or
+   one with no room. The Save and × buttons have no part in it. */
+#spaces-carry {
+  display: none;
+  margin: -2px 2px 6px;
+  color: var(--cursor, #e9a13b);
+  font-size: calc(10.5px * var(--ui-scale, 1));
+}
+
+#spaces[data-carrying] #spaces-carry {
+  display: block;
+}
+
+#spaces[data-carrying] .ssave,
+#spaces[data-carrying] .drop {
+  visibility: hidden;
+}
+
+#spaces .space[data-drop],
+#spaces-add[data-drop] {
+  outline: 2px solid var(--cursor, #e9a13b);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--cursor, #e9a13b) 12%, transparent);
+}
+
+#spaces .space[data-nodrop],
+#spaces-add[data-nodrop] {
+  opacity: 0.45;
+}
+
 #spaces .space[data-here] {
   background: var(--hairline, #252a35);
 }

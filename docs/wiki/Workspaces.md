@@ -21,6 +21,28 @@ was hidden, not closed.
   how many windows go with it, and how many of them are still running. The last
   workspace can't be closed; there is always somewhere to be.
 
+## Moving a window to another workspace
+
+Drag it by its title bar to the left edge of the screen and **hold it there**
+for a moment. The panel slides out, saying *Drop it on a workspace to move it
+there*; the workspace under the pointer lights up, and dropping it there moves
+the window, shell and all — whatever is running keeps running, its deck and
+scrollback go with it, and it lands where it sat before you picked it up. You
+stay where you are.
+
+- **＋ New workspace** takes it too, making a workspace just for it.
+- The workspace it's already in, or one with eight windows, is greyed out.
+- Let go anywhere else in the panel and the window goes back where it was;
+  carry it back out past the panel and the panel goes, and you're dragging as
+  before.
+- Moving the last window out of a workspace takes you with it, and the empty
+  workspace goes.
+
+A *quick* drag to the left edge still snaps the window to the left half, as it
+always has: only a window held against the edge brings the panel out, the way
+macOS asks you to hold a window at the edge of the screen to move it to another
+Space.
+
 ## Closing one, and taking it back
 
 Closing doesn't kill the shells. It lets go of them, and the server keeps the

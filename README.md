@@ -102,6 +102,8 @@ still running, and three columns](https://raw.githubusercontent.com/yokeholy/Her
 - Switching **restarts nothing** — a build left running in another workspace
   keeps going, and its row in the panel says **1 running** until it's done.
 - Closing one can be **undone** for twenty seconds, shells and scrollback intact.
+- **Move a window** to another workspace: drag it to the left edge and hold it
+  there, and drop it on a workspace in the panel that slides out.
 - Double-click a row's top line to name it; until then, the windows in it are
   its name.
 - **Save this workspace…** keeps its layout — windows, places, folders — to

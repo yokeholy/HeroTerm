@@ -85,6 +85,10 @@ leaving you towing a half-screen slab. On a free drag the edges are magnetic —
 they line up with the screen's sides and middle and with every other window,
 within a few pixels.
 
+Hold a window against the **left** edge instead of letting go, and the
+workspaces panel comes out, to drop it into another workspace — see
+[Workspaces](Workspaces.md#moving-a-window-to-another-workspace).
+
 You aim at the real edges of the screen, but a snapped window lands in the same
 inset area that arranging tiles into and the green light fills: clear of the
 buttons along the top and the status bar along the bottom, with a margin down

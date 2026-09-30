@@ -84,6 +84,7 @@
     const rows = list_.map((space, i) => {
       const row = document.createElement('div');
       row.className = 'space';
+      row.dataset.index = String(i);
       if (space.here) row.dataset.here = '';
 
       const go = document.createElement('button');
@@ -507,5 +508,72 @@
   adder.addEventListener('mousedown', (e) => e.preventDefault());
   adder.addEventListener('click', () => S().add());
 
-  window.HEROTERM_EDGE = { open, close: shut, toggle };
+  /* ---------- carrying a window here ---------- */
+
+  // Hold a window you're dragging against the left edge and the panel comes
+  // out for it (app.js decides when): each workspace becomes somewhere to drop
+  // it. The window being dragged has the pointer captured, so nothing here
+  // hears it move — app.js asks, with the pointer's position, instead.
+
+  const carrying = () => panel.hasAttribute('data-carrying');
+
+  // What's under the pointer: a workspace that can take the window, the ＋
+  // that makes one for it, or nothing. The dragged window may be drawn over
+  // the panel, so everything at that point is looked through, not just the top.
+  function carryTarget(x, y) {
+    const list_ = S().list();
+    const limits = S().limits;
+    for (const el of document.elementsFromPoint(x, y)) {
+      if (el === adder) {
+        const here = list_.find((w) => w.here);
+        const ok = list_.length < limits.workspaces && here && here.windows.length > 1;
+        return { el, fresh: true, ok };
+      }
+      const row = el.closest && el.closest('#spaces-list .space[data-index]');
+      if (row) {
+        const space = list_[Number(row.dataset.index)];
+        const ok = Boolean(space) && !space.here && space.windows.length < limits.windows;
+        return { el: row, index: Number(row.dataset.index), ok };
+      }
+    }
+    return null;
+  }
+
+  function carryStart() {
+    panel.setAttribute('data-carrying', '');
+    open();
+  }
+
+  function carryOver(x, y) {
+    if (!carrying()) return;
+    const t = carryTarget(x, y);
+    for (const el of [...list.querySelectorAll('.space'), adder]) {
+      el.toggleAttribute('data-drop', Boolean(t && t.ok && t.el === el));
+      el.toggleAttribute('data-nodrop', Boolean(t && !t.ok && t.el === el));
+    }
+  }
+
+  // Where a drop at x, y goes: { index } or { fresh: true }, or null for
+  // "nowhere" — which puts the window back where it was.
+  function carryAt(x, y) {
+    const t = carrying() ? carryTarget(x, y) : null;
+    if (!t || !t.ok) return null;
+    return t.fresh ? { fresh: true } : { index: t.index };
+  }
+
+  function carryEnd() {
+    if (!carrying()) return;
+    panel.removeAttribute('data-carrying');
+    for (const el of [...list.querySelectorAll('.space'), adder]) {
+      el.removeAttribute('data-drop');
+      el.removeAttribute('data-nodrop');
+    }
+    shut();
+  }
+
+  // How far the panel reaches, so a pointer carried back out past it can
+  // put the panel away and go back to snapping.
+  const width = () => (panel.hidden ? 0 : panel.getBoundingClientRect().right);
+
+  window.HEROTERM_EDGE = { open, close: shut, toggle, carryStart, carryOver, carryAt, carryEnd, width };
 })();

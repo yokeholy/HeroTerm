@@ -262,6 +262,20 @@ const page = {
     if (c === focused) paintStatus();
   },
 
+  // --- carrying a window to another workspace; see carry below ---
+
+  // On every move of a window drag. True while the workspaces panel has the
+  // pointer, and snapping and splitting should stand aside.
+  carryMove(c, px, py) {
+    return carry.move(c, px, py);
+  },
+
+  // At the end of one. Null when the panel had nothing to do with it; else
+  // what to do once the window has been put back where it started.
+  carryDrop(c, px, py) {
+    return carry.drop(c, px, py);
+  },
+
   // --- snapping, asked for by whichever container is being dragged ---
 
   zoneAt: snapZone,
@@ -894,6 +908,72 @@ const rect = (x, y, w, h) => ({
   w: Math.round(w),
   h: Math.round(h),
 });
+
+// Carrying a window to another workspace. The left edge already means "the
+// left half" to a window being dragged, so the panel doesn't take it over:
+// it waits for the window to be *held* there, the way macOS asks you to hold
+// a window at the edge of the screen to move it to another Space. A quick
+// drag to the edge snaps, as it always has.
+//
+// Once the panel is out it has the pointer: each workspace is somewhere to
+// drop the window, ＋ makes a new one for it, and letting go anywhere else in
+// the panel puts it back where it was. Carry it back out past the panel and
+// the panel goes, and snapping carries on.
+const HOLD = 600; // ms against the edge before the panel comes out for it
+const HOLD_EDGE = 3; // ...and how hard against it: the last few pixels
+
+const carry = (() => {
+  let timer = null;
+  let out = false; // the panel is out for this drag
+  const edge = () => window.HEROTERM_EDGE;
+
+  function reset() {
+    clearTimeout(timer);
+    timer = null;
+    if (out) edge().carryEnd();
+    out = false;
+  }
+
+  return {
+    move(c, px, py) {
+      if (!edge()) return false;
+      if (out) {
+        if (px > edge().width() + 24) {
+          reset();
+          return false;
+        }
+        edge().carryOver(px, py);
+        return true;
+      }
+      if (px <= HOLD_EDGE) {
+        if (!timer) {
+          timer = setTimeout(() => {
+            timer = null;
+            out = true;
+            page.preview(null, null); // it isn't going to the left half
+            edge().carryStart();
+            edge().carryOver(px, py);
+          }, HOLD);
+        }
+      } else if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      return false;
+    },
+
+    drop(c, px, py) {
+      if (!out) {
+        reset();
+        return null;
+      }
+      const target = edge().carryAt(px, py);
+      reset();
+      if (!target) return () => {}; // let go in the panel, but not on anywhere
+      return () => (target.fresh ? WS.moveToNew(c) : WS.moveTo(c, target.index));
+    },
+  };
+})();
 
 // Where the pointer is aiming, or null for "leave it where you drop it".
 // Corners are tested first: within EDGE of one side and CORNER along another

@@ -134,6 +134,8 @@
     <div id="edge" aria-hidden="true"></div>
     <nav id="spaces" hidden aria-label="Workspaces">
       <h2>Workspaces</h2>
+      <!-- Only while a window is being carried here; see spaces.js. -->
+      <p id="spaces-carry">Drop it on a workspace to move it there.</p>
       <div id="spaces-list"></div>
       <button id="spaces-add" type="button" aria-label="New workspace">＋ New workspace</button>
       <!-- Keeping one: a button that becomes a name field in place. -->
@@ -279,6 +281,9 @@
             in another workspace keeps going</dd>
           <dt>⌘⌥← ⌘⌥→</dt>
           <dd>one workspace to the left, one to the right</dd>
+          <dt>hold at the edge</dt>
+          <dd>drag a window to the left edge and hold it there: the panel comes
+            out, and dropping it on a workspace moves it there, shell and all</dd>
           <dt>save</dt>
           <dd>Save this workspace…, at the bottom of the panel, keeps its windows,
             where they sit and the folder each shell was in — and each window's

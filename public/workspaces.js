@@ -248,6 +248,46 @@
 
       profileOf,
 
+      // Carry a window from the workspace in front to workspace i: its shell,
+      // whatever is running in it and its deck all go with it, and it lands
+      // where it sat here. You stay where you are — unless it was the last
+      // window here, in which case you go with it, and the workspace it left,
+      // now empty, goes. False if there's no room for it there.
+      moveTo(c, i) {
+        if (i === at || !spaces[i] || !host.containers.includes(c)) return false;
+        if (spaces[i].windows.length >= limits.windows) return false;
+        host.closeOverview();
+        host.containers.splice(host.containers.indexOf(c), 1);
+        c.el.toggleAttribute('data-away', true);
+        spaces[i].windows.push(c);
+        spaces[i].focused = c; // what you find in front when you go there
+        // What the arrange button could undo no longer describes either one.
+        spaces[i].arrangement = null;
+        host.arrangement = null;
+        if (host.focused === c) host.focused = null;
+
+        if (!host.containers.length) {
+          const left = at;
+          leave();
+          settle(swapIn(i));
+          spaces.splice(left, 1);
+          if (left < at) at -= 1;
+          host.changed();
+          return true;
+        }
+        settle(null);
+        return true;
+      },
+
+      // ...or to a workspace of its own, made for it. Not for the only window
+      // in a workspace: that would only trade one workspace for another.
+      moveToNew(c) {
+        if (spaces.length >= limits.workspaces || host.containers.length < 2) return false;
+        if (!host.containers.includes(c)) return false;
+        spaces.push(blank());
+        return api.moveTo(c, spaces.length - 1);
+      },
+
       // Every window, in every workspace, in front or not.
       everyWindow() {
         return spaces.flatMap((_s, i) => windowsOf(i));

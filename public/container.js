@@ -574,7 +574,8 @@
           page.setDragging(null);
           if (onEnd) onEnd();
           page.save();
-          term.focus();
+          // Not a window carried off to another workspace: the keys stay here.
+          if (!el.hasAttribute('data-away')) term.focus();
         };
 
         target.addEventListener('pointermove', move);
@@ -586,11 +587,15 @@
     // --- moving, with snapping ---
 
     let drop = null; // where it would land if you let go right now
+    let held = null; // where it was when this drag began, in case it's carried off
+    let pointer = null; // the last place the pointer was seen
 
     gesture(
       deck,
       (e) => Boolean(e.target.closest('.card-head')) && !e.target.isContentEditable,
       (dx, dy, from, ev) => {
+        if (!held) held = { ...box };
+        pointer = { x: ev.clientX, y: ev.clientY };
         let r = { x: from.x + dx, y: from.y + dy + CARD_TOP, w: from.w, h: from.h - CARD_TOP };
 
         // Dragging a snapped window off its edge gives it its old size back,
@@ -602,6 +607,15 @@
           r.x = ev.clientX - grab * r.w;
           Object.assign(from, { x: r.x - dx, y: r.y - dy - CARD_TOP, w: r.w, h: r.h + CARD_TOP });
           unsnapped = null;
+        }
+
+        // Held against the left edge, the workspaces panel comes out, and while
+        // it's out the pointer is aiming at a workspace, not a screen edge.
+        if (page.carryMove && page.carryMove(self, ev.clientX, ev.clientY)) {
+          drop = null;
+          page.preview(null, null);
+          setVisible(r);
+          return;
         }
 
         // A screen edge wins over a split: the outer 26px of the display is a
@@ -617,6 +631,22 @@
       },
       () => {
         page.preview(null, null);
+        const start = held;
+        held = null;
+        // Dropped on a workspace — or let go in the panel, which is a change
+        // of mind. Either way it goes back to where it sat before the drag:
+        // there, if it's staying, or in the workspace it's carried to.
+        const carried = pointer && page.carryDrop ? page.carryDrop(self, pointer.x, pointer.y) : null;
+        pointer = null;
+        if (carried) {
+          drop = null;
+          if (start) {
+            Object.assign(box, start);
+            applyBox();
+          }
+          carried();
+          return;
+        }
         if (!drop) return;
         // The window being split moves first, so that its old rectangle is
         // still what the guides saw while you were aiming.

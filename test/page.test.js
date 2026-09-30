@@ -524,6 +524,85 @@ test('full screen asks for Esc, so vim keeps it', { skip }, async () => {
   }
 });
 
+// Hold a window you're dragging against the left edge, and the workspaces
+// panel comes out for it: drop it on one and it moves there, shell and all.
+test('a window can be carried to another workspace', { skip }, async () => {
+  const W = 'HEROTERM_SPACES';
+  const mouse = (type, x, y) =>
+    page.cmd('Input.dispatchMouseEvent', { type, x, y, button: 'left', buttons: type === 'mouseReleased' ? 0 : 1, clickCount: 1 });
+  const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+  const barOf = (name) =>
+    page.ev(`(d => (r => ({ x: r.x + r.width / 2, y: r.y + r.height / 2 }))(d.querySelector('.card[data-front] .card-head').getBoundingClientRect()))(
+      [...document.querySelectorAll('.deck:not([data-away])')].find(d => d.querySelector('.card[data-front] .name').textContent === '${name}'))`);
+  const boxOf = (name) => page.ev(`(w => w && { x: w.x, y: w.y, w: w.w, h: w.h })(HEROTERM_WINDOWS.snapshot().find(w => w.name === '${name}'))`);
+  const rowAt = (i) => page.ev(`(r => ({ x: r.x + r.width / 2, y: r.y + 14 }))(document.querySelector('#spaces .space[data-index="${i}"]').getBoundingClientRect())`);
+
+  await page.ev(`HEROTERM_WINDOWS.open([
+    { name: 'keep', x: 700, y: 90, w: 520, h: 360 },
+    { name: 'carry', x: 160, y: 120, w: 480, h: 340 },
+  ]), 1`);
+  await page.until(`HEROTERM_WINDOWS.snapshot().length === 2 && ${connected}`);
+  await page.ev(`${W}.add(), ${W}.go(0), 1`);
+  await page.until(`${W}.at === 0 && ${W}.list().length === 2`);
+  const before = await boxOf('carry');
+
+  // A quick drag to the edge still snaps to the left half, as it always has.
+  let at = await barOf('carry');
+  await mouse('mousePressed', at.x, at.y);
+  for (const x of [at.x - 60, 80, 1]) await mouse('mouseMoved', x, at.y);
+  await mouse('mouseReleased', 1, at.y);
+  await page.until(`HEROTERM_WINDOWS.snapshot().find(w => w.name === 'carry').x < 40`, 'the snap');
+  assert.equal(await page.ev('document.getElementById("spaces").hidden'), true, 'the panel came out for a quick drag');
+
+  // Held there, the panel comes out for it — and letting go in the panel but
+  // not on a workspace puts it back.
+  const snapped = await boxOf('carry');
+  at = await barOf('carry');
+  await mouse('mousePressed', at.x, at.y);
+  for (const x of [at.x + 40, 60, 1]) await mouse('mouseMoved', x, at.y);
+  await pause(900);
+  await page.until("document.getElementById('spaces').hasAttribute('data-carrying')", 'the panel, for the held window');
+  await mouse('mouseMoved', 60, 20); // the panel's heading: not a workspace
+  await mouse('mouseReleased', 60, 20);
+  await page.until("document.getElementById('spaces').hidden", 'the panel to go');
+  assert.deepEqual(await boxOf('carry'), snapped, 'a change of mind moved the window');
+  assert.deepEqual(await page.ev(`${W}.list()[0].names`), ['keep', 'carry'], 'a change of mind moved it anyway');
+
+  // Dropped on the other workspace: it goes there, where it sat; you stay.
+  at = await barOf('carry');
+  await mouse('mousePressed', at.x, at.y);
+  for (const x of [at.x + 40, 60, 1]) await mouse('mouseMoved', x, at.y);
+  await pause(900);
+  await page.until("document.getElementById('spaces').hasAttribute('data-carrying')");
+  // Over the workspace it's already in: not somewhere to go.
+  const here = await rowAt(0);
+  await mouse('mouseMoved', here.x, here.y);
+  await page.until(`document.querySelector('#spaces .space[data-index="0"]').hasAttribute('data-nodrop')`, 'its own workspace, greyed');
+  const row = await rowAt(1);
+  await mouse('mouseMoved', row.x, row.y);
+  await page.until(`document.querySelector('#spaces .space[data-index="1"]').hasAttribute('data-drop')`, 'the row to light up');
+  await mouse('mouseReleased', row.x, row.y);
+  await page.until(`${W}.list()[1].names.includes('carry')`, 'the window to move');
+  assert.equal(await page.ev(`${W}.at`), 0, 'went along with it');
+  assert.deepEqual(await page.ev(`${W}.list()[0].names`), ['keep']);
+  assert.deepEqual(await page.ev(`${W}.list()[1].windows.find(w => w.name === 'carry').rect.w`), snapped.w);
+
+  // The last window out takes you with it, and the empty workspace goes.
+  at = await barOf('keep');
+  await mouse('mousePressed', at.x, at.y);
+  for (const x of [at.x - 40, 60, 1]) await mouse('mouseMoved', x, at.y);
+  await pause(900);
+  await page.until("document.getElementById('spaces').hasAttribute('data-carrying')");
+  const other = await rowAt(1);
+  await mouse('mouseMoved', other.x, other.y);
+  await mouse('mouseReleased', other.x, other.y);
+  await page.until(`${W}.list().length === 1`, 'the empty workspace to go');
+  assert.deepEqual((await page.ev(`${W}.list()[0].names`)).sort(), ['Vega', 'carry', 'keep'].sort());
+  // and the shells came too
+  await page.until(connected);
+  assert.ok(before.w > 0);
+});
+
 test('nothing threw along the way', { skip }, () => {
   assert.deepEqual(page.errors, []);
 });
