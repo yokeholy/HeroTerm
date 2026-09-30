@@ -1300,11 +1300,38 @@ window.addEventListener('resize', () => {
 
 const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement || null;
 
+// In full screen, Esc belongs to the browser: it leaves full screen before the
+// page ever sees the key — so vim, less, a Claude Code prompt, anything that
+// wants Esc, loses it. Chromium browsers let a full-screen page ask for Esc
+// back (the Keyboard Lock API): a tap then reaches the terminal, and leaving
+// takes holding Esc, which the browser itself tells you as you go in. Safari
+// and Firefox have no such thing; there Esc still leaves.
+const keyboardLock = navigator.keyboard && typeof navigator.keyboard.lock === 'function' ? navigator.keyboard : null;
+let escLocked = false;
+
+function lockEsc(on) {
+  if (!keyboardLock) return;
+  if (on) {
+    keyboardLock
+      .lock(['Escape'])
+      .then(() => {
+        escLocked = Boolean(fsElement());
+        renderExpand();
+      })
+      .catch(() => {
+        escLocked = false; // refused: Esc leaves, as it always has
+      });
+  } else {
+    keyboardLock.unlock();
+    escLocked = false;
+  }
+}
+
 function renderExpand() {
   const on = Boolean(fsElement());
   els.expand.setAttribute('aria-pressed', String(on));
   els.expand.setAttribute('aria-label', on ? 'Leave full screen' : 'Full screen');
-  els.expand.dataset.tip = on ? 'Leave full screen' : 'Browser full screen';
+  els.expand.dataset.tip = on ? (escLocked ? 'Leave full screen · or hold Esc' : 'Leave full screen') : 'Browser full screen';
 }
 
 if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) {
@@ -1348,6 +1375,7 @@ if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) {
 
   const onFsChange = () => {
     clearTimeout(probe);
+    lockEsc(Boolean(fsElement()));
     renderExpand();
     for (const c of containers) {
       c.applyBox();

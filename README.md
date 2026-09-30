@@ -69,7 +69,7 @@ shells in the same folders.
 | **＋** | new terminal, in the folder you're in |
 | **▦** | arrange every window to fill the screen; press again to put them back |
 | **⊞** | show every window at once — click one to go to it (a buried window's way back) |
-| **⛶** | browser full screen |
+| **⛶** | browser full screen — Esc still reaches vim; hold it to leave |
 | **⚙︎** | settings |
 
 **?** and the stats live top left; the rest, top right. Rest the pointer on any

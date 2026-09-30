@@ -490,6 +490,40 @@ test('feedback opens a filled-in GitHub issue', { skip }, async () => {
   assert.equal(await page.ev("document.getElementById('fb-text').value"), '');
 });
 
+// In full screen the browser takes Esc for itself, which leaves vim with no
+// Esc at all. Where it can, the page asks for it back while full screen lasts.
+test('full screen asks for Esc, so vim keeps it', { skip }, async () => {
+  // Headless Chromium has no navigator.keyboard, and the page looks for it as
+  // it loads — so a stand-in goes in before the page's own scripts, and the
+  // page is loaded again with it.
+  const { result } = await page.cmd('Page.addScriptToEvaluateOnNewDocument', {
+    source: `window.__locks = [];
+      Object.defineProperty(navigator, 'keyboard', { configurable: true, value: {
+        lock: (keys) => { __locks.push(['lock', keys]); return Promise.resolve(); },
+        unlock: () => { __locks.push(['unlock']); },
+      } });`,
+  });
+  try {
+    await page.reload();
+    await page.until(connected);
+    // Clicked as a person would: full screen wants a user gesture.
+    const press = () =>
+      page.cmd('Runtime.evaluate', { expression: "document.getElementById('expand').click()", userGesture: true });
+    await press();
+    await page.until('!!document.fullscreenElement', 'full screen', 5000);
+    await page.until('__locks.length === 1', 'the lock');
+    assert.deepEqual(await page.ev('__locks[0]'), ['lock', ['Escape']]);
+    await page.until("document.getElementById('expand').dataset.tip.includes('hold Esc')", 'the tip to say how to leave');
+
+    await press();
+    await page.until('!document.fullscreenElement', 'leaving full screen');
+    await page.until('__locks.length === 2', 'the unlock');
+    assert.deepEqual(await page.ev('__locks[1]'), ['unlock']);
+  } finally {
+    await page.cmd('Page.removeScriptToEvaluateOnNewDocument', { identifier: result.identifier });
+  }
+});
+
 test('nothing threw along the way', { skip }, () => {
   assert.deepEqual(page.errors, []);
 });

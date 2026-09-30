@@ -102,8 +102,16 @@ Where you put it is remembered.
 The status line along the bottom — connection, deck position, grid size — is
 page furniture too.
 
+**Esc in full screen goes to the terminal**, so vim, `less` and Claude Code
+keep it. Browsers normally take Esc for themselves in full screen and leave
+it; HeroTerm asks for it back (the Keyboard Lock API) for as long as full
+screen lasts. To leave, **hold** Esc — the browser says so as you go in — or
+press the button again. That's Chrome, Brave, Edge and Arc; Safari and Firefox
+have no way to give Esc back, so there a tap still leaves. For those, the
+window's own full screen (the green button, or ⌃⌘F) keeps Esc for the page.
+
 Full screen is driven by the `fullscreenchange` event rather than the promise
-`requestFullscreen()` returns, because pressing Esc to leave only produces the
+`requestFullscreen()` returns, because leaving by Esc only produces the
 event — and because there are embedded browsers that accept the call and then
 never settle the promise at all. If the browser won't do it, the button retires
 itself rather than sitting there looking live.
