@@ -100,8 +100,8 @@ let WS = null;
 // Stacking order, in one place because the numbers only make sense together:
 //
 //    10  a window
-//    15  the fire around a working window   (fire.js: shows only past its edges)
 //    20  the focused window
+//    25  the fire around it                 (fire.js: burns a band into it, no further)
 //    30  the snap and split outlines   (over the window you're aiming at)
 //    40  the status bar
 //    50  the help button and controls

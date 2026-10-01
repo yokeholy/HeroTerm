@@ -32,6 +32,11 @@
   const BOTTOM_SHARE = 2; // its flames, as a multiple of its length's share
   const BOTTOM_DEPTH = 30; // px below the edge a flame there can be born
   const BOTTOM_BED = 2.2; // its bed, as a multiple of BED
+  // How far the fire burns into the window, past its edge: flames are drawn
+  // over the window, and then everything further in than this is wiped away
+  // again, fading over the band — so they lick over the frame but never reach
+  // the middle of the terminal.
+  const INTO = 30; // px
   const SEG = 18; // px of edge per flicker of the bed
   const SPARKS = 0.025; // the share of flames that are sparks instead
   const IGNITE = 0.45; // seconds from nothing to full fire
@@ -140,7 +145,9 @@
     let x;
     let y;
     let vx;
-    const out = 3; // just past the edge, so a flame is born where it shows
+    // Somewhere from a little inside the edge to just past it: the ones born
+    // inside are the fire burning through the window's frame.
+    const out = rand(-INTO * 0.6, 3);
     if ((d -= r.w) < 0) {
       x = r.x + Math.random() * r.w;
       y = r.y - out;
@@ -217,6 +224,50 @@
     side(r.x, r.y + r.h, r.x + r.w, r.y + r.h, 0, 1, BED * BOTTOM_BED, 50); // bottom: the base
     side(r.x, r.y, r.x, r.y + r.h, -1, 0, BED, 100); // left: outward
     side(r.x + r.w, r.y, r.x + r.w, r.y + r.h, 1, 0, BED, 200); // right: outward
+    // ...and a shallower one inward, the edge burning into the window.
+    side(r.x, r.y, r.x + r.w, r.y, 0, 1, INTO * 0.45, 300);
+    side(r.x, r.y + r.h, r.x + r.w, r.y + r.h, 0, -1, INTO * 0.6, 350);
+    side(r.x, r.y, r.x, r.y + r.h, 1, 0, INTO * 0.4, 400);
+    side(r.x + r.w, r.y, r.x + r.w, r.y + r.h, -1, 0, INTO * 0.4, 450);
+  }
+
+  // Wipe away whatever was drawn deeper into the window than INTO, fading in
+  // over the band, so the fire burns over the frame and no further. Gradient
+  // strips rather than a blurred shape, so it works in every browser.
+  function burnInto(r) {
+    g.globalCompositeOperation = 'destination-out';
+    g.globalAlpha = 1;
+    const ix = r.x + INTO;
+    const iy = r.y + INTO;
+    const iw = Math.max(0, r.w - 2 * INTO);
+    const ih = Math.max(0, r.h - 2 * INTO);
+    g.fillStyle = '#000';
+    g.fillRect(ix, iy, iw, ih);
+    const strip = (x, y, sw, sh, x0, y0, x1, y1) => {
+      const grad = g.createLinearGradient(x0, y0, x1, y1);
+      grad.addColorStop(0, 'rgba(0,0,0,0)');
+      grad.addColorStop(1, 'rgba(0,0,0,1)');
+      g.fillStyle = grad;
+      g.fillRect(x, y, sw, sh);
+    };
+    strip(ix, r.y, iw, INTO, 0, r.y, 0, iy); // top band
+    strip(ix, iy + ih, iw, INTO, 0, r.y + r.h, 0, iy + ih); // bottom band
+    strip(r.x, iy, INTO, ih, r.x, 0, ix, 0); // left band
+    strip(ix + iw, iy, INTO, ih, r.x + r.w, 0, ix + iw, 0); // right band
+    // The corners, which no strip reaches: faded from the inner corner out.
+    for (const [cx, cy, qx, qy] of [
+      [ix, iy, r.x, r.y],
+      [ix + iw, iy, ix + iw, r.y],
+      [ix, iy + ih, r.x, iy + ih],
+      [ix + iw, iy + ih, ix + iw, iy + ih],
+    ]) {
+      const grad = g.createRadialGradient(cx, cy, 0, cx, cy, INTO);
+      grad.addColorStop(0, 'rgba(0,0,0,1)');
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = grad;
+      g.fillRect(qx, qy, INTO, INTO);
+    }
+    g.globalCompositeOperation = light ? 'source-over' : 'lighter';
   }
 
   function frame(now) {
@@ -273,6 +324,7 @@
     }
     flames = live;
     g.globalAlpha = 1;
+    if (r) burnInto(r);
 
     if (flames.length || want || feed > 0) raf = requestAnimationFrame(frame);
     else {

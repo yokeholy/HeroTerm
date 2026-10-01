@@ -141,9 +141,11 @@ every busy window would be a wall of it, and the workspaces panel already
 says where else things are running — and quiet commands never do. Turning it
 on shows you for two seconds on the window beside the sheet.
 
-The flames are drawn on a canvas of their own, *behind* the window, so they
-show only where they reach past its edges and never over what's in it
-(`public/fire.js`). On a dark theme they're added together, which is what
+The flames are drawn on a canvas of their own, over the window, and then
+wiped away again from everything more than about 30px inside its edges — so
+the fire burns into the frame, fading as it goes, but never reaches the middle
+of the terminal (`public/fire.js`). The first and last rows sit in that band,
+and can be partly behind flames while a command runs. On a dark theme they're added together, which is what
 makes the heart of a fire burn bright; on Vellum that would only bleach the
 paper, so there they're deeper and drawn as they are. With "reduce motion"
 set in your system, there are no flames, only a steady glow. Nothing is drawn
