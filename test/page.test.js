@@ -667,9 +667,15 @@ test('the Effects tab previews the effects, and its sliders stick', { skip }, as
   await slide('set-warp-speed', 250);
   await slide('set-fire-size', 180);
 
-  // Another tab: the preview ends.
+  // Another tab: the preview ends, and the window gets its full room back.
+  const width = "document.querySelector('.deck[data-preview] .card[data-front]').getBoundingClientRect().width";
+  await new Promise((r) => setTimeout(r, 600)); // let it glide there
+  const small = await page.ev(width);
   await page.ev("HEROTERM_SETTINGS.open('behavior'), 1");
   await page.until(`!${burning} && !${flying}`, 'the preview to end');
+  await new Promise((r) => setTimeout(r, 600));
+  const full = await page.ev(width);
+  assert.ok(Math.abs(small / full - 0.75) < 0.03, `the window was ${Math.round((small / full) * 100)}% on the Effects tab`);
   await page.ev('HEROTERM_SETTINGS.close(), 1');
 
   await page.reload();

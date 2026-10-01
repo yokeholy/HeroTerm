@@ -682,7 +682,9 @@
   // greyed: it still works, for when you turn the effect back on.
   let previewing = false;
   function previewEffects(on = previewing) {
+    const changed = previewing !== on;
     previewing = on;
+    if (changed && !panel.hidden) place(); // smaller for the effects, and back
     const stars = on && Boolean(valueOf('warp'));
     const fire = on && Boolean(valueOf('fire'));
     if (window.HEROTERM_SKY && window.HEROTERM_SKY.hold) window.HEROTERM_SKY.hold(stars);
@@ -911,6 +913,7 @@
   const GAP = 24;
   const TOP = 56; // matches #settings's top padding, so the two line up
   const MIN_ROOM = 300; // below this there's no window worth showing
+  const EFFECTS_SCALE = 0.75; // the window's share of its room on the Effects tab
 
   function place() {
     const W = window.HEROTERM_WINDOWS;
@@ -929,7 +932,19 @@
     // left, sharing its top and bottom edges. The status bar it covers along
     // the bottom is under the veil while the sheet is open anyway.
     panel.setAttribute('data-preview', '');
-    W.preview({ x: MARGIN, y: TOP, w: room, h: window.innerHeight - TOP - MARGIN });
+    const r = { x: MARGIN, y: TOP, w: room, h: window.innerHeight - TOP - MARGIN };
+    // On the Effects tab the window is the stage, not the subject: smaller,
+    // in the middle of its room, so the stars and the fire have space around
+    // it to be seen in.
+    if (previewing) {
+      const w = Math.round(r.w * EFFECTS_SCALE);
+      const h = Math.round(r.h * EFFECTS_SCALE);
+      r.x += Math.round((r.w - w) / 2);
+      r.y += Math.round((r.h - h) / 2);
+      r.w = w;
+      r.h = h;
+    }
+    W.preview(r);
   }
 
   window.addEventListener('resize', place);

@@ -126,7 +126,8 @@ and which sounds are on, and the switches drive that rather than keeping a
 second copy — two stores for one fact is how they come to disagree.
 
 **The Effects tab previews what it sets.** While it's open, the window
-beside the sheet burns and the stars fly from it — running or not — with the
+beside the sheet shrinks to three quarters of its room, so there's sky around
+it to watch, and it burns and the stars fly from it — running or not — with the
 dimming behind the sheet lifted, so every switch and slider changes something
 you can see as you change it. Leave the tab, or close the sheet, and both go
 back to following what's actually running.
