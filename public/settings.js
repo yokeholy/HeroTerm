@@ -30,6 +30,15 @@
         if (window.HEROTERM_WINDOWS && window.HEROTERM_WINDOWS.refire) window.HEROTERM_WINDOWS.refire();
       },
     },
+    // How fast the stars fly, and how big the fire is: percent of the usual.
+    warpSpeed: {
+      fallback: () => 100,
+      apply: (v) => window.HEROTERM_SKY && window.HEROTERM_SKY.setSpeed && window.HEROTERM_SKY.setSpeed(v),
+    },
+    fireSize: {
+      fallback: () => 100,
+      apply: (v) => window.HEROTERM_FIRE && window.HEROTERM_FIRE.setSize(v),
+    },
     // Commands to neither hear nor watch: one pattern a line, matched against
     // the command as typed. A dev server is the case it's for — it runs all
     // day, and a sky that flies all day stops meaning anything.
@@ -660,10 +669,28 @@
       saved.fire = on ? 1 : 0;
       save();
       OPTIONS.fire.apply(on);
-      // so you see what you just turned on, on the window beside the sheet
-      if (on && window.HEROTERM_WINDOWS && window.HEROTERM_WINDOWS.fireDemo) window.HEROTERM_WINDOWS.fireDemo(2000);
+      previewEffects(); // on this tab, it's showing — or now it isn't
     }
   );
+
+  bind('warpSpeed', document.getElementById('set-warp-speed'), document.getElementById('set-warp-speed-num'), document.getElementById('set-warp-speed-reset'));
+  bind('fireSize', document.getElementById('set-fire-size'), document.getElementById('set-fire-size-num'), document.getElementById('set-fire-size-reset'));
+
+  // While the Effects tab is open, both effects are on show on the window
+  // beside the sheet — whatever is running — so a switch or a slider changes
+  // something you can see, as you change it. A slider whose effect is off is
+  // greyed: it still works, for when you turn the effect back on.
+  let previewing = false;
+  function previewEffects(on = previewing) {
+    previewing = on;
+    const stars = on && Boolean(valueOf('warp'));
+    const fire = on && Boolean(valueOf('fire'));
+    if (window.HEROTERM_SKY && window.HEROTERM_SKY.hold) window.HEROTERM_SKY.hold(stars);
+    document.body.toggleAttribute('data-effects-preview', on);
+    if (window.HEROTERM_WINDOWS && window.HEROTERM_WINDOWS.previewFire) window.HEROTERM_WINDOWS.previewFire(fire);
+    document.getElementById('set-warp-speed').closest('.setting').toggleAttribute('data-off', !valueOf('warp'));
+    document.getElementById('set-fire-size').closest('.setting').toggleAttribute('data-off', !valueOf('fire'));
+  }
 
   // This one has no other owner, so it is stored here like the slider.
   bindSwitch(
@@ -673,7 +700,7 @@
       saved.warp = on ? 1 : 0;
       save();
       OPTIONS.warp.apply(on);
-      if (on) window.HEROTERM_SKY.demo(2000); // so you see what you just turned on
+      previewEffects(); // on this tab, it's showing — or now it isn't
     }
   );
 
@@ -827,6 +854,7 @@
       }
       if (opener) opener.focus();
       opener = null;
+      previewEffects(page === 'effects');
       if (page === 'system') {
         loadSystem();
         if (window.HEROTERM_UPDATES) window.HEROTERM_UPDATES.refresh();
@@ -919,6 +947,7 @@
 
   function close() {
     tuning(false);
+    previewEffects(false);
     panel.hidden = true;
     panel.removeAttribute('data-preview');
     openBtn.setAttribute('aria-expanded', 'false');

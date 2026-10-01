@@ -505,11 +505,20 @@
               <label for="set-warp">Flying stars</label>
               <p class="hint">
                 The rush outward while a command runs, from the middle of whatever
-                is working. Off leaves the sky where it is, still breathing;
-                turning it on shows you for two seconds.
+                is working. Off leaves the sky where it is, still breathing. While
+                this tab is open, it's showing on the window beside it.
               </p>
             </div>
             <input id="set-warp" class="switch" type="checkbox" />
+          </div>
+          <div class="setting sub">
+            <label for="set-warp-speed">Flying speed</label>
+            <div class="row">
+              <input id="set-warp-speed" type="range" min="20" max="300" step="5" />
+              <input id="set-warp-speed-num" type="number" min="20" max="300" step="5" aria-label="Flying speed, percent" />
+              <span class="unit">%</span>
+              <button id="set-warp-speed-reset" class="reset" type="button" data-tip="Back to 100%">Reset</button>
+            </div>
           </div>
 
           <div class="setting toggle">
@@ -518,10 +527,19 @@
               <p class="hint">
                 While a command runs in the window you're in, its edges catch
                 fire, and die down when it's done. Quiet commands don't burn.
-                Turning it on shows you for two seconds.
+                While this tab is open, it's burning on the window beside it.
               </p>
             </div>
             <input id="set-fire" class="switch" type="checkbox" />
+          </div>
+          <div class="setting sub">
+            <label for="set-fire-size">Fire size</label>
+            <div class="row">
+              <input id="set-fire-size" type="range" min="40" max="250" step="5" />
+              <input id="set-fire-size-num" type="number" min="40" max="250" step="5" aria-label="Fire size, percent" />
+              <span class="unit">%</span>
+              <button id="set-fire-size-reset" class="reset" type="button" data-tip="Back to 100%">Reset</button>
+            </div>
           </div>
         </div>
 

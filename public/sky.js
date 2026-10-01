@@ -224,9 +224,29 @@
   let warpAllowed = true;
   let flying = false; // a demo is under way
 
+  let pace = 1; // Settings → Effects → Flying speed, as a multiple
+  let holding = false; // the Effects tab is open: fly until it closes
+
   function aim() {
-    target = (wantWarp && warpAllowed) || flying ? WARP : 0;
+    target = (wantWarp && warpAllowed) || flying || holding ? WARP * pace : 0;
   }
+
+  // How fast they fly, in percent of the usual; 100 is as designed.
+  window.HEROTERM_SKY.setSpeed = (pct) => {
+    pace = Math.max(0.2, Math.min(4, (Number(pct) || 100) / 100));
+    aim();
+  };
+
+  // Fly for as long as asked, whatever is running — the Effects tab shows
+  // what it's setting, and its sliders change it as you watch. Like a demo,
+  // `data-sky-demo` is on the body meanwhile, for the settings veil to lift.
+  window.HEROTERM_SKY.hold = (on) => {
+    holding = Boolean(on);
+    demoing = holding || flying;
+    sync();
+    aim();
+    document.body.toggleAttribute('data-sky-demo', holding || flying);
+  };
 
   // Driven by whether *anything* is running rather than by one container's
   // events, so a build in a terminal you aren't looking at still moves the sky.

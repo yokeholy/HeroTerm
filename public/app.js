@@ -840,6 +840,11 @@ window.addEventListener('resize', () => {
 // to answer for the current frame: commands start and stop, and a window can
 // be dragged or resized while its command runs.
 function runningCentre() {
+  // The Effects tab is showing the stars on the window beside the sheet.
+  if (document.body.hasAttribute('data-effects-preview') && focused) {
+    const r = onScreen(focused);
+    return { x: r.x + r.w / 2, y: r.y + r.h / 2 };
+  }
   const a = workArea();
   let x = 0;
   let y = 0;
@@ -919,15 +924,31 @@ const rect = (x, y, w, h) => ({
 // a wall of it, and the panel already says where else things are running. Not
 // while the overview has the windows shrunk to pictures, nor for one in the
 // tray, nor while Settings → Effects says no.
+//
+// The Effects tab borrows it (firePreview): the window beside the sheet burns
+// for as long as the tab is open, running or not, so the switch and the size
+// slider change something you can see.
+let firePreview = false;
+
+// Where a window is on screen right now. Not its box: the window shown
+// beside Settings is drawn somewhere else for the while, and the fire has to
+// be around what you see.
+function onScreen(c) {
+  const card = c.el.querySelector('.card[data-front]');
+  if (!card) return c.visibleRect();
+  const r = card.getBoundingClientRect();
+  return { x: r.x, y: r.y, w: r.width, h: r.height };
+}
+
 function refire() {
   const fire = window.HEROTERM_FIRE;
   if (!fire) return;
   const on = !window.HEROTERM_SETTINGS || Boolean(window.HEROTERM_SETTINGS.get('fire'));
   const c = focused;
-  const burning =
-    on && c && containers.includes(c) && c.session.running && !c.minimized && !overviewing ? c : null;
+  const live = c && containers.includes(c) && !c.minimized && !overviewing;
+  const burning = on && live && (c.session.running || firePreview) ? c : null;
   for (const other of containers) other.el.toggleAttribute('data-burning', other === burning);
-  fire.burn(burning ? () => burning.visibleRect() : null);
+  fire.burn(burning ? () => onScreen(burning) : null);
 }
 
 // Carrying a window to another workspace. The left edge already means "the
@@ -1200,15 +1221,12 @@ let previewed = null;
 window.HEROTERM_WINDOWS = {
   limits: { windows: MAX_CONTAINERS }, // for settings' System tab
 
-  // For the Burning edges setting: put the fire where it belongs now, and
-  // show it for a moment on the window you're in.
+  // For the Effects tab: put the fire where it belongs now, and burn the
+  // window beside the sheet for as long as the tab is open.
   refire,
-  fireDemo(ms) {
-    const c = focused;
-    if (!c || !window.HEROTERM_FIRE) return;
-    c.el.toggleAttribute('data-burning', true);
-    window.HEROTERM_FIRE.demo(ms, () => c.visibleRect());
-    setTimeout(refire, ms + 50);
+  previewFire(on) {
+    firePreview = Boolean(on);
+    refire();
   },
 
   // A new window, named, in front, with a command typed into it once its

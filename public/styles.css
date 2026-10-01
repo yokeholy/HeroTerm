@@ -974,6 +974,12 @@ body[data-overview] .deck:hover .card[data-front] {
   pointer-events: none;
 }
 
+/* The Effects tab is showing it on the window beside the sheet, which sits
+   over the sheet's veil (101): so the fire must too. */
+body[data-effects-preview] #fire {
+  z-index: 102;
+}
+
 .deck[data-burning] .card[data-front] {
   --glow: #ff7a2a;
   border-color: #ff9a3c;
@@ -1767,6 +1773,15 @@ body[data-tuning] .deck[data-preview] {
 
 #settings .setting + .setting {
   margin-top: 24px;
+}
+
+/* A slider that belongs to the switch above it: tucked under it. */
+#settings .setting + .setting.sub {
+  margin-top: 10px;
+}
+
+#settings .setting.sub[data-off] {
+  opacity: 0.45;
 }
 
 #settings .toggle {

@@ -646,6 +646,42 @@ test('a running window catches fire, and goes out when it is done', { skip }, as
   assert.equal(await page.ev(burning), false, 'a quiet command burned');
 });
 
+// The Effects tab shows both effects on the window beside it while it's open,
+// with nothing running, and its sliders are remembered.
+test('the Effects tab previews the effects, and its sliders stick', { skip }, async () => {
+  const burning = "!!document.querySelector('.deck[data-burning]')";
+  const flying = "document.body.hasAttribute('data-sky-demo')";
+  assert.equal(await page.ev(burning), false, 'burning with nothing running');
+
+  await page.ev("HEROTERM_SETTINGS.open('effects'), 1");
+  await page.until(`${burning} && ${flying}`, 'both effects on show');
+
+  // Turning one off takes it out of the preview at once; back on, it's back.
+  await page.ev("document.getElementById('set-fire').click(), 1");
+  await page.until(`!${burning}`, 'the fire to go');
+  assert.ok(await page.ev("document.getElementById('set-fire-size').closest('.setting').hasAttribute('data-off')"), 'its slider still looks live');
+  await page.ev("document.getElementById('set-fire').click(), 1");
+  await page.until(burning, 'the fire back');
+
+  const slide = (id, v) => page.ev(`(s => { s.value = ${v}; s.dispatchEvent(new Event('input')); })(document.getElementById('${id}')), 1`);
+  await slide('set-warp-speed', 250);
+  await slide('set-fire-size', 180);
+
+  // Another tab: the preview ends.
+  await page.ev("HEROTERM_SETTINGS.open('behavior'), 1");
+  await page.until(`!${burning} && !${flying}`, 'the preview to end');
+  await page.ev('HEROTERM_SETTINGS.close(), 1');
+
+  await page.reload();
+  await page.until(connected);
+  const kept = await page.ev("JSON.parse(localStorage.getItem('heroterm.settings'))");
+  assert.equal(kept.warpSpeed, 250);
+  assert.equal(kept.fireSize, 180);
+  assert.equal(await page.ev("(HEROTERM_SETTINGS.open('effects'), document.getElementById('set-fire-size-num').value)"), '180');
+  await page.ev('HEROTERM_SETTINGS.close(), 1');
+  await page.until(`!${burning}`, 'closing the sheet to end the preview');
+});
+
 test('nothing threw along the way', { skip }, () => {
   assert.deepEqual(page.errors, []);
 });

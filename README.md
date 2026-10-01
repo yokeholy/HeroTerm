@@ -134,7 +134,7 @@ still running, and three columns](https://raw.githubusercontent.com/yokeholy/Her
 - 🔤 **Any installed font**, with terminal and interface sizes set separately
 - 👻 **Fade** the windows you're not using
 - 🔊 **Sound** on/off, per sound, with a volume slider and three voices each
-- ✨ **Flying stars** and 🔥 **burning edges**, each on/off
+- ✨ **Flying stars** and 🔥 **burning edges**, each on/off, with flying speed and fire size — previewed live while the Effects tab is open
 - 🤫 **Quiet commands** — a dev server shouldn't ring and fly the stars all day
 - 📋 **Copy what you select**, iTerm style — ⌘C still works too
 - 🛑 **Confirm before closing** a window: never, while something runs, or always

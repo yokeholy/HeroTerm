@@ -47,6 +47,7 @@
   let h = 0;
   let dpr = 1;
   let target = null; // a function giving the rectangle to burn around, or null
+  let scale = 1; // Settings → Effects → Fire size, as a multiple
   let feed = 0; // 0..1, how hard the fire is being fed — eases to `want`
   let want = 0;
   let allowed = true;
@@ -158,7 +159,7 @@
       vx = rand(18, 48); // flaring out from the side, not stacking up its length
     } else if ((d -= r.w * BOTTOM_SHARE) < 0) {
       x = r.x + Math.random() * r.w;
-      y = r.y + r.h + out + Math.random() * BOTTOM_DEPTH;
+      y = r.y + r.h + out + Math.random() * BOTTOM_DEPTH * scale;
       vx = rand(-10, 10);
     } else {
       x = r.x - out;
@@ -169,7 +170,7 @@
       return { x, y, vx: vx * 1.5 + rand(-20, 20), vy: -rand(110, 200), age: 0, life: rand(0.6, 1.3), size: rand(1.2, 2.4), seed: Math.random() * 6.28, spark: true };
     }
     const life = rand(LIFE[0], LIFE[1]);
-    return { x, y, vx, vy: -rand(RISE[0], RISE[1]), age: 0, life, size: rand(SIZE[0], SIZE[1]), seed: Math.random() * 6.28 };
+    return { x, y, vx, vy: -rand(RISE[0], RISE[1]) * scale, age: 0, life, size: rand(SIZE[0], SIZE[1]) * scale, seed: Math.random() * 6.28 };
   }
 
   // The bed of the fire: a band of glow hugging the edge, so the edge itself
@@ -220,10 +221,11 @@
       g.fill();
     };
 
-    side(r.x, r.y, r.x + r.w, r.y, 0, -1, BED, 0); // top: up
-    side(r.x, r.y + r.h, r.x + r.w, r.y + r.h, 0, 1, BED * BOTTOM_BED, 50); // bottom: the base
-    side(r.x, r.y, r.x, r.y + r.h, -1, 0, BED, 100); // left: outward
-    side(r.x + r.w, r.y, r.x + r.w, r.y + r.h, 1, 0, BED, 200); // right: outward
+    const bed = BED * scale;
+    side(r.x, r.y, r.x + r.w, r.y, 0, -1, bed, 0); // top: up
+    side(r.x, r.y + r.h, r.x + r.w, r.y + r.h, 0, 1, bed * BOTTOM_BED, 50); // bottom: the base
+    side(r.x, r.y, r.x, r.y + r.h, -1, 0, bed, 100); // left: outward
+    side(r.x + r.w, r.y, r.x + r.w, r.y + r.h, 1, 0, bed, 200); // right: outward
     // ...and a shallower one inward, the edge burning into the window.
     side(r.x, r.y, r.x + r.w, r.y, 0, 1, INTO * 0.45, 300);
     side(r.x, r.y + r.h, r.x + r.w, r.y + r.h, 0, -1, INTO * 0.6, 350);
@@ -282,7 +284,9 @@
 
     // Fed in proportion to the edge, and to how far the fire has caught.
     if (r && feed > 0.01) {
-      owed += (r.w * (1 + BOTTOM_SHARE) + 2 * r.h) * PER_PX * feed * dt;
+      // Bigger flames cover more each, so fewer are born: the fire grows
+      // taller and wider without piling up into a white-hot smear.
+      owed += ((r.w * (1 + BOTTOM_SHARE) + 2 * r.h) * PER_PX * feed * dt) / Math.max(1, scale) ** 1.2;
       while (owed >= 1 && flames.length < MAX) {
         flames.push(spawn(r));
         owed -= 1;
@@ -317,7 +321,7 @@
         const half = f.size * (1 - t * 0.6);
         const tall = half * (3.2 + t * 1.8);
         const sprite = sprites[Math.min(sprites.length - 1, Math.floor(t * t * sprites.length * 1.6))];
-        g.globalAlpha = fade * (light ? 0.34 : 0.36);
+        g.globalAlpha = (fade * (light ? 0.34 : 0.36)) / Math.sqrt(Math.max(1, scale));
         g.drawImage(sprite, f.x - half, f.y - tall * 0.75, half * 2, tall);
       }
       live.push(f);
@@ -325,6 +329,15 @@
     flames = live;
     g.globalAlpha = 1;
     if (r) burnInto(r);
+    // While Settings shows it off, the fire is drawn over the sheet's veil —
+    // and so over the sheet, where it has no business: cut that out.
+    if (document.body.hasAttribute('data-effects-preview')) {
+      const sheet = document.querySelector('#settings .sheet');
+      if (sheet) {
+        const q = sheet.getBoundingClientRect();
+        g.clearRect(q.x, q.y, q.width, q.height);
+      }
+    }
 
     if (flames.length || want || feed > 0) raf = requestAnimationFrame(frame);
     else {
@@ -359,17 +372,15 @@
       wake();
     },
 
-    // Two seconds of it, to show what turning it on does.
-    demo(ms, getRect) {
-      const before = target;
-      this.burn(getRect);
-      setTimeout(() => {
-        if (target === getRect) this.burn(before);
-      }, ms);
-    },
-
     retheme() {
       readTheme();
+    },
+
+    // How big the fire is, in percent of the usual; 100 is as designed. The
+    // band burnt into the window stays the same, so a bigger fire is taller,
+    // not deeper into the terminal.
+    setSize(pct) {
+      scale = Math.max(0.3, Math.min(3, (Number(pct) || 100) / 100));
     },
   };
 
