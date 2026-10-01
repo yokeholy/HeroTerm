@@ -21,6 +21,15 @@
       fallback: () => 1,
       apply: (v) => window.HEROTERM_SKY.allowWarp(Boolean(v)),
     },
+    // The edges of a working window catch fire. fire.js; the page tells it
+    // which window, and this says whether it may.
+    fire: {
+      fallback: () => 1,
+      apply: (v) => {
+        if (window.HEROTERM_FIRE) window.HEROTERM_FIRE.allow(Boolean(v));
+        if (window.HEROTERM_WINDOWS && window.HEROTERM_WINDOWS.refire) window.HEROTERM_WINDOWS.refire();
+      },
+    },
     // Commands to neither hear nor watch: one pattern a line, matched against
     // the command as typed. A dev server is the case it's for — it runs all
     // day, and a sky that flies all day stops meaning anything.
@@ -641,6 +650,18 @@
       saved.updateCheck = on ? 1 : 0;
       save();
       OPTIONS.updateCheck.apply(on);
+    }
+  );
+
+  bindSwitch(
+    document.getElementById('set-fire'),
+    () => Boolean(valueOf('fire')),
+    (on) => {
+      saved.fire = on ? 1 : 0;
+      save();
+      OPTIONS.fire.apply(on);
+      // so you see what you just turned on, on the window beside the sheet
+      if (on && window.HEROTERM_WINDOWS && window.HEROTERM_WINDOWS.fireDemo) window.HEROTERM_WINDOWS.fireDemo(2000);
     }
   );
 

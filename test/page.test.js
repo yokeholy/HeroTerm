@@ -603,6 +603,49 @@ test('a window can be carried to another workspace', { skip }, async () => {
   assert.ok(before.w > 0);
 });
 
+// The window you're in burns while a command runs in it, and only then.
+test('a running window catches fire, and goes out when it is done', { skip }, async () => {
+  const burning = "!!document.querySelector('.deck[data-burning]')";
+  // How much fire is drawn just above the window's top edge, sampled across it.
+  const heat = `(() => {
+    const c = document.getElementById('fire');
+    const d = [...document.querySelectorAll('.deck:not([data-away])')].find(x => x.hasAttribute('data-focused'));
+    const r = d.querySelector('.card[data-front]').getBoundingClientRect();
+    const k = c.width / innerWidth;
+    const px = c.getContext('2d').getImageData(Math.round(r.x * k), Math.round((r.y - 12) * k), Math.round(r.width * k), 1).data;
+    let lit = 0;
+    for (let i = 3; i < px.length; i += 4) if (px[i] > 20) lit += 1;
+    return lit;
+  })()`;
+
+  await page.ev(`HEROTERM_WINDOWS.open([{ name: 'build', x: 300, y: 200, w: 640, h: 380 }]), 1`);
+  await page.until(`HEROTERM_WINDOWS.snapshot().length === 1 && ${connected}`);
+  await page.focusWindow();
+  await page.type('sleep 3');
+  await page.until(burning, 'the window to catch');
+  await page.until(`${heat} > 40`, 'flames above its edge', 5000);
+
+  // Off in Settings: out at once.
+  await page.ev("HEROTERM_SETTINGS.open('effects'), document.getElementById('set-fire').click(), 1");
+  await page.until(`!${burning}`, 'the fire to go out when turned off');
+  await page.ev("document.getElementById('set-fire').click(), HEROTERM_SETTINGS.close(), 1");
+  await page.until(burning, 'and to catch again when turned back on');
+
+  // Done: it dies down by itself.
+  await page.until(`!${burning}`, 'the fire to stop being fed', 8000);
+  await page.until(`${heat} === 0`, 'the last flames to die', 4000);
+
+  // A quiet command never burns.
+  await page.ev(`localStorage.setItem('heroterm.settings', JSON.stringify({ hush: 'sleep' })), 1`);
+  await page.reload();
+  await page.until(connected);
+  await page.focusWindow();
+  await page.type('sleep 2');
+  await page.until(`${here}.querySelector('.card[data-front] .cmd').textContent === 'sleep 2'`, 'the quiet command');
+  await new Promise((r) => setTimeout(r, 600));
+  assert.equal(await page.ev(burning), false, 'a quiet command burned');
+});
+
 test('nothing threw along the way', { skip }, () => {
   assert.deepEqual(page.errors, []);
 });

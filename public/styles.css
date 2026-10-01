@@ -962,6 +962,43 @@ body[data-overview] .deck:hover .card[data-front] {
   border-color: var(--red, #d4736b);
 }
 
+/* Burning (fire.js): the flames are on their own canvas, under the focused
+   window and over the rest — so they show only past its edges — and the
+   window itself glows with them, flickering as firelight does. */
+#fire {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 15; /* see the stacking order in app.js */
+  pointer-events: none;
+}
+
+.deck[data-burning] .card[data-front] {
+  --glow: #ff7a2a;
+  border-color: #ff9a3c;
+  animation: burning 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes burning {
+  0% {
+    box-shadow: 0 0 14px 0 rgba(255, 110, 30, 0.45), 0 24px 70px var(--shadow, rgba(0, 0, 0, 0.7));
+  }
+  45% {
+    box-shadow: 0 0 26px 3px rgba(255, 150, 40, 0.6), 0 24px 70px var(--shadow, rgba(0, 0, 0, 0.7));
+  }
+  100% {
+    box-shadow: 0 0 18px 1px rgba(255, 90, 20, 0.5), 0 24px 70px var(--shadow, rgba(0, 0, 0, 0.7));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deck[data-burning] .card[data-front] {
+    animation: none;
+    box-shadow: 0 0 22px 2px rgba(255, 120, 30, 0.5), 0 24px 70px var(--shadow, rgba(0, 0, 0, 0.7));
+  }
+}
+
 .card[data-front] {
   border-width: 2px;
   box-shadow: 0 0 16px -5px var(--glow), 0 24px 70px var(--shadow, rgba(0, 0, 0, 0.7));

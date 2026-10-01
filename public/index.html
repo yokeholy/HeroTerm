@@ -11,6 +11,7 @@
   </head>
   <body data-run="idle">
     <canvas id="sky"></canvas>
+    <canvas id="fire" aria-hidden="true"></canvas>
 
     <div id="lcontrols">
       <button id="helpbtn" class="chip" type="button" aria-expanded="false" aria-label="Help"
@@ -510,6 +511,18 @@
             </div>
             <input id="set-warp" class="switch" type="checkbox" />
           </div>
+
+          <div class="setting toggle">
+            <div>
+              <label for="set-fire">Burning edges</label>
+              <p class="hint">
+                While a command runs in the window you're in, its edges catch
+                fire, and die down when it's done. Quiet commands don't burn.
+                Turning it on shows you for two seconds.
+              </p>
+            </div>
+            <input id="set-fire" class="switch" type="checkbox" />
+          </div>
         </div>
 
         <div id="page-behavior" class="page" data-page="behavior" role="tabpanel" aria-labelledby="tab-behavior" hidden>
@@ -645,6 +658,7 @@
     <script src="/session.js"></script>
     <script src="/audio.js"></script>
     <script src="/sky.js"></script>
+    <script src="/fire.js"></script>
     <script src="/stack.js"></script>
     <script src="/container.js"></script>
     <script src="/stats.js"></script>

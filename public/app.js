@@ -100,6 +100,7 @@ let WS = null;
 // Stacking order, in one place because the numbers only make sense together:
 //
 //    10  a window
+//    15  the fire around a working window   (fire.js: shows only past its edges)
 //    20  the focused window
 //    30  the snap and split outlines   (over the window you're aiming at)
 //    40  the status bar
@@ -146,6 +147,7 @@ const page = {
     restack();
     paintStatus();
     paintTitle();
+    refire();
     page.save();
   },
 
@@ -324,6 +326,7 @@ const page = {
     const busy = containers.some((c) => c.session.running);
     document.body.dataset.run = busy ? 'busy' : 'idle';
     sky.setWarp(busy);
+    refire();
     audio.setBusy(busy);
     paintTray(); // a minimized window's chip carries its verdict
   },
@@ -764,11 +767,13 @@ function openOverview() {
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   layOutOverview();
   paintOverview();
+  refire(); // the windows are pictures now, not windows
 }
 
 function closeOverview(pick) {
   if (!overviewing) return;
   overviewing = false;
+  setTimeout(refire, 0); // once whichever window you picked has focus
   document.body.removeAttribute('data-overview');
   els.ovBack.hidden = true;
   els.ovTags.hidden = true;
@@ -908,6 +913,22 @@ const rect = (x, y, w, h) => ({
   w: Math.round(w),
   h: Math.round(h),
 });
+
+// Fire along the edges of the window you're in, while a command runs in it
+// (fire.js draws it). Only that one: a fire around every busy window would be
+// a wall of it, and the panel already says where else things are running. Not
+// while the overview has the windows shrunk to pictures, nor for one in the
+// tray, nor while Settings → Effects says no.
+function refire() {
+  const fire = window.HEROTERM_FIRE;
+  if (!fire) return;
+  const on = !window.HEROTERM_SETTINGS || Boolean(window.HEROTERM_SETTINGS.get('fire'));
+  const c = focused;
+  const burning =
+    on && c && containers.includes(c) && c.session.running && !c.minimized && !overviewing ? c : null;
+  for (const other of containers) other.el.toggleAttribute('data-burning', other === burning);
+  fire.burn(burning ? () => burning.visibleRect() : null);
+}
 
 // Carrying a window to another workspace. The left edge already means "the
 // left half" to a window being dragged, so the panel doesn't take it over:
@@ -1145,6 +1166,7 @@ const host = {
   },
   unfocused() {
     for (const c of containers) c.el.removeAttribute('data-focused');
+    refire();
     paintStatus();
     paintTitle();
   },
@@ -1177,6 +1199,17 @@ let previewed = null;
 
 window.HEROTERM_WINDOWS = {
   limits: { windows: MAX_CONTAINERS }, // for settings' System tab
+
+  // For the Burning edges setting: put the fire where it belongs now, and
+  // show it for a moment on the window you're in.
+  refire,
+  fireDemo(ms) {
+    const c = focused;
+    if (!c || !window.HEROTERM_FIRE) return;
+    c.el.toggleAttribute('data-burning', true);
+    window.HEROTERM_FIRE.demo(ms, () => c.visibleRect());
+    setTimeout(refire, ms + 50);
+  },
 
   // A new window, named, in front, with a command typed into it once its
   // shell is there — typed, not run behind your back, so you see what it is
