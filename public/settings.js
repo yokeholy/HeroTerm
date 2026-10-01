@@ -32,10 +32,12 @@
     },
     // How fast the stars fly, and how big the fire is: percent of the usual.
     warpSpeed: {
+      range: [10, 150],
       fallback: () => 100,
       apply: (v) => window.HEROTERM_SKY && window.HEROTERM_SKY.setSpeed && window.HEROTERM_SKY.setSpeed(v),
     },
     fireSize: {
+      range: [10, 150],
       fallback: () => 100,
       apply: (v) => window.HEROTERM_FIRE && window.HEROTERM_FIRE.setSize(v),
     },
@@ -111,7 +113,10 @@
   function valueOf(key) {
     if (OPTIONS[key].text) return typeof saved[key] === 'string' ? saved[key] : OPTIONS[key].fallback();
     const v = Number(saved[key]);
-    return Number.isFinite(v) ? v : OPTIONS[key].fallback();
+    if (!Number.isFinite(v)) return OPTIONS[key].fallback();
+    // A value stored before its range was narrowed comes back inside it.
+    const range = OPTIONS[key].range;
+    return range ? Math.max(range[0], Math.min(range[1], v)) : v;
   }
 
   function save() {

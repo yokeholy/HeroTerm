@@ -380,7 +380,7 @@
     // band burnt into the window stays the same, so a bigger fire is taller,
     // not deeper into the terminal.
     setSize(pct) {
-      scale = Math.max(0.3, Math.min(3, (Number(pct) || 100) / 100));
+      scale = Math.max(0.1, Math.min(1.5, (Number(pct) || 100) / 100)); // 10–150%
     },
   };
 

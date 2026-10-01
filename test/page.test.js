@@ -664,8 +664,8 @@ test('the Effects tab previews the effects, and its sliders stick', { skip }, as
   await page.until(burning, 'the fire back');
 
   const slide = (id, v) => page.ev(`(s => { s.value = ${v}; s.dispatchEvent(new Event('input')); })(document.getElementById('${id}')), 1`);
-  await slide('set-warp-speed', 250);
-  await slide('set-fire-size', 180);
+  await slide('set-warp-speed', 140);
+  await slide('set-fire-size', 35);
 
   // Another tab: the preview ends, and the window gets its full room back.
   const width = "document.querySelector('.deck[data-preview] .card[data-front]').getBoundingClientRect().width";
@@ -681,11 +681,17 @@ test('the Effects tab previews the effects, and its sliders stick', { skip }, as
   await page.reload();
   await page.until(connected);
   const kept = await page.ev("JSON.parse(localStorage.getItem('heroterm.settings'))");
-  assert.equal(kept.warpSpeed, 250);
-  assert.equal(kept.fireSize, 180);
-  assert.equal(await page.ev("(HEROTERM_SETTINGS.open('effects'), document.getElementById('set-fire-size-num').value)"), '180');
+  assert.equal(kept.warpSpeed, 140);
+  assert.equal(kept.fireSize, 35);
+  assert.equal(await page.ev("(HEROTERM_SETTINGS.open('effects'), document.getElementById('set-fire-size-num').value)"), '35');
   await page.ev('HEROTERM_SETTINGS.close(), 1');
   await page.until(`!${burning}`, 'closing the sheet to end the preview');
+
+  // Saved before the range was 10–150%: read back inside it.
+  await page.ev(`localStorage.setItem('heroterm.settings', JSON.stringify({ warpSpeed: 300, fireSize: 5 })), 1`);
+  await page.reload();
+  await page.until(connected);
+  assert.deepEqual(await page.ev("[HEROTERM_SETTINGS.get('warpSpeed'), HEROTERM_SETTINGS.get('fireSize')]"), [150, 10]);
 });
 
 test('nothing threw along the way', { skip }, () => {

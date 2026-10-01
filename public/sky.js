@@ -233,7 +233,7 @@
 
   // How fast they fly, in percent of the usual; 100 is as designed.
   window.HEROTERM_SKY.setSpeed = (pct) => {
-    pace = Math.max(0.2, Math.min(4, (Number(pct) || 100) / 100));
+    pace = Math.max(0.1, Math.min(1.5, (Number(pct) || 100) / 100)); // 10–150%
     aim();
   };
 

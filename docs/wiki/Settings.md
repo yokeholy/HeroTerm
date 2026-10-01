@@ -132,7 +132,7 @@ dimming behind the sheet lifted, so every switch and slider changes something
 you can see as you change it. Leave the tab, or close the sheet, and both go
 back to following what's actually running.
 
-**Flying speed** (20–300%) and **Fire size** (40–250%) sit under their
+**Flying speed** and **Fire size**, each 10–150%, sit under their
 switches. A bigger fire has bigger flames that climb higher, but fewer of them
 and each a little fainter, so it grows rather than turning into a white-hot
 smear; it burns no deeper into the window either way. A slider whose effect is
