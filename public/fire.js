@@ -27,6 +27,11 @@
   const RISE = [45, 95]; // px/s upward
   const SIZE = [6, 13]; // px half-width when born; a flame is taller than wide
   const BED = 14; // px: how far the bed of fire along the edge reaches out
+  // The bottom is the base of the fire — the window sits on it — so it burns
+  // hardest: more flames, born further down, under a deeper bed.
+  const BOTTOM_SHARE = 2; // its flames, as a multiple of its length's share
+  const BOTTOM_DEPTH = 30; // px below the edge a flame there can be born
+  const BOTTOM_BED = 2.2; // its bed, as a multiple of BED
   const SEG = 18; // px of edge per flicker of the bed
   const SPARKS = 0.025; // the share of flames that are sparks instead
   const IGNITE = 0.45; // seconds from nothing to full fire
@@ -126,10 +131,11 @@
   // Born somewhere along the edge, chosen by length so a long side burns as
   // densely as a short one. Every flame rises — this is fire — but each side
   // starts it off differently: the top sends it straight up, the sides lean it
-  // outward and up their length, and the bottom only has the lip that shows
-  // below the window before the flame climbs out of sight behind it.
+  // outward and up their length, and the bottom — the base of the fire —
+  // starts them well below the window, with room to burn before they climb
+  // out of sight behind it.
   function spawn(r) {
-    const per = 2 * (r.w + r.h);
+    const per = r.w * (1 + BOTTOM_SHARE) + 2 * r.h;
     let d = Math.random() * per;
     let x;
     let y;
@@ -143,9 +149,9 @@
       x = r.x + r.w + out;
       y = r.y + Math.random() * r.h;
       vx = rand(18, 48); // flaring out from the side, not stacking up its length
-    } else if ((d -= r.w) < 0) {
+    } else if ((d -= r.w * BOTTOM_SHARE) < 0) {
       x = r.x + Math.random() * r.w;
-      y = r.y + r.h + out;
+      y = r.y + r.h + out + Math.random() * BOTTOM_DEPTH;
       vx = rand(-10, 10);
     } else {
       x = r.x - out;
@@ -195,16 +201,20 @@
       g.lineTo(pts[pts.length - 1][0], pts[pts.length - 1][1]);
       g.lineTo(bx, by);
       g.closePath();
-      const far = reach * 1.6;
+      // Faded out by about the shortest the outline gets, so its wave reads as
+      // a flicker in the glow, never as a hard edge — the bottom has no flames
+      // rising past it to soften it, as the top does.
+      const far = reach * 1.05;
       const grad = g.createLinearGradient(ax, ay, ax + ox * far, ay + oy * far);
-      grad.addColorStop(0, `${hot}${0.6 * feed})`);
+      grad.addColorStop(0, `${hot}${0.7 * feed})`);
+      grad.addColorStop(0.45, `${hot}${0.32 * feed})`);
       grad.addColorStop(1, `${hot}0)`);
       g.fillStyle = grad;
       g.fill();
     };
 
     side(r.x, r.y, r.x + r.w, r.y, 0, -1, BED, 0); // top: up
-    side(r.x, r.y + r.h, r.x + r.w, r.y + r.h, 0, 1, BED * 0.6, 50); // bottom: a lip
+    side(r.x, r.y + r.h, r.x + r.w, r.y + r.h, 0, 1, BED * BOTTOM_BED, 50); // bottom: the base
     side(r.x, r.y, r.x, r.y + r.h, -1, 0, BED, 100); // left: outward
     side(r.x + r.w, r.y, r.x + r.w, r.y + r.h, 1, 0, BED, 200); // right: outward
   }
@@ -221,7 +231,7 @@
 
     // Fed in proportion to the edge, and to how far the fire has caught.
     if (r && feed > 0.01) {
-      owed += 2 * (r.w + r.h) * PER_PX * feed * dt;
+      owed += (r.w * (1 + BOTTOM_SHARE) + 2 * r.h) * PER_PX * feed * dt;
       while (owed >= 1 && flames.length < MAX) {
         flames.push(spawn(r));
         owed -= 1;
