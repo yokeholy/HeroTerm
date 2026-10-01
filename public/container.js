@@ -304,7 +304,9 @@
     // now. A server from before protocol 3 doesn't send { t: 'exit' }, but its
     // close reason says the same thing, so that closes the window too.
     function onclose(ev) {
-      if (ended || closed) return;
+      // Halted (see halt): the page has said why, and a socket closing late
+      // mustn't put "Reconnecting…" back over it.
+      if (ended || closed || halted) return;
       if (/^shell exited/.test(ev.reason || '')) {
         shellEnded(null);
         return;
