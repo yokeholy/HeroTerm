@@ -962,22 +962,15 @@ body[data-overview] .deck:hover .card[data-front] {
   border-color: var(--red, #d4736b);
 }
 
-/* Burning (fire.js): the flames are on their own canvas, under the focused
-   window and over the rest — so they show only past its edges — and the
-   window itself glows with them, flickering as firelight does. */
-#fire {
+/* Burning (fire.js): each burning window's flames on a canvas of their own,
+   placed just after the window and at its stacking level by fire.js — over
+   its window, under anything in front — and the window glows with them,
+   flickering as firelight does. */
+.fire {
   position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 25; /* over the focused window: see the stacking order in app.js */
+  left: 0;
+  top: 0;
   pointer-events: none;
-}
-
-/* The Effects tab is showing it on the window beside the sheet, which sits
-   over the sheet's veil (101): so the fire must too. */
-body[data-effects-preview] #fire {
-  z-index: 102;
 }
 
 .deck[data-burning] .card[data-front] {

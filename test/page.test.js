@@ -606,13 +606,16 @@ test('a window can be carried to another workspace', { skip }, async () => {
 // The window you're in burns while a command runs in it, and only then.
 test('a running window catches fire, and goes out when it is done', { skip }, async () => {
   const burning = "!!document.querySelector('.deck[data-burning]')";
-  // How much fire is drawn just above the window's top edge, sampled across it.
+  // How much fire is drawn just above the window's top edge, sampled across
+  // it, on the canvas fire.js puts right after the window.
   const heat = `(() => {
-    const c = document.getElementById('fire');
     const d = [...document.querySelectorAll('.deck:not([data-away])')].find(x => x.hasAttribute('data-focused'));
+    const c = d.nextElementSibling;
+    if (!c || !c.classList.contains('fire')) return 0;
     const r = d.querySelector('.card[data-front]').getBoundingClientRect();
-    const k = c.width / innerWidth;
-    const px = c.getContext('2d').getImageData(Math.round(r.x * k), Math.round((r.y - 12) * k), Math.round(r.width * k), 1).data;
+    const b = c.getBoundingClientRect();
+    const k = c.width / b.width;
+    const px = c.getContext('2d').getImageData(Math.round((r.x - b.x) * k), Math.round((r.y - 12 - b.y) * k), Math.round(r.width * k), 1).data;
     let lit = 0;
     for (let i = 3; i < px.length; i += 4) if (px[i] > 20) lit += 1;
     return lit;
@@ -644,6 +647,35 @@ test('a running window catches fire, and goes out when it is done', { skip }, as
   await page.until(`${here}.querySelector('.card[data-front] .cmd').textContent === 'sleep 2'`, 'the quiet command');
   await new Promise((r) => setTimeout(r, 600));
   assert.equal(await page.ev(burning), false, 'a quiet command burned');
+});
+
+// Every window with something running burns, not only the one you're in; and
+// a window in front still covers the fire of one behind it.
+test('a running window burns even when it is not the one you are in', { skip }, async () => {
+  await page.ev(`HEROTERM_WINDOWS.open([
+    { name: 'back', x: 120, y: 160, w: 560, h: 360 },
+    { name: 'front', x: 520, y: 260, w: 560, h: 360 },
+  ]), 1`);
+  await page.until(`HEROTERM_WINDOWS.snapshot().length === 2 && ${connected}`);
+  const deckOf = (n) => `[...document.querySelectorAll('.deck:not([data-away])')].find(d => d.querySelector('.card[data-front] .name').textContent === '${n}')`;
+  // Run something in 'back', then put the keys in 'front'.
+  await page.ev(`${deckOf('back')}.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })), 1`);
+  await page.until(`${deckOf('back')}.hasAttribute('data-focused')`, "the keys in 'back'");
+  await page.focusWindow();
+  await page.type('sleep 3');
+  await page.until(`${deckOf('back')}.hasAttribute('data-burning')`, "'back' to catch");
+  await page.ev(`${deckOf('front')}.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })), 1`);
+  await page.until(`${deckOf('front')}.hasAttribute('data-focused')`, "the keys in 'front'");
+  await new Promise((r) => setTimeout(r, 400));
+  assert.ok(await page.ev(`${deckOf('back')}.hasAttribute('data-burning')`), "'back' went out when it lost the keys");
+
+  // Its fire sits right after it, at its level — under 'front', which is above.
+  const z = await page.ev(`[getComputedStyle(${deckOf('back')}).zIndex, ${deckOf('back')}.nextElementSibling.style.zIndex, getComputedStyle(${deckOf('front')}).zIndex]`);
+  assert.equal(z[1], z[0], 'the fire is not at its window\'s level');
+  assert.ok(Number(z[2]) > Number(z[1]), 'the window in front is not above the fire');
+
+  await page.until(`!${deckOf('back')}.hasAttribute('data-burning')`, 'the fire to stop being fed', 8000);
+  await page.until(`!${deckOf('back')}.nextElementSibling || !${deckOf('back')}.nextElementSibling.classList.contains('fire')`, 'the fire to go out', 4000);
 });
 
 // The Effects tab shows both effects on the window beside it while it's open,

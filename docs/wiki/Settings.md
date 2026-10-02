@@ -144,16 +144,18 @@ it are separate questions, both remembered, so switching the flying back on
 part way through a command starts it flying rather than waiting for the next
 one.
 
-**Burning edges** sets the window you're in on fire while a command runs in
-it: flames lick up from all four edges, embers fly off the top, and the
+**Burning edges** sets a window on fire while a command runs in it — any
+window in the workspace you're looking at, whether or not it's the one you're
+in: flames lick up from all four edges, embers fly off the top, and the
 window glows orange; when the command ends the fire stops being fed and dies
-down by itself. Only the window you're in burns — a ring of fires around
-every busy window would be a wall of it, and the workspaces panel already
-says where else things are running — and quiet commands never do. Turning it
+down by itself. Quiet commands never burn, nor do windows in the tray. Turning it
 on shows you for two seconds on the window beside the sheet.
 
-The flames are drawn on a canvas of their own, over the window, and then
-wiped away again from everything more than about 30px inside its edges — so
+Each burning window's flames are drawn on a canvas of their own, placed just
+after the window and at its stacking level — over the window, under any window
+in front of it, which covers the fire as it covers the text. A window you
+aren't in is faded, but its fire isn't. The flames are wiped away again from
+everything more than about 30px inside the window's edges — so
 the fire burns into the frame, fading as it goes, but never reaches the middle
 of the terminal (`public/fire.js`). The first and last rows sit in that band,
 and can be partly behind flames while a command runs. On a dark theme they're added together, which is what

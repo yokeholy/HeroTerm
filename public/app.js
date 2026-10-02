@@ -101,7 +101,7 @@ let WS = null;
 //
 //    10  a window
 //    20  the focused window
-//    25  the fire around it                 (fire.js: burns a band into it, no further)
+//        (a burning window's fire takes its window's level, just after it: fire.js)
 //    30  the snap and split outlines   (over the window you're aiming at)
 //    40  the status bar
 //    50  the help button and controls
@@ -181,6 +181,7 @@ const page = {
   minimize(c) {
     if (c.minimized) return;
     c.setMinimized(true);
+    refire(); // nothing to burn in the tray
     if (focused === c) {
       focused = null;
       const next = visible().slice(-1)[0];
@@ -200,6 +201,7 @@ const page = {
   restore(c) {
     if (!c.minimized) return;
     c.setMinimized(false);
+    refire();
     page.focus(c);
     c.focus();
     page.runStateChanged();
@@ -919,11 +921,10 @@ const rect = (x, y, w, h) => ({
   h: Math.round(h),
 });
 
-// Fire along the edges of the window you're in, while a command runs in it
-// (fire.js draws it). Only that one: a fire around every busy window would be
-// a wall of it, and the panel already says where else things are running. Not
-// while the overview has the windows shrunk to pictures, nor for one in the
-// tray, nor while Settings → Effects says no.
+// Fire along the edges of every window with a command running in it, focused
+// or not (fire.js draws it). Not while the overview has the windows shrunk to
+// pictures, nor for one in the tray, nor while Settings → Effects says no.
+// Only the workspace in front: the others aren't on screen.
 //
 // The Effects tab borrows it (firePreview): the window beside the sheet burns
 // for as long as the tab is open, running or not, so the switch and the size
@@ -944,11 +945,11 @@ function refire() {
   const fire = window.HEROTERM_FIRE;
   if (!fire) return;
   const on = !window.HEROTERM_SETTINGS || Boolean(window.HEROTERM_SETTINGS.get('fire'));
-  const c = focused;
-  const live = c && containers.includes(c) && !c.minimized && !overviewing;
-  const burning = on && live && (c.session.running || firePreview) ? c : null;
-  for (const other of containers) other.el.toggleAttribute('data-burning', other === burning);
-  fire.burn(burning ? () => onScreen(burning) : null);
+  const burning = on && !overviewing
+    ? containers.filter((c) => !c.minimized && (c.session.running || (firePreview && c === focused)))
+    : [];
+  for (const c of containers) c.el.toggleAttribute('data-burning', burning.includes(c));
+  fire.burn(burning.map((c) => ({ key: c.id, el: c.el, rect: () => onScreen(c) })));
 }
 
 // Carrying a window to another workspace. The left edge already means "the

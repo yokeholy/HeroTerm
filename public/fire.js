@@ -1,25 +1,26 @@
 'use strict';
 
-// Fire along the edges of the window that's working.
+// Fire along the edges of every window that's working.
 //
-// While a command runs in the window you're in, its edges burn: flames lick
-// up from all four sides and climb, and the window glows with it. When the
-// command ends the burning stops being fed and the flames that are already up
-// die down on their own, which is the fade-out.
+// While a command runs in a window, its edges burn: flames lick up from all
+// four sides and climb, and the window glows with it. When the command ends
+// the burning stops being fed and the flames that are already up die down on
+// their own, which is the fade-out.
 //
-// One canvas for the page, under the focused window and over the rest (see
-// the stacking order in app.js): flames are drawn *behind* the window, so they
-// show only where they reach past its edge — the window's own content is never
-// painted over. Each flame is a particle: born on the edge, rising, drifting,
-// shrinking and cooling from white-yellow through orange to red, drawn from a
-// few sprites made once. Nothing runs while nothing is burning.
+// Each burning window has a fire of its own: a canvas just after the window
+// in the page, at the window's own stacking level — so it's drawn over its
+// window and under any window in front of it, which covers it the way it
+// covers that window's text. A sibling and not a child, because a window you
+// aren't in is faded, and its fire shouldn't be. The canvas is only as big as
+// the window and the room its flames need, and follows it every frame, so a
+// window dragged mid-build takes its fire along.
 //
-// Like the sky, it follows the window it's burning around every frame, so a
-// window dragged mid-build takes its fire with it.
+// Each flame is a particle: born on the edge, rising, drifting, shrinking and
+// cooling from yellow through orange to red, drawn from a few sprites made
+// once. Nothing runs while nothing is burning.
 
 (function () {
-  const canvas = document.getElementById('fire');
-  const g = canvas.getContext('2d');
+  let g = null; // the canvas being drawn on: each fire's in turn, in frame()
 
   const PER_PX = 1.5; // flames born per second, per pixel of edge
   const MAX = 3600; // flames alive at once, whatever the window's size
@@ -43,19 +44,15 @@
 
   const rand = (a, b) => a + Math.random() * (b - a);
 
-  let w = 0;
-  let h = 0;
   let dpr = 1;
-  let target = null; // a function giving the rectangle to burn around, or null
   let scale = 1; // Settings → Effects → Fire size, as a multiple
-  let feed = 0; // 0..1, how hard the fire is being fed — eases to `want`
-  let want = 0;
   let allowed = true;
-  let flames = [];
   let raf = null;
   let last = 0;
-  let owed = 0; // fractional flames carried from one frame to the next
   let sprites = null;
+  // The fires, by the key the page gave each window. A fire outlives being
+  // asked for by as long as its last flames take to die.
+  const fires = new Map();
   let light = false; // a pale theme: ink-dark flames, drawn normally
 
   // Respecting "reduce motion": no flames at all, just the glow (styles.css).
@@ -126,10 +123,51 @@
 
   function resize() {
     dpr = Math.min(2, window.devicePixelRatio || 1);
-    w = window.innerWidth;
-    h = window.innerHeight;
-    canvas.width = Math.round(w * dpr);
-    canvas.height = Math.round(h * dpr);
+  }
+
+  // How much room around the window its fire draws in: flames and sparks
+  // rise, so most of it is above.
+  function room() {
+    const k = Math.max(1, scale);
+    return { top: Math.round(300 * k), side: Math.round(130 * k), bottom: Math.round(110 * k) };
+  }
+
+  function makeFire(el) {
+    const canvas = document.createElement('canvas');
+    canvas.className = 'fire';
+    canvas.setAttribute('aria-hidden', 'true');
+    el.after(canvas);
+    return { el, canvas, g: canvas.getContext('2d'), target: null, feed: 0, owed: 0, flames: [], box: null };
+  }
+
+  // Put the canvas around the window, with room for its flames — sized in
+  // steps, so a window being resized doesn't reallocate it every frame — and
+  // at the window's stacking level, whatever that is just now.
+  function place(f, r) {
+    const m = room();
+    const step = 64;
+    const want = {
+      x: Math.floor(r.x - m.side),
+      y: Math.floor(r.y - m.top),
+      w: Math.ceil((r.w + 2 * m.side) / step) * step,
+      h: Math.ceil((r.h + m.top + m.bottom) / step) * step,
+    };
+    const c = f.canvas;
+    if (!f.box || f.box.w !== want.w || f.box.h !== want.h || f.dpr !== dpr) {
+      c.width = Math.round(want.w * dpr);
+      c.height = Math.round(want.h * dpr);
+      c.style.width = `${want.w}px`;
+      c.style.height = `${want.h}px`;
+      f.dpr = dpr;
+    }
+    c.style.transform = `translate(${want.x}px, ${want.y}px)`;
+    c.style.zIndex = getComputedStyle(f.el).zIndex;
+    f.box = want;
+  }
+
+  function drop(key, f) {
+    f.canvas.remove();
+    fires.delete(key);
   }
 
   /* ---------- the flames ---------- */
@@ -178,7 +216,7 @@
   // nothing. Its outer outline rises and falls along the edge — each point
   // flickering to its own height, joined by smooth curves — so it's never a
   // steady stripe, and never a row of blocks either.
-  function bed(r, now) {
+  function bed(r, now, feed) {
     const flicker = (i) =>
       0.55 + 0.25 * Math.sin(now / 90 + i * 1.7) + 0.2 * Math.sin(now / 37 + i * 4.3);
     const hot = light ? 'rgba(214, 96, 34,' : 'rgba(255, 128, 36,';
@@ -272,65 +310,72 @@
     g.globalCompositeOperation = light ? 'source-over' : 'lighter';
   }
 
-  function frame(now) {
-    raf = null;
-    const dt = Math.min(0.05, (now - (last || now)) / 1000);
-    last = now;
-
-    const r = allowed && !still.matches && target ? target() : null;
-    want = r ? 1 : 0;
-    feed += (want - feed) * Math.min(1, dt / IGNITE * 2.2);
-    if (feed < 0.002 && !want) feed = 0;
+  // One fire's frame: feed it, move and draw its flames, burn into its
+  // window. Returns whether it still has anything to show.
+  function burnOne(f, now, dt) {
+    // Closed, in another workspace, or minimized to the tray: out at once,
+    // rather than embers hanging where the window was.
+    const away = !f.el.isConnected || f.el.hasAttribute('data-away') || f.el.hidden;
+    if (away) return false;
+    const r = allowed && !still.matches && f.target ? f.target() : null;
+    const want = r ? 1 : 0;
+    f.feed += (want - f.feed) * Math.min(1, (dt / IGNITE) * 2.2);
+    if (f.feed < 0.002 && !want) f.feed = 0;
 
     // Fed in proportion to the edge, and to how far the fire has caught.
-    if (r && feed > 0.01) {
+    if (r && f.feed > 0.01) {
       // Bigger flames cover more each, so fewer are born: the fire grows
       // taller and wider without piling up into a white-hot smear.
-      owed += ((r.w * (1 + BOTTOM_SHARE) + 2 * r.h) * PER_PX * feed * dt) / Math.max(1, scale) ** 1.2;
-      while (owed >= 1 && flames.length < MAX) {
-        flames.push(spawn(r));
-        owed -= 1;
+      f.owed += ((r.w * (1 + BOTTOM_SHARE) + 2 * r.h) * PER_PX * f.feed * dt) / Math.max(1, scale) ** 1.2;
+      while (f.owed >= 1 && f.flames.length < MAX) {
+        f.flames.push(spawn(r));
+        f.owed -= 1;
       }
-      owed = Math.min(owed, 1);
+      f.owed = Math.min(f.owed, 1);
     }
+    if (!f.flames.length && !want && !f.feed) return false;
 
-    g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    g.clearRect(0, 0, w, h);
+    if (r) place(f, r);
+    else if (f.box) f.canvas.style.zIndex = getComputedStyle(f.el).zIndex;
+    if (!f.box) return true; // nothing placed yet; next frame
+    g = f.g;
+    g.setTransform(dpr, 0, 0, dpr, -f.box.x * dpr, -f.box.y * dpr);
+    g.clearRect(f.box.x, f.box.y, f.box.w, f.box.h);
     g.globalCompositeOperation = light ? 'source-over' : 'lighter';
-    if (r && feed > 0.01) bed(r, now);
+    if (r && f.feed > 0.01) bed(r, now, f.feed);
 
     const live = [];
-    for (const f of flames) {
-      f.age += dt;
-      if (f.age >= f.life) continue;
-      const t = f.age / f.life;
+    for (const p of f.flames) {
+      p.age += dt;
+      if (p.age >= p.life) continue;
+      const t = p.age / p.life;
       // A lick of sideways flutter, so the flames dance rather than rise in
       // straight lines, and a little acceleration upward, as hot air does.
-      f.vx += Math.sin(now / 140 + f.seed) * 40 * dt;
-      f.vy -= 30 * dt;
-      f.x += f.vx * dt;
-      f.y += f.vy * dt;
+      p.vx += Math.sin(now / 140 + p.seed) * 40 * dt;
+      p.vy -= 30 * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
       const fade = t < 0.1 ? t / 0.1 : 1 - (t - 0.1) / 0.9;
-      if (f.spark) {
+      if (p.spark) {
         g.globalAlpha = fade * (light ? 0.8 : 0.95);
-        const sz = f.size * 2.4;
-        g.drawImage(spark, f.x - sz, f.y - sz, sz * 2, sz * 2);
+        const sz = p.size * 2.4;
+        g.drawImage(spark, p.x - sz, p.y - sz, sz * 2, sz * 2);
       } else {
         // Thinner as it rises and cools, and pulled taller: a tongue that
         // narrows to nothing rather than a puff that shrinks.
-        const half = f.size * (1 - t * 0.6);
+        const half = p.size * (1 - t * 0.6);
         const tall = half * (3.2 + t * 1.8);
         const sprite = sprites[Math.min(sprites.length - 1, Math.floor(t * t * sprites.length * 1.6))];
         g.globalAlpha = (fade * (light ? 0.34 : 0.36)) / Math.sqrt(Math.max(1, scale));
-        g.drawImage(sprite, f.x - half, f.y - tall * 0.75, half * 2, tall);
+        g.drawImage(sprite, p.x - half, p.y - tall * 0.75, half * 2, tall);
       }
-      live.push(f);
+      live.push(p);
     }
-    flames = live;
+    f.flames = live;
     g.globalAlpha = 1;
     if (r) burnInto(r);
-    // While Settings shows it off, the fire is drawn over the sheet's veil —
-    // and so over the sheet, where it has no business: cut that out.
+    // While Settings shows it off, the window sits over the sheet's veil, and
+    // its fire with it — and so over the sheet, where it has no business.
     if (document.body.hasAttribute('data-effects-preview')) {
       const sheet = document.querySelector('#settings .sheet');
       if (sheet) {
@@ -338,12 +383,16 @@
         g.clearRect(q.x, q.y, q.width, q.height);
       }
     }
+    return true;
+  }
 
-    if (flames.length || want || feed > 0) raf = requestAnimationFrame(frame);
-    else {
-      last = 0;
-      g.clearRect(0, 0, w, h);
-    }
+  function frame(now) {
+    raf = null;
+    const dt = Math.min(0.05, (now - (last || now)) / 1000);
+    last = now;
+    for (const [key, f] of fires) if (!burnOne(f, now, dt)) drop(key, f);
+    if (fires.size) raf = requestAnimationFrame(frame);
+    else last = 0;
   }
 
   function wake() {
@@ -356,12 +405,28 @@
   /* ---------- asked for by the page ---------- */
 
   window.HEROTERM_FIRE = {
-    // What to burn around: a function returning the window's rectangle on
-    // screen, asked every frame, or null to let the fire die down.
-    burn(getRect) {
-      target = typeof getRect === 'function' ? getRect : null;
-      document.body.toggleAttribute('data-fire', Boolean(target) && allowed);
+    // What to burn: every window that should be on fire now, as
+    // { key, el, rect } — the window's element, and a function giving its
+    // rectangle on screen, asked every frame. A window left out stops being
+    // fed, and its fire dies down.
+    burn(list) {
       readTheme();
+      const keep = new Set();
+      for (const w of list || []) {
+        keep.add(w.key);
+        let f = fires.get(w.key);
+        if (f && f.el !== w.el) {
+          drop(w.key, f);
+          f = null;
+        }
+        if (!f) {
+          f = makeFire(w.el);
+          fires.set(w.key, f);
+        }
+        f.target = w.rect;
+      }
+      for (const [key, f] of fires) if (!keep.has(key)) f.target = null;
+      document.body.toggleAttribute('data-fire', keep.size > 0 && allowed);
       wake();
     },
 

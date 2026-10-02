@@ -21,7 +21,7 @@
 - 🪟 **A window per command.** Each one opens clean; the last dozen stack up behind it, and you can walk back through them.
 - 🚦 **See how it went at a glance.** The border is yellow while it runs, green when it succeeds, red when it fails.
 - 🌌 **A star field that flies** from whatever is working, and settles when it's done.
-- 🔥 **Burning edges:** the window you're in catches fire while its command runs, and dies down when it's done.
+- 🔥 **Burning edges:** a window catches fire while its command runs, and dies down when it's done.
 - 🔔 **Sounds you can live with:** a ding, a tick-tock, a chime. Each can be switched off.
 - 🔄 **Refresh loses nothing.** Same shell, same folder, same running job — and it reconnects by itself after your laptop sleeps.
 - 🧱 **Several terminals.** Snap, split, or arrange them all with one click.
