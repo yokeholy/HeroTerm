@@ -44,7 +44,7 @@ function isolatedEnv(home, extra = {}) {
   // The update check goes to a port nothing listens on, so no test ever asks
   // the real registry; the tests of the check stand one up of their own.
   const env = { ...process.env, HOME: home, HEROTERM_DEV: '0', HEROTERM_UPDATE_URL: 'http://127.0.0.1:9/', ...extra };
-  for (const name of ['ZDOTDIR', 'HISTFILE', 'PORT', 'HEROTERM_PORT', 'HEROTERM_STATE', 'HEROTERM_HOME', 'HEROTERM_TOKEN']) {
+  for (const name of ['ZDOTDIR', 'HISTFILE', 'PORT', 'HEROTERM_PORT', 'HEROTERM_STATE', 'HEROTERM_HOME', 'HEROTERM_TOKEN', 'HEROTERM_NEW_TOKEN']) {
     if (!(name in extra)) delete env[name];
   }
   return env;

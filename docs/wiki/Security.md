@@ -5,8 +5,9 @@
 It runs a shell, so the question is a fair one. The short version:
 
 - The server binds `127.0.0.1` only, never `0.0.0.0`.
-- Every launch mints a random 192-bit token, held in memory and printed once.
-  Without it the socket returns 403.
+- A random 192-bit token, made on the first launch and kept in
+  `~/.heroterm/token` (mode 600) for the launches after, so a bookmark keeps
+  working. `heroterm -n` replaces it. Without it the socket returns 403.
 - That token matters more than it looks: **localhost WebSockets aren't
   protected by CORS**, so without it any page you happened to visit could open
   a socket to your shell. Loopback is not an access boundary — every process
@@ -38,7 +39,8 @@ Everything above about the token, plus what it doesn't cover:
 - The token lives in the URL, which is the leakiest place for a secret —
   browser history, anything that logs URLs, and a shell history if you `open`
   it from a terminal. Redirecting the server's stdout to a file stores a live
-  one.
+  one. Because the token is kept, a leaked link stays good until you run
+  `heroterm -n` — a restart alone no longer retires it.
 - It defends against *other web pages*. It does not defend against code already
   running as your user, and nothing in this design could.
 - Since the session persists, a leaked token doesn't get a fresh shell — it

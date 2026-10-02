@@ -27,6 +27,7 @@ const USAGE = `
 
   Options
     -p, --port <n>   port to listen on (default 7777, or $HEROTERM_PORT)
+    -n, --new-token  a new token for the link; old links stop working
         --no-open    don't open the browser; just print the URL
         --all        stop every background one, whatever the port
     -v, --version    print the version
@@ -138,6 +139,7 @@ function start(port, open) {
   if (already) {
     say(`\n  HeroTerm is already running on port ${port}:\n`);
     say(`  ${already.url}\n`);
+    if (fresh) say(`  It has its token already. For a new one: heroterm restart -n${port === 7777 ? '' : ` --port ${port}`}\n`);
     if (open) openBrowser(already.url);
     return;
   }
@@ -154,6 +156,7 @@ function start(port, open) {
       HEROTERM_PORT: String(port),
       HEROTERM_STATE: stateFile(port),
       HEROTERM_OPEN: '', // the browser is this end's job, once there's a URL
+      HEROTERM_NEW_TOKEN: fresh ? '1' : '', // see TOKEN in server.js
     },
   });
   child.unref();
@@ -275,6 +278,7 @@ if (argv.length && !argv[0].startsWith('-')) {
 let port = Number(process.env.HEROTERM_PORT || process.env.PORT || 7777);
 let open = true;
 let all = false;
+let fresh = false; // -n: the server makes a new token rather than reusing it
 
 for (let i = 0; i < argv.length; i += 1) {
   const a = argv[i];
@@ -284,6 +288,8 @@ for (let i = 0; i < argv.length; i += 1) {
   } else if (a === '-v' || a === '--version') {
     say(pkg.version);
     process.exit(0);
+  } else if (a === '-n' || a === '--new-token') {
+    fresh = true;
   } else if (a === '--no-open') {
     open = false;
   } else if (a === '--all') {
@@ -319,6 +325,7 @@ async function main() {
   // Here, in this terminal, the way it has always worked.
   process.env.HEROTERM_PORT = String(port);
   if (open) process.env.HEROTERM_OPEN = '1';
+  process.env.HEROTERM_NEW_TOKEN = fresh ? '1' : '';
   require('../server.js');
 }
 

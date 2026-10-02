@@ -1337,7 +1337,7 @@ function refuse() {
     : "This link's token isn't valid";
   document.getElementById('denied-why').textContent = missing
     ? "HeroTerm only lets in a page that carries its token, and this one doesn't have one — it was opened as a bare address."
-    : 'HeroTerm makes a new token each time it starts, so a link from before a restart — a bookmark, a tab left open — stops working.';
+    : 'HeroTerm has a different token now — it was given a new one (heroterm -n), or this link is from another machine — so this link no longer works.';
   // Every window in every workspace: the ones out of sight are trying too.
   for (const c of WS.everyWindow()) c.halt('Token not accepted');
   deniedEl.hidden = false;

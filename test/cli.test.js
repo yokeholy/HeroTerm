@@ -86,3 +86,33 @@ test('a background server restarts itself when the page asks', async () => {
   cli('stop', '--port', String(port));
 });
 
+// The token is kept, so a bookmarked link outlives a restart; -n replaces it.
+test('the token is kept across launches, and -n makes a new one', async () => {
+  const port = await freePort();
+  const file = path.join(state, `${port}.json`);
+  const tokenFile = path.join(state, 'token');
+  const tokenNow = () => JSON.parse(fs.readFileSync(file, 'utf8')).token;
+
+  cli('start', '--port', String(port), '--no-open');
+  const first = tokenNow();
+  assert.equal(fs.readFileSync(tokenFile, 'utf8').trim(), first);
+  assert.equal((fs.statSync(tokenFile).mode & 0o777).toString(8), '600', 'the token file is readable by others');
+
+  cli('restart', '--port', String(port), '--no-open');
+  assert.equal(tokenNow(), first, 'a restart changed the token');
+
+  // Already running: -n can't change it, and says how.
+  assert.match(cli('start', '-n', '--port', String(port), '--no-open'), /heroterm restart -n/);
+
+  cli('restart', '-n', '--port', String(port), '--no-open');
+  const second = tokenNow();
+  assert.notEqual(second, first, '-n kept the old token');
+  assert.equal(fs.readFileSync(tokenFile, 'utf8').trim(), second, 'the new token was not kept');
+  // and the old one is turned away
+  const old = await fetch(`http://127.0.0.1:${port}/config?token=${first}`);
+  assert.equal(old.status, 403);
+
+  cli('stop', '--port', String(port));
+  fs.rmSync(tokenFile, { force: true });
+});
+

@@ -157,11 +157,16 @@ each address has its own. `HEROTERM_DEV=1` or `=0` overrides the detection.
 
 ## The token
 
-The URL carries a random token, regenerated every launch. It's what stops other
-pages in your browser from opening a socket to your shell — localhost
-WebSockets aren't protected by CORS. Because it changes every launch, a
-bookmarked URL stops working when you restart; the `heroterm` command opens the
-new one for you, and `npm start` prints it.
+The URL carries a random token. It's what stops other pages in your browser
+from opening a socket to your shell — localhost WebSockets aren't protected by
+CORS.
+
+It's **kept**: made on the first launch, saved in `~/.heroterm/token` (readable
+by you alone), and reused by every launch after — `heroterm`, `start` and
+`restart` alike — so a bookmarked link keeps working. **`heroterm -n`** (or
+`--new-token`, with `start` or `restart` too) makes a new one, and every old
+link and open tab stops working; do that if a link may have got out. One token
+serves every port.
 
 A page whose token the server won't take — an old tab, a bookmark, or the bare
 address with no token at all — says so, and points at `heroterm status` for the

@@ -52,6 +52,7 @@ To leave it running without a terminal to keep open:
 heroterm start    # background; closing the terminal doesn't stop it
 heroterm status   # where it is, and the URL to get back
 heroterm stop     # end it
+heroterm -n       # a new token for the link; old links stop working
 ```
 
 When a newer HeroTerm is out, the status bar says so. **Update** in Settings →
@@ -145,7 +146,7 @@ Changes preview live on the window beside the panel.
 ## 🔒 Safe by default
 
 - Listens on loopback only — `127.0.0.1` and `::1` — never the network.
-- A random token per launch, so other web pages can't reach your shell.
+- A random token in the link, so other web pages can't reach your shell. It's kept, so bookmarks work; `heroterm -n` makes a new one.
 - Nothing about you is sent anywhere, and settings stay in your browser. The one
   request out asks npm for HeroTerm's latest version, every few hours — and
   Settings → System turns that off.

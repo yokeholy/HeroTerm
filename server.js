@@ -102,16 +102,52 @@ process.on('SIGINT', shutdown);
 process.on('exit', clearState);
 
 // A page you visit in another tab can open a WebSocket to localhost without
-// tripping CORS, so the socket is gated on a per-launch token plus an origin
-// check. The token is printed once at startup and lives only in memory.
+// tripping CORS, so the socket is gated on a token plus an origin check.
 //
-// One exception: a restart asked for from the page (see /restart) hands its
-// token to the server that replaces it, so the tab that asked — and any other
-// open on it — reconnects to the new one rather than being locked out of it.
-// Read once and taken out of the environment, so no shell ever sees it.
+// The token is kept, so a link you bookmarked still works after HeroTerm
+// restarts: made once, in ~/.heroterm/token (yours alone to read), and used by
+// every launch after. `heroterm -n` makes a new one, which is how an old link
+// is turned away — every open tab with it included. In that order:
+//   1. carried: a restart asked for from the page (see /restart) hands its
+//      token to the server replacing it, so the tab that asked gets back in;
+//   2. kept: the one in the file, unless -n asked for a new one;
+//   3. new: made now, and kept for next time.
+// Both variables are read once and taken out of the environment, so no shell
+// ever sees them.
+const TOKEN_SHAPE = /^[0-9a-f]{48}$/;
+const TOKEN_FILE = path.join(process.env.HEROTERM_HOME || path.join(os.homedir(), '.heroterm'), 'token');
 const CARRIED = process.env.HEROTERM_TOKEN;
+const FRESH = process.env.HEROTERM_NEW_TOKEN === '1';
 delete process.env.HEROTERM_TOKEN;
-const TOKEN = /^[0-9a-f]{48}$/.test(CARRIED || '') ? CARRIED : crypto.randomBytes(24).toString('hex');
+delete process.env.HEROTERM_NEW_TOKEN;
+
+function keptToken() {
+  try {
+    const t = fs.readFileSync(TOKEN_FILE, 'utf8').trim();
+    return TOKEN_SHAPE.test(t) ? t : null;
+  } catch {
+    return null; // none yet, or unreadable: a new one, then
+  }
+}
+
+function keepToken(t) {
+  try {
+    fs.mkdirSync(path.dirname(TOKEN_FILE), { recursive: true, mode: 0o700 });
+    fs.writeFileSync(TOKEN_FILE, `${t}\n`, { mode: 0o600 });
+    fs.chmodSync(TOKEN_FILE, 0o600); // an existing file keeps its old mode otherwise
+  } catch {
+    /* not kept: this launch works, the next makes another */
+  }
+}
+
+const TOKEN = (() => {
+  if (TOKEN_SHAPE.test(CARRIED || '')) return CARRIED;
+  const kept = FRESH ? null : keptToken();
+  if (kept) return kept;
+  const t = crypto.randomBytes(24).toString('hex');
+  keepToken(t);
+  return t;
+})();
 const ALLOWED_ORIGINS = new Set([
   `http://127.0.0.1:${PORT}`,
   `http://localhost:${PORT}`,
