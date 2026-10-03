@@ -618,6 +618,37 @@ body[data-overview] .deck:hover .card[data-front] {
   white-space: nowrap;
 }
 
+/* Finished while you were in another workspace: green, or red if anything
+   failed. The same pill as "running", and the dot wears the colour too. */
+#spaces .sfin {
+  flex: none;
+  align-self: center;
+  padding: 1px 7px;
+  border-radius: 8px;
+  font-size: calc(10px * var(--ui-scale, 1));
+  white-space: nowrap;
+}
+
+#spaces .sfin[data-run='ok'] {
+  background: color-mix(in srgb, var(--green, #93b07a) 18%, transparent);
+  color: var(--green, #93b07a);
+}
+
+#spaces .sfin[data-run='err'] {
+  background: color-mix(in srgb, var(--red, #d4736b) 18%, transparent);
+  color: var(--red, #d4736b);
+}
+
+#spaces .sdot[data-ended='ok'] {
+  background: var(--green, #93b07a);
+  opacity: 1;
+}
+
+#spaces .sdot[data-ended='err'] {
+  background: var(--red, #d4736b);
+  opacity: 1;
+}
+
 #spaces .shead {
   display: flex;
   align-items: baseline;

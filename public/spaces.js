@@ -183,6 +183,25 @@
         run.dataset.tip = `Running in ${space.running.join(', ')}`;
         head.append(run);
       }
+      // Finished while you were elsewhere: green if it all went well, red if
+      // anything failed — gone once you go and look.
+      const ended = space.done.length + space.failed.length;
+      if (ended) {
+        const bad = space.failed.length > 0;
+        row.dataset.ended = bad ? 'err' : 'ok';
+        const fin = document.createElement('span');
+        fin.className = 'sfin';
+        fin.dataset.run = bad ? 'err' : 'ok';
+        fin.textContent = bad ? `${space.failed.length} failed` : `${ended} done`;
+        fin.dataset.tip = [
+          space.failed.length ? `Failed in ${space.failed.join(', ')}` : '',
+          space.done.length ? `Finished in ${space.done.join(', ')}` : '',
+        ]
+          .filter(Boolean)
+          .join(' · ');
+        head.append(fin);
+        if (!space.busy) dot.dataset.ended = row.dataset.ended;
+      }
       go.append(head, thumb);
       go.addEventListener('click', () => {
         // The one you are already in: not a switch, and not worth closing the

@@ -76,6 +76,12 @@ yellow, after the window names — hover it for which windows — and its dot
 pulses. Both go when the last of them finishes, so a workspace you aren't
 looking at can't be working unnoticed.
 
+And when it's done, the row says how it went: **1 done** in green, or
+**1 failed** in red if any of them failed — a failure outranks a success, and
+hovering lists both — with the dot in the same colour. It stays until you go
+to that workspace and see for yourself. Quiet commands don't count, and the
+workspace you're in never needs telling.
+
 Each row is the workspace's name and what's in it, with a picture of it
 under that, the full width of the panel: one box per window, where the window
 actually is, with its name in the middle of it, in the colour its border is wearing — grey

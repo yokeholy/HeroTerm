@@ -122,6 +122,7 @@
       host.focused = null;
       for (const c of host.containers) {
         c.el.removeAttribute('data-away');
+        c.unseen = null; // you're looking at it now
         c.applyBox();
         c.relayout();
       }
@@ -167,6 +168,9 @@
             area,
             busy: windows.some((c) => c.session.running),
             running: windows.filter((c) => c.session.running).map((c) => c.name),
+            // Finished while you were away, and not looked at since (app.js).
+            done: windows.filter((c) => c.unseen === 'ok').map((c) => c.name),
+            failed: windows.filter((c) => c.unseen === 'err').map((c) => c.name),
             names: windows.map((c) => c.name),
             windows: windows.map((c) => ({
               name: c.name,

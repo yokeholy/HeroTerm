@@ -102,7 +102,8 @@ sit — two columns, a wide window over a short one with a dot showing something
 still running, and three columns](https://raw.githubusercontent.com/yokeholy/HeroTerm/main/docs/workspaces.png)
 
 - Switching **restarts nothing** — a build left running in another workspace
-  keeps going, and its row in the panel says **1 running** until it's done.
+  keeps going, and its row in the panel says **1 running** until it's done —
+  then **1 done** in green, or **1 failed** in red, until you go and look.
 - Closing one can be **undone** for twenty seconds, shells and scrollback intact.
 - **Move a window** to another workspace: drag it to the left edge and hold it
   there, and drop it on a workspace in the panel that slides out.

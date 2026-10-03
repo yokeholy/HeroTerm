@@ -252,6 +252,15 @@ const page = {
   // A command finished. In a workspace opened from a kept profile, it goes
   // into that window's history there; see profiles.js.
   finished(c, rec) {
+    // Finished out of sight, in a workspace you aren't looking at: kept on
+    // the window until you go there, for the panel to say so. A quiet
+    // command is one you asked not to hear about, so it doesn't.
+    const S = window.HEROTERM_SETTINGS;
+    if (c.el.hasAttribute('data-away') && !(S && rec.cmd && S.hushes(rec.cmd))) {
+      // A failure stands until you've seen it; a later success doesn't hide it.
+      if (c.unseen !== 'err') c.unseen = rec.ok ? 'ok' : 'err';
+      if (WS) WS.paint();
+    }
     if (!c.slot || !WS || !window.HEROTERM_PROFILES) return;
     const name = WS.profileOf(c);
     if (name) window.HEROTERM_PROFILES.record(name, c.slot, rec);

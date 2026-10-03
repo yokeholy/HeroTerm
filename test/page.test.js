@@ -678,6 +678,41 @@ test('a running window burns even when it is not the one you are in', { skip }, 
   await page.until(`!${deckOf('back')}.nextElementSibling || !${deckOf('back')}.nextElementSibling.classList.contains('fire')`, 'the fire to go out', 4000);
 });
 
+// A command that finishes in a workspace you aren't looking at says so in the
+// panel — green, or red if it failed — until you go and look.
+test('a workspace says what finished while you were away', { skip }, async () => {
+  const W = 'HEROTERM_SPACES';
+  const fin = "(document.querySelector('#spaces .space[data-index=\"0\"] .sfin') || {})";
+  await page.ev(`HEROTERM_WINDOWS.open([{ name: 'build', x: 120, y: 120, w: 600, h: 380 }]), 1`);
+  await page.until(`HEROTERM_WINDOWS.snapshot().length === 1 && ${connected}`);
+  await page.focusWindow();
+  await page.type('sleep 1');
+  await page.until(`${W}.list()[0].busy`, 'the command to start');
+  await page.ev(`${W}.add(), 1`); // away from it, into a new workspace
+  await page.until(`${W}.at === 1 && ${connected}`);
+  await page.until(`${W}.list()[0].done.length === 1`, 'the finish to be noticed', 6000);
+  assert.equal(await page.ev(`${W}.list()[1].done.length`), 0, 'the one you are in says something finished');
+
+  await page.ev('HEROTERM_EDGE.open(), 1');
+  await page.until(`${fin}.textContent === '1 done'`, 'the green label');
+  assert.equal(await page.ev(`${fin}.dataset.run`), 'ok');
+
+  // A failure is red, and outranks the success.
+  await page.ev(`${W}.go(0), 1`);
+  await page.until(`${W}.at === 0`);
+  assert.equal(await page.ev(`${W}.list()[0].done.length`), 0, 'looking at it did not clear it');
+  await page.focusWindow();
+  await page.type('sleep 1; false');
+  await page.until(`${W}.list()[0].busy`);
+  await page.ev(`${W}.go(1), 1`);
+  await page.until(`${W}.list()[0].failed.length === 1`, 'the failure', 6000);
+  await page.ev('HEROTERM_EDGE.open(), 1');
+  await page.until(`${fin}.textContent === '1 failed'`, 'the red label');
+  assert.equal(await page.ev(`${fin}.dataset.run`), 'err');
+  assert.equal(await page.ev(`document.querySelector('#spaces .space[data-index="0"] .sdot').dataset.ended`), 'err');
+  await page.ev('HEROTERM_EDGE.close(), 1');
+});
+
 // The Effects tab shows both effects on the window beside it while it's open,
 // with nothing running, and its sliders are remembered.
 test('the Effects tab previews the effects, and its sliders stick', { skip }, async () => {
