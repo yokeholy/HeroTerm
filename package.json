@@ -43,6 +43,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "dev": "HEROTERM_DEV=1 node bin/heroterm.js --port 7778",
     "postinstall": "node scripts/fix-spawn-helper.js",
     "test": "node --test test/*.test.js"
   },

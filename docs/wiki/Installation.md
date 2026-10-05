@@ -149,8 +149,12 @@ the published package for everyday use on the default port, and run the
 checkout alongside on another:
 
 ```bash
-node bin/heroterm.js --port 7778
+npm run dev
 ```
+
+That's `node bin/heroterm.js --port 7778`, marked as a development copy, and
+it opens the browser as `heroterm` does. Anything after `--` is passed on:
+`npm run dev -- --no-open`, or `npm run dev -- --port 7779` for another port.
 
 The two keep separate shells, and separate settings and layouts too, since
 each address has its own. `HEROTERM_DEV=1` or `=0` overrides the detection.
