@@ -85,6 +85,14 @@ leaving you towing a half-screen slab. On a free drag the edges are magnetic —
 they line up with the screen's sides and middle and with every other window,
 within a few pixels.
 
+**Resizing the browser** keeps every window's share of the screen, in every
+workspace: a window filling the left half still fills the left half, and two
+side by side stay side by side. Snapped, arranged and maximized windows stay
+lined up, and the arrange and green buttons can still put things back. It's
+worked out from where everything stood when the resize began, so dragging the
+browser smaller and back gives you exactly the layout you had — a window held
+at its minimum size on the way down gets its old size back on the way up.
+
 Hold a window against the **left** edge instead of letting go, and the
 workspaces panel comes out, to drop it into another workspace — see
 [Workspaces](Workspaces.md#moving-a-window-to-another-workspace).

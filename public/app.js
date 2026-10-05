@@ -837,9 +837,6 @@ window.addEventListener(
   true
 );
 
-window.addEventListener('resize', () => {
-  if (overviewing) layOutOverview();
-});
 
 /* ---------- where the sky flies from ---------- */
 
@@ -1424,9 +1421,72 @@ els.next.addEventListener('mousedown', (e) => e.preventDefault());
 els.prev.addEventListener('click', () => focused && focused.stack.go(1));
 els.next.addEventListener('click', () => focused && focused.stack.go(-1));
 
-window.addEventListener('resize', () => {
-  for (const c of containers) c.applyBox();
-});
+/* ---------- the browser window resized ---------- */
+
+// Every window, in every workspace, keeps its share of the screen: a window
+// filling the left half of the browser still fills the left half when the
+// browser is wider, and two windows side by side stay side by side. Scaled
+// against the tiling area — the screen less its margins — so snapped and
+// arranged windows stay lined up, and what the arrange button would undo is
+// scaled alike, so it still recognises the layout as its own.
+//
+// From where things stood when the resize began, not from the last step of
+// it: a drag fires dozens of resize events, and scaling each from the one
+// before would compound the rounding — and a window held at its minimum size
+// on the way down would never get its old size back on the way up. The
+// starting point is let go once the resizing stops (SETTLE); anything you
+// move after that is the new starting point.
+const SETTLE = 400; // ms after the last resize event
+let sizedFor = tileArea(); // the area the layout is laid out for now
+let resizing = null; // { area, boxes, arrangements } — while a resize lasts
+let settleTimer = null;
+
+function scaler(from, to) {
+  const sx = to.w / from.w;
+  const sy = to.h / from.h;
+  const min = window.HEROTERM_CONTAINER.minVisible;
+  return (r) =>
+    rect(
+      to.x + (r.x - from.x) * sx,
+      to.y + (r.y - from.y) * sy,
+      Math.max(min.w, r.w * sx),
+      Math.max(min.h, r.h * sy)
+    );
+}
+
+function onResize() {
+  const now = tileArea();
+  if (!resizing) {
+    resizing = {
+      area: sizedFor,
+      boxes: new Map(WS.everyWindow().map((c) => [c, { r: c.visibleRect(), zoom: c.zoom }])),
+      arrangements: WS.arrangements(),
+    };
+  }
+  const scale = scaler(resizing.area, now);
+  const scaleMap = (m) => Object.fromEntries(Object.entries(m).map(([id, r]) => [id, scale(r)]));
+
+  for (const [c, was] of resizing.boxes) {
+    c.setVisible(scale(was.r));
+    if (was.zoom) c.zoom = { before: scale(was.zoom.before), after: scale(was.zoom.after) };
+    if (!c.el.hasAttribute('data-away')) c.relayout();
+  }
+  WS.setArrangements(
+    resizing.arrangements.map((a) => (a ? { before: scaleMap(a.before), after: scaleMap(a.after) } : null))
+  );
+  // The overview is laid out from the windows' boxes, which just changed.
+  if (overviewing) layOutOverview();
+
+  clearTimeout(settleTimer);
+  settleTimer = setTimeout(() => {
+    resizing = null;
+    sizedFor = tileArea();
+    paintArrange();
+    page.save();
+  }, SETTLE);
+}
+
+window.addEventListener('resize', onResize);
 
 // Deliberately no unload handler. `pagehide` and `beforeunload` fire on a
 // refresh exactly as they do on a close, and the browser gives you no way to

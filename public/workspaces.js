@@ -297,6 +297,19 @@
         return spaces.flatMap((_s, i) => windowsOf(i));
       },
 
+      // What the arrange button could undo, in every workspace — read and
+      // written back whole, for the page to rescale when the browser resizes.
+      arrangements() {
+        return spaces.map((s, i) => (i === at ? host.arrangement : s.arrangement) || null);
+      },
+      setArrangements(list) {
+        list.forEach((a, i) => {
+          if (!spaces[i]) return;
+          if (i === at) host.arrangement = a;
+          else spaces[i].arrangement = a;
+        });
+      },
+
       rename(i, name) {
         if (!spaces[i]) return;
         spaces[i].name = String(name || '').trim().slice(0, 24);

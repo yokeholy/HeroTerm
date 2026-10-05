@@ -761,6 +761,53 @@ test('the Effects tab previews the effects, and its sliders stick', { skip }, as
   assert.deepEqual(await page.ev("[HEROTERM_SETTINGS.get('warpSpeed'), HEROTERM_SETTINGS.get('fireSize')]"), [150, 10]);
 });
 
+// Resizing the browser keeps every window's share of the screen — in every
+// workspace — and going back to the old size gives back the old layout.
+test('windows keep their share of the screen when the browser resizes', { skip }, async () => {
+  const W = 'HEROTERM_SPACES';
+  const size = (w, h) => page.cmd('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 2, mobile: false });
+  const settle = () => new Promise((r) => setTimeout(r, 650)); // past the resize's SETTLE
+  const rects = () => page.ev('HEROTERM_SPACES.everyWindow().map(c => c.visibleRect())');
+  try {
+    await page.ev(`HEROTERM_WINDOWS.open([
+      { name: 'a', x: 100, y: 100, w: 500, h: 360 },
+      { name: 'b', x: 700, y: 140, w: 520, h: 400 },
+    ]), 1`);
+    await page.until(`HEROTERM_WINDOWS.snapshot().length === 2 && ${connected}`);
+    await page.ev("document.getElementById('arrange').click(), 1"); // tiled, with something to undo
+    await page.until("document.getElementById('arrange').getAttribute('aria-pressed') === 'true'");
+    await page.ev(`${W}.add(), ${W}.go(0), 1`); // a second workspace, out of sight
+    await page.until(`${W}.at === 0`);
+    await settle();
+    const before = await rects();
+
+    // Smaller, in steps, as a drag would.
+    for (const [w, h] of [[1300, 820], [1100, 700], [900, 600]]) await size(w, h);
+    await settle();
+    const small = await rects();
+    const a = await page.ev("(() => { const t = { w: innerWidth, h: innerHeight }; return t; })()");
+    assert.equal(a.w, 900);
+    // The two tiled windows still split the screen between them, side by side.
+    assert.ok(small[0].x + small[0].w < small[1].x, 'the tiled windows overlap');
+    const share = (r, total) => r.w / total;
+    assert.ok(Math.abs(share(small[0], 900) - share(before[0], 1440)) < 0.03, 'the first window lost its share');
+    // The one in the other workspace was scaled too.
+    assert.ok(small[2].w < before[2].w, 'a window out of sight kept its old size');
+    // ...and the arrange button still knows it can undo.
+    assert.equal(await page.ev("document.getElementById('arrange').getAttribute('aria-pressed')"), 'true');
+
+    // Back to where it was: the same layout, not one worn down by the trip.
+    for (const [w, h] of [[1100, 700], [1440, 900]]) await size(w, h);
+    await settle();
+    const after = await rects();
+    after.forEach((r, i) => {
+      for (const k of ['x', 'y', 'w', 'h']) assert.ok(Math.abs(r[k] - before[i][k]) <= 1, `window ${i} ${k}: ${before[i][k]} → ${r[k]}`);
+    });
+  } finally {
+    await size(1440, 900);
+  }
+});
+
 test('nothing threw along the way', { skip }, () => {
   assert.deepEqual(page.errors, []);
 });

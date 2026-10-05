@@ -78,7 +78,7 @@ shells in the same folders.
 of them for a second and it says what it does. Rest it on the **left edge** of
 the page and your [workspaces](#-workspaces) slide out.
 
-**Windows:** 🔴 close · 🟡 minimize to the status bar · 🟢 fill the screen · drag by the title bar · resize from any edge · drag to a screen edge to snap · drop onto another window to split · double-click the name to rename.
+**Windows:** 🔴 close · 🟡 minimize to the status bar · 🟢 fill the screen · drag by the title bar · resize from any edge · drag to a screen edge to snap · drop onto another window to split · double-click the name to rename · they keep their share of the screen when the browser resizes.
 
 <table>
   <tr>
