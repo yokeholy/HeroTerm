@@ -131,7 +131,13 @@ open for a project, in the four folders they belong in — write it down.
   apart. Click one and it opens as **a workspace of its own**, beside the ones
   you have — nothing you have is closed to make room. A name you save under
   becomes that workspace's name.
-- **×** forgets one. Saving under a name you already used replaces it.
+- **×** forgets one.
+- **Saving one that's already saved** asks first: **Overwrite** replaces it —
+  its windows, where they sit, their names and their folders — with what's on
+  screen now; **Save as new…** keeps this as another one, offering the next
+  free name ("proj 2"), and the workspace follows the new one from then on.
+  Escape changes nothing. Typing the name of a different saved workspace warns
+  you, and only a second Enter replaces it.
 
 Opening one starts fresh shells — running processes can't be kept — and a
 window that was minimized comes back minimized, in the tray.

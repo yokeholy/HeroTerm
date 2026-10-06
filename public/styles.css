@@ -820,7 +820,58 @@ body[data-overview] .deck:hover .card[data-front] {
 }
 
 #spaces-name[hidden],
+#spaces-choice[hidden],
 #spaces-saved[hidden] {
+  display: none;
+}
+
+/* Saving one that's already kept: overwrite it, or save as another. */
+#spaces-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 2px 2px 4px;
+}
+
+#spaces-choice p {
+  flex: 1 0 100%;
+  margin: 0 0 2px;
+  color: var(--label, #6b7384);
+  font-size: calc(10.5px * var(--ui-scale, 1));
+}
+
+#spaces-choice button {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid var(--hairline, #252a35);
+  border-radius: 7px;
+  background: none;
+  color: var(--fg, #d6d9e0);
+  font: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+#spaces-choice button:hover,
+#spaces-choice button:focus-visible {
+  border-color: var(--yellow, #d9a86c);
+  outline: none;
+}
+
+#spaces-overwrite {
+  border-color: color-mix(in srgb, var(--yellow, #d9a86c) 55%, transparent) !important;
+}
+
+#spaces-name-note {
+  margin: 5px 2px 0;
+  color: var(--yellow, #d9a86c);
+  font-size: calc(10.5px * var(--ui-scale, 1));
+}
+
+#spaces-name-note[hidden] {
   display: none;
 }
 

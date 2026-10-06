@@ -31,6 +31,11 @@
   const saver = document.getElementById('spaces-save');
   const nameForm = document.getElementById('spaces-name');
   const nameField = nameForm.querySelector('input');
+  const nameNote = document.getElementById('spaces-name-note');
+  const choice = document.getElementById('spaces-choice');
+  const choiceQ = document.getElementById('spaces-choice-q');
+  const overwrite = document.getElementById('spaces-overwrite');
+  const asNew = document.getElementById('spaces-asnew');
   const savedBox = document.getElementById('spaces-saved');
   const savedList = document.getElementById('spaces-saved-list');
 
@@ -64,7 +69,7 @@
     clearTimeout(openTimer);
     clearTimeout(shutTimer);
     asking = null;
-    if (!nameForm.hidden) stopSaving({ refocus: false });
+    if (!nameForm.hidden || !choice.hidden) stopSaving({ refocus: false });
     const hadKeys = panel.contains(document.activeElement);
     panel.hidden = true;
     // Straight back to the terminal it came from, so typing goes on where it
@@ -413,20 +418,68 @@
 
   // Saving: the button becomes a name field in place, offered the workspace's
   // own name, or what is in it. Enter keeps it; Escape changes nothing.
+  //
+  // A workspace that's already kept asks first: overwrite it — its windows,
+  // where they sit, their names and folders all replaced by what's here now —
+  // or save this as another one, under a new name.
+  let replacing = null; // a name typed that's already kept, once warned about
+
   function startSaving() {
     const here = S().list().find((w) => w.here);
-    nameField.value = (here && (here.profile || here.name || here.names.join(', '))) || '';
     saver.hidden = true;
+    if (here && here.profile) {
+      choiceQ.textContent = `Already saved as “${here.profile}”.`;
+      // The line above names it; the button has no room to.
+      overwrite.textContent = 'Overwrite';
+      overwrite.setAttribute('aria-label', `Overwrite “${here.profile}”`);
+      overwrite.dataset.tip = 'Replace its windows, places, names and folders with these';
+      choice.hidden = false;
+      overwrite.focus();
+      return;
+    }
+    askName((here && (here.name || here.names.join(', '))) || '');
+  }
+
+  function askName(value) {
+    choice.hidden = true;
+    replacing = null;
+    nameNote.hidden = true;
+    nameField.value = value;
     nameForm.hidden = false;
     nameField.focus();
     nameField.select();
   }
 
+  // "proj" → "proj 2", or the next number free.
+  function freshName(base) {
+    const kept = P().list();
+    const stem = base.replace(/ \d+$/, '');
+    for (let n = 2; ; n += 1) {
+      const name = `${stem} ${n}`.slice(0, P().MAX_NAME);
+      if (!kept[name]) return name;
+    }
+  }
+
   function stopSaving({ refocus = true } = {}) {
     nameForm.hidden = true;
+    choice.hidden = true;
+    replacing = null;
+    nameNote.hidden = true;
     saver.hidden = false;
     if (refocus && !panel.hidden) saver.focus();
   }
+
+  overwrite.addEventListener('click', () => {
+    const here = S().list().find((w) => w.here);
+    if (here && here.profile) S().keep(S().at, here.profile);
+    stopSaving();
+    paint();
+  });
+
+  asNew.addEventListener('click', () => {
+    const here = S().list().find((w) => w.here);
+    askName(freshName((here && here.profile) || 'workspace'));
+  });
 
   saver.addEventListener('mousedown', (e) => e.preventDefault());
   saver.addEventListener('click', startSaving);
@@ -435,9 +488,23 @@
     e.preventDefault();
     const name = nameField.value.trim().slice(0, P().MAX_NAME);
     if (!name) return;
+    // A name that's already kept would replace it: say so, and take a second
+    // Enter as the answer.
+    if (P().get(name) && replacing !== name) {
+      replacing = name;
+      nameNote.textContent = `“${name}” is already saved. Enter again to replace it.`;
+      nameNote.hidden = false;
+      return;
+    }
     S().keep(S().at, name);
     stopSaving();
     paint();
+  });
+
+  // Typing past the warning is a different name: warn afresh if it's kept too.
+  nameField.addEventListener('input', () => {
+    replacing = null;
+    nameNote.hidden = true;
   });
 
   // Escape in the field is about the field, not the whole panel.
@@ -495,6 +562,13 @@
           e.stopPropagation();
           stopSaving();
         }
+        return;
+      }
+      // The overwrite question: Escape puts it away, not the panel.
+      if (choice.contains(e.target) && e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        stopSaving();
         return;
       }
       if (e.key === 'Escape') {

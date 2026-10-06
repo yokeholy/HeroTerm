@@ -140,8 +140,15 @@
       <button id="spaces-add" type="button" aria-label="New workspace">＋ New workspace</button>
       <!-- Keeping one: a button that becomes a name field in place. -->
       <button id="spaces-save" type="button" aria-label="Save this workspace">Save this workspace…</button>
+      <!-- Already kept: replace it, or keep this as another one. -->
+      <div id="spaces-choice" hidden role="group" aria-labelledby="spaces-choice-q">
+        <p id="spaces-choice-q"></p>
+        <button id="spaces-overwrite" type="button"></button>
+        <button id="spaces-asnew" type="button">Save as new…</button>
+      </div>
       <form id="spaces-name" hidden>
         <input type="text" maxlength="40" aria-label="Name to save this workspace as" autocomplete="off" spellcheck="false" />
+        <p id="spaces-name-note" hidden></p>
       </form>
       <!-- What has been kept, opened into a workspace of its own. -->
       <section id="spaces-saved" hidden aria-label="Saved workspaces">

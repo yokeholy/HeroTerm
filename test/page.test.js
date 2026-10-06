@@ -337,6 +337,71 @@ test('a kept workspace keeps its history, and brings it back', { skip }, async (
   assert.equal(await page.ev(`${history}[3]`), 'echo th""ird');
 });
 
+// Saving a workspace that's already kept asks: overwrite it — windows,
+// places, names and folders all replaced — or save it as another.
+test('saving a kept workspace offers to overwrite it or save a new one', { skip }, async () => {
+  const P = 'HEROTERM_PROFILES';
+  const W = 'HEROTERM_SPACES';
+  await page.ev(`HEROTERM_WINDOWS.open([{ name: 'api', x: 60, y: 70, w: 500, h: 360 }]), 1`);
+  await page.until(`HEROTERM_WINDOWS.snapshot().length === 1 && ${connected}`);
+  await page.ev(`${W}.keep(${W}.at, 'proj'), 1`);
+
+  // Change it: another window, renamed, moved.
+  await page.ev(`HEROTERM_WINDOWS.open([
+    { name: 'web', x: 640, y: 90, w: 520, h: 380 },
+    { name: 'db', x: 200, y: 300, w: 420, h: 300 },
+  ]), 1`);
+  await page.until(`HEROTERM_WINDOWS.snapshot().length === 2 && ${connected}`);
+  // (open() replaced the windows; the workspace is still linked to 'proj')
+  assert.equal(await page.ev(`${W}.list()[${W}.at].profile`), 'proj');
+
+  const openSave = async () => {
+    await page.ev('HEROTERM_EDGE.open(), 1');
+    await page.ev("document.getElementById('spaces-save').click(), 1");
+  };
+
+  // Escape: nothing changes.
+  await openSave();
+  await page.until("!document.getElementById('spaces-choice').hidden", 'the choice');
+  assert.equal(await page.ev("document.getElementById('spaces-choice-q').textContent"), 'Already saved as “proj”.');
+  assert.equal(await page.ev("document.getElementById('spaces-overwrite').getAttribute('aria-label')"), 'Overwrite “proj”');
+  await page.key('Escape', { code: 'Escape', keyCode: 27 });
+  await page.until("document.getElementById('spaces-choice').hidden");
+  assert.deepEqual(await page.ev(`${P}.get('proj').windows.map(w => w.name)`), ['api']);
+
+  // Overwrite: all of it replaced.
+  await openSave();
+  await page.until("!document.getElementById('spaces-choice').hidden");
+  await page.ev("document.getElementById('spaces-overwrite').click(), 1");
+  const kept = await page.ev(`${P}.get('proj').windows.map(w => ({ name: w.name, x: w.x, w: w.w }))`);
+  assert.deepEqual(kept.map((w) => w.name), ['web', 'db']);
+  assert.deepEqual(kept.map((w) => w.x), (await page.ev('HEROTERM_WINDOWS.snapshot()')).map((w) => w.x), 'the places were not replaced');
+
+  // Save as new: a name of its own, offered free; 'proj' left alone.
+  await openSave();
+  await page.until("!document.getElementById('spaces-choice').hidden");
+  await page.ev("document.getElementById('spaces-asnew').click(), 1");
+  await page.until("!document.getElementById('spaces-name').hidden", 'the name field');
+  assert.equal(await page.ev("document.querySelector('#spaces-name input').value"), 'proj 2');
+  await page.key('Enter', { code: 'Enter', keyCode: 13, text: '\r' });
+  await page.until(`!!${P}.get('proj 2')`, 'the new one');
+  assert.equal(await page.ev(`${W}.list()[${W}.at].profile`), 'proj 2', 'not linked to what it was saved as');
+  assert.deepEqual(await page.ev(`${P}.get('proj').windows.map(w => w.name)`), ['web', 'db']);
+
+  // Typing the name of another kept one warns first; a second Enter replaces it.
+  await openSave();
+  await page.ev("document.getElementById('spaces-asnew').click(), 1");
+  await page.until("!document.getElementById('spaces-name').hidden");
+  await page.ev("(f => { f.value = 'proj'; f.dispatchEvent(new Event('input')); })(document.querySelector('#spaces-name input')), 1");
+  await page.key('Enter', { code: 'Enter', keyCode: 13, text: '\r' });
+  await page.until("!document.getElementById('spaces-name-note').hidden", 'the warning');
+  assert.match(await page.ev("document.getElementById('spaces-name-note').textContent"), /already saved/);
+  await page.key('Enter', { code: 'Enter', keyCode: 13, text: '\r' });
+  await page.until("document.getElementById('spaces-name').hidden", 'the second Enter to save');
+  assert.equal(await page.ev(`${W}.list()[${W}.at].profile`), 'proj');
+  await page.ev('HEROTERM_EDGE.close(), 1');
+});
+
 // Kept by the toolbar button that came before the panel: same key, still here.
 test('screens saved by the old toolbar button are still there', { skip }, async () => {
   await page.ev(`localStorage.setItem('heroterm.screens', JSON.stringify({
