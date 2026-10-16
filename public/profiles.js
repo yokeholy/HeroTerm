@@ -161,6 +161,17 @@
     // the history is touched: the layout is what it was when saved. A window
     // the profile has no place for — one added since, or a profile that has
     // been forgotten — is simply not recorded.
+    // ⌘⇧K in a window of a kept workspace: its history there goes too, or
+    // opening the workspace again would bring it all back.
+    forgetHistory(name, key) {
+      if (!name || !key) return;
+      const all = read();
+      const w = all[name] && all[name].windows.find((x) => x.key === key);
+      if (!w) return;
+      w.history = [];
+      write(all, name);
+    },
+
     record(name, key, rec) {
       if (!name || !key) return;
       const all = read();

@@ -125,6 +125,7 @@ still running, and three columns](https://raw.githubusercontent.com/yokeholy/Her
 | `⌘←` / `⌘→` | start / end of the line |
 | `⌘⌫` | clear the line |
 | `⌘K` | clear |
+| `⌘⇧K` | clear, and forget the earlier commands behind it |
 | `⌘+` / `⌘−` / `⌘0` | this window's text size |
 | `⌘C` / `⌘V` | copy / paste — or just select, and it's copied |
 

@@ -980,6 +980,14 @@
         send({ t: 'i', d: data });
       },
 
+      // ⌘⇧K: the screen and every earlier command behind it — here, and on
+      // the server, so a refresh doesn't bring them back.
+      clearHistory() {
+        term.clear();
+        stack.clear();
+        send({ t: 'forget' });
+      },
+
       // Closing a container is unambiguous in a way that the tab going away is
       // not, so this is the only place that ends a shell early.
       // Let go of the shell without ending it. The server keeps a session

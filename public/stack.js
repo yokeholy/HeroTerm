@@ -370,6 +370,22 @@ function createStack(opts) {
       return cursor;
     },
 
+    // Forget every earlier command: the cards behind, and what the live one
+    // has printed so far, so that nothing comes back as a card when the next
+    // command starts. A command still running keeps running, on a clean slate.
+    clear() {
+      for (const card of cards) {
+        if (card.term) card.term.dispose();
+        card.el.remove();
+      }
+      cards = [];
+      if (current && current.running) current.bytes = '';
+      else current = null;
+      cursor = 0;
+      paintHead(liveEl, current);
+      render();
+    },
+
     get cursor() {
       return cursor;
     },

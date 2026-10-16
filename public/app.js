@@ -1654,6 +1654,14 @@ window.addEventListener(
       e.preventDefault();
       return;
     }
+    // ⌘⇧K: and every earlier command behind it, too.
+    if ((e.key === 'k' || e.key === 'K') && e.shiftKey) {
+      focused.clearHistory();
+      const P = window.HEROTERM_PROFILES;
+      if (P && focused.slot && WS) P.forgetHistory(WS.profileOf(focused), focused.slot);
+      e.preventDefault();
+      return;
+    }
     if (e.key === 'k') {
       term.clear();
       e.preventDefault();

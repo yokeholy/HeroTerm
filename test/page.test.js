@@ -873,6 +873,39 @@ test('windows keep their share of the screen when the browser resizes', { skip }
   }
 });
 
+// ⌘⇧K forgets the earlier commands behind a window — and a refresh doesn't
+// bring them back, since the server's copy goes too.
+test('Cmd-Shift-K clears a window and the commands behind it', { skip }, async () => {
+  const cards = `[...${here}.querySelectorAll('.card:not([data-front]) .cmd')].map(e => e.textContent)`;
+  const runOk = `${here}.querySelector('.card[data-front]').dataset.status === 'ok'`;
+  await page.focusWindow();
+  for (const n of ['one', 'two', 'three']) {
+    await page.type(`echo ${n}`);
+    await page.until(`${here}.querySelector('.card[data-front] .cmd').textContent === 'echo ${n}' && ${runOk}`);
+  }
+  await page.until(`${cards}.length === 2`, 'two commands behind it');
+
+  await page.key('K', { code: 'KeyK', keyCode: 75, modifiers: 4 | 8 }); // ⌘⇧K
+  await page.until(`${cards}.length === 0`, 'the deck to clear');
+  // The next command starts a deck with nothing behind it — not the one that
+  // was on screen when it was cleared.
+  await page.type('echo four');
+  await page.until(`${here}.querySelector('.card[data-front] .cmd').textContent === 'echo four' && ${runOk}`);
+  assert.deepEqual(await page.ev(cards), [], 'a cleared command came back as a card');
+
+  await page.reload();
+  await page.until(connected);
+  await page.until(`${here}.querySelector('.card[data-front] .cmd').textContent === 'echo four'`, 'the restored deck');
+  assert.deepEqual(await page.ev(cards), [], 'a refresh brought the cleared commands back');
+
+  // In a saved workspace, the window's saved history goes too.
+  await page.ev("HEROTERM_SPACES.keep(HEROTERM_SPACES.at, 'cleared'), 1");
+  assert.ok((await page.ev("HEROTERM_PROFILES.get('cleared').windows[0].history.length")) > 0, 'nothing saved to clear');
+  await page.focusWindow();
+  await page.key('K', { code: 'KeyK', keyCode: 75, modifiers: 4 | 8 });
+  await page.until("HEROTERM_PROFILES.get('cleared').windows[0].history.length === 0", 'the saved history to clear');
+});
+
 test('nothing threw along the way', { skip }, () => {
   assert.deepEqual(page.errors, []);
 });

@@ -864,6 +864,13 @@ wss.on('connection', (ws, req) => {
         if (Number.isFinite(msg.s)) s.grace = Math.max(0, Math.min(MAX_GRACE, msg.s)) * 1000;
         break;
 
+      case 'forget': // ⌘⇧K: the window's earlier commands, and its screen
+        s.records = [];
+        s.screen = '';
+        if (s.current && s.current.running) s.current.bytes = '';
+        else s.current = null;
+        break;
+
       case 'bye': // the window's × — its shell goes with it
         s.reaped = true;
         kill(s);
