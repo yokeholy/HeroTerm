@@ -16,6 +16,6 @@ not something the page does, they work at the far end of an ssh as well.
 
 | `Cmd ⌫` | clear the line (sends ^U, so it works over ssh too) |
 | `Cmd K` | clear |
-| `Cmd Shift K` | clear, and forget every earlier command behind it — after a refresh too, and in a saved workspace (your shell's own ↑ history is left alone) |
+| `Cmd K` twice | clear, and forget every earlier command behind it — after a refresh too, and in a saved workspace (your shell's own ↑ history is left alone). Twice rather than a shortcut of its own, since apps like Notion claim shortcuts such as `Cmd Shift K` system-wide |
 | `Cmd +` / `Cmd -` / `Cmd 0` | this window's text size; `0` returns to the size in settings |
 | `Option F` / `Option B` | move by word |

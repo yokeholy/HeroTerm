@@ -1593,6 +1593,10 @@ if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) {
 
 // Bound on the page rather than per terminal, so they mean the same thing
 // wherever focus happens to be, and always act on the focused container.
+// ⌘K twice: see below.
+const CLEAR_AGAIN = 600; // ms
+let lastClear = null;
+
 window.addEventListener(
   'keydown',
   (e) => {
@@ -1654,16 +1658,21 @@ window.addEventListener(
       e.preventDefault();
       return;
     }
-    // ⌘⇧K: and every earlier command behind it, too.
-    if ((e.key === 'k' || e.key === 'K') && e.shiftKey) {
-      focused.clearHistory();
-      const P = window.HEROTERM_PROFILES;
-      if (P && focused.slot && WS) P.forgetHistory(WS.profileOf(focused), focused.slot);
-      e.preventDefault();
-      return;
-    }
-    if (e.key === 'k') {
-      term.clear();
+    // ⌘K clears the screen; ⌘K again, straight after, forgets every earlier
+    // command behind it too. Twice rather than another shortcut: apps take
+    // shortcuts for themselves system-wide (Notion has ⌘⇧K), and a browser
+    // never sees a key another app has claimed.
+    if (e.key === 'k' && !e.shiftKey) {
+      const again = lastClear && lastClear.c === focused && e.timeStamp - lastClear.at < CLEAR_AGAIN;
+      if (again) {
+        focused.clearHistory();
+        const P = window.HEROTERM_PROFILES;
+        if (P && focused.slot && WS) P.forgetHistory(WS.profileOf(focused), focused.slot);
+        lastClear = null;
+      } else {
+        term.clear();
+        lastClear = { c: focused, at: e.timeStamp };
+      }
       e.preventDefault();
       return;
     }

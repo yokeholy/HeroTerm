@@ -873,9 +873,9 @@ test('windows keep their share of the screen when the browser resizes', { skip }
   }
 });
 
-// ⌘⇧K forgets the earlier commands behind a window — and a refresh doesn't
+// ⌘K twice forgets the earlier commands behind a window — and a refresh doesn't
 // bring them back, since the server's copy goes too.
-test('Cmd-Shift-K clears a window and the commands behind it', { skip }, async () => {
+test('Cmd-K twice clears a window and the commands behind it', { skip }, async () => {
   const cards = `[...${here}.querySelectorAll('.card:not([data-front]) .cmd')].map(e => e.textContent)`;
   const runOk = `${here}.querySelector('.card[data-front]').dataset.status === 'ok'`;
   await page.focusWindow();
@@ -885,7 +885,13 @@ test('Cmd-Shift-K clears a window and the commands behind it', { skip }, async (
   }
   await page.until(`${cards}.length === 2`, 'two commands behind it');
 
-  await page.key('K', { code: 'KeyK', keyCode: 75, modifiers: 4 | 8 }); // ⌘⇧K
+  // Once: the screen only.
+  await page.key('k', { code: 'KeyK', keyCode: 75, modifiers: 4 });
+  await new Promise((r) => setTimeout(r, 900)); // too late to count as twice
+  assert.equal(await page.ev(`${cards}.length`), 2, 'one Cmd-K cleared the deck');
+  // Twice, quickly: and the deck.
+  await page.key('k', { code: 'KeyK', keyCode: 75, modifiers: 4 });
+  await page.key('k', { code: 'KeyK', keyCode: 75, modifiers: 4 });
   await page.until(`${cards}.length === 0`, 'the deck to clear');
   // The next command starts a deck with nothing behind it — not the one that
   // was on screen when it was cleared.
@@ -902,7 +908,8 @@ test('Cmd-Shift-K clears a window and the commands behind it', { skip }, async (
   await page.ev("HEROTERM_SPACES.keep(HEROTERM_SPACES.at, 'cleared'), 1");
   assert.ok((await page.ev("HEROTERM_PROFILES.get('cleared').windows[0].history.length")) > 0, 'nothing saved to clear');
   await page.focusWindow();
-  await page.key('K', { code: 'KeyK', keyCode: 75, modifiers: 4 | 8 });
+  await page.key('k', { code: 'KeyK', keyCode: 75, modifiers: 4 });
+  await page.key('k', { code: 'KeyK', keyCode: 75, modifiers: 4 });
   await page.until("HEROTERM_PROFILES.get('cleared').windows[0].history.length === 0", 'the saved history to clear');
 });
 

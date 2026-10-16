@@ -980,7 +980,7 @@
         send({ t: 'i', d: data });
       },
 
-      // ⌘⇧K: the screen and every earlier command behind it — here, and on
+      // ⌘K twice: the screen and every earlier command behind it — here, and on
       // the server, so a refresh doesn't bring them back.
       clearHistory() {
         term.clear();
