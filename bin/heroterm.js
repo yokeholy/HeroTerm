@@ -41,6 +41,16 @@ const USAGE = `
     HEROTERM_HOME          where a background one keeps its state (default ~/.heroterm)
 `;
 
+// Only in a git checkout — the copy being worked on — since an installed
+// package has no package.json scripts to run and no reason to mention them.
+const CHECKOUT = fs.existsSync(path.join(__dirname, '..', '.git'));
+const DEV_USAGE = `
+  Development (this is a git checkout)
+    npm run dev                 this checkout on port 7778, marked as a development copy
+    npm run dev -- --port <n>   ...on another port; anything after -- is passed on
+    npm test                    the test suite
+`;
+
 // One file per port, so a second HeroTerm on another port is its own thing
 // rather than something that clobbers the first.
 const HOME_DIR = process.env.HEROTERM_HOME || path.join(os.homedir(), '.heroterm');
@@ -283,7 +293,7 @@ let fresh = false; // -n: the server makes a new token rather than reusing it
 for (let i = 0; i < argv.length; i += 1) {
   const a = argv[i];
   if (a === '-h' || a === '--help') {
-    say(USAGE);
+    say(USAGE + (CHECKOUT ? DEV_USAGE : ''));
     process.exit(0);
   } else if (a === '-v' || a === '--version') {
     say(pkg.version);
