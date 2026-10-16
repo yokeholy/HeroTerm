@@ -616,6 +616,31 @@ function createSession(id, cwd) {
   const env = { ...process.env };
   for (const name of ['PORT', 'HEROTERM_PORT', 'HEROTERM_STATE', 'HEROTERM_OPEN']) delete env[name];
 
+  // ...and less the identity of the terminal HeroTerm was started from. A shell
+  // here isn't in that terminal, and carrying its TERM_PROGRAM made macOS's
+  // /etc/zshrc run Apple Terminal's session restore in every one of them —
+  // all under that one window's TERM_SESSION_ID, writing their session files
+  // into our ZDOTDIR. Tools that change what they send by terminal (images,
+  // hyperlinks, shell integration) would be just as misled. So: HeroTerm.
+  for (const name of [
+    'TERM_PROGRAM',
+    'TERM_PROGRAM_VERSION',
+    'TERM_SESSION_ID',
+    'ITERM_SESSION_ID',
+    'ITERM_PROFILE',
+    'LC_TERMINAL',
+    'LC_TERMINAL_VERSION',
+    'WT_SESSION',
+    'KITTY_WINDOW_ID',
+    'WEZTERM_PANE',
+    'ALACRITTY_WINDOW_ID',
+    'VSCODE_INJECTION',
+  ]) {
+    delete env[name];
+  }
+  env.TERM_PROGRAM = 'HeroTerm';
+  env.TERM_PROGRAM_VERSION = require('./package.json').version;
+
   const term = pty.spawn(SHELL, shellArgs, {
     name: 'xterm-256color',
     cols: 80,

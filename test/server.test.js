@@ -203,6 +203,34 @@ test('a shell that already exists ignores a seed', async () => {
   sh.bye();
 });
 
+// A shell here isn't the terminal HeroTerm was started from. Inheriting its
+// TERM_PROGRAM made macOS's /etc/zshrc run Apple Terminal's session saving in
+// every HeroTerm shell — writing session files into HeroTerm's own ZDOTDIR,
+// all under the one inherited session id.
+test("a shell says it's in HeroTerm, not the terminal that started it", async () => {
+  const sessions = path.join(__dirname, '..', 'shell', 'zdotdir', '.zsh_sessions');
+  fs.rmSync(sessions, { recursive: true, force: true });
+  const two = await startServer({
+    env: { TERM_PROGRAM: 'Apple_Terminal', TERM_PROGRAM_VERSION: '455', TERM_SESSION_ID: 'ABC-123', ITERM_SESSION_ID: 'w0t0p0' },
+  });
+  try {
+    const out = path.join(two.home, 'term.txt');
+    const ws = new WebSocket(`ws://127.0.0.1:${two.port}/pty?token=${two.token}&id=tp`);
+    let seen = '';
+    ws.on('message', (m) => (seen += m.toString()));
+    await new Promise((r) => ws.once('open', r));
+    await waitFor(() => /[%$#] $/m.test(seen.replace(/\x1b\[[0-9;?]*[a-zA-Z]|\x1b\][^\x07]*\x07/g, '')), { what: 'a prompt' });
+    ws.send(JSON.stringify({ t: 'i', d: `echo "$TERM_PROGRAM|\${TERM_SESSION_ID-none}|\${ITERM_SESSION_ID-none}" > ${out}\r` }));
+    const said = await waitFor(() => fs.existsSync(out) && fs.readFileSync(out, 'utf8').trim(), { what: 'the echo' });
+    ws.send(JSON.stringify({ t: 'bye' }));
+    ws.close();
+    assert.equal(said, 'HeroTerm|none|none');
+    assert.equal(fs.existsSync(sessions), false, 'Apple Terminal session files were written into the integration folder');
+  } finally {
+    await two.stop();
+  }
+});
+
 // A saved workspace can name a folder that has since gone. Home is a better
 // answer than no shell at all.
 test('a folder that no longer exists falls back to home', async () => {

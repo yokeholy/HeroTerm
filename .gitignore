@@ -10,3 +10,7 @@ node_modules/
 # repository. See "Editing server.js needs a restart" in the README for why the
 # shim exists at all.
 shell/zdotdir/.zsh_history
+
+# Apple Terminal's session files, should a shell ever write them here again
+# (see TERM_PROGRAM in server.js).
+shell/zdotdir/.zsh_sessions/

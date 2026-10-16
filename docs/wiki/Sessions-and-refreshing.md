@@ -65,7 +65,15 @@ folder the old one was standing in.
 ## What a window's shell inherits
 
 The environment HeroTerm was started with, plus `HEROTERM=1` so your rc files
-can tell, and `TERM=xterm-256color`.
+can tell, `TERM=xterm-256color`, and `TERM_PROGRAM=HeroTerm` with the version
+in `TERM_PROGRAM_VERSION`.
+
+Nor does it inherit the identity of the terminal you started HeroTerm from —
+`TERM_PROGRAM`, `TERM_SESSION_ID`, iTerm's and the like. A shell in a
+HeroTerm window isn't in that terminal, and believing it was had macOS's
+`/etc/zshrc` run Apple Terminal's session restore in every HeroTerm shell, all
+sharing that one window's session id; tools that pick features by terminal
+were misled the same way.
 
 What it does *not* inherit is HeroTerm's own plumbing: the port it is
 listening on, where its state file lives, and whether it was asked to open a
