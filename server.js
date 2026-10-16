@@ -433,7 +433,7 @@ function rememberExit(id, code) {
 // keeping a copy that has to be kept in step by hand. HEROTERM_MAX_SESSIONS
 // moves it, within reason.
 const MAX_SESSIONS = Math.max(1, Math.min(64, Number(process.env.HEROTERM_MAX_SESSIONS) || 24));
-const PROTOCOL = 3; // the wire contract's version; see the 'hello' below
+const PROTOCOL = 4; // the wire contract's version; see the 'hello' below
 const FG_POLL = 1000; // ms between looks at which program has the terminal
 const MAX_GRACE = 24 * 60 * 60; // seconds; the longest a page may ask to keep a shell
 
@@ -818,6 +818,9 @@ wss.on('connection', (ws, req) => {
   //   3  { t: 'exit' } when a shell ends on its own, so its window can close;
   //      later, { t: 'fg' } for the foreground program — additive, so an
   //      older page just ignores it
+  //   4  { t: 'forget' } from the page: drop the window's earlier commands
+  //      (⌘K twice). An older server ignores it, and a refresh brings them
+  //      back — the page says so rather than let that look like a bug
   control(ws, { t: 'hello', protocol: PROTOCOL, resumed, grace: GRACE });
 
   // A resumed shell puts the page back as it was; a new one seeded from a kept

@@ -214,7 +214,8 @@
     let replaying = false; // a restored screen is being written back; see below
     let ended = false; // the shell exited; the window is on its way out
     let closed = false; // the window was closed here; stop reconnecting
-    let hadShell = false; // a shell has answered here before, so a new one is a change
+    let hadShell = false;
+    let serverProtocol = 0; // from the server's hello; what it understands // a shell has answered here before, so a new one is a change
 
     // The shell is gone for good — `exit`, Ctrl-D, or it died — so the window
     // goes too. Once only: the exit message and the socket closing both say so.
@@ -235,6 +236,7 @@
         return;
       }
       if (msg.t === 'hello') {
+        serverProtocol = msg.protocol || 0;
         // A server older than the per-container sessions ignores the id in the
         // socket URL and hands every container the same shell — so every window
         // shows the first one's content, and refreshing never helps because the
@@ -986,6 +988,9 @@
         term.clear();
         stack.clear();
         send({ t: 'forget' });
+        // A server started before it learnt to forget keeps its copy, and a
+        // refresh would bring every card back. Say so, where it'll be seen.
+        if (serverProtocol < 4) setState('yes', 'Cleared here only — restart HeroTerm to make it stick');
       },
 
       // Closing a container is unambiguous in a way that the tab going away is
