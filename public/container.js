@@ -406,11 +406,25 @@
 
     connect();
 
+    // What the terminal itself sends back is replies to questions in what it's
+    // shown — where the cursor is (ESC[6n → ESC[row;colR), what kind of
+    // terminal this is (ESC[c → ESC[?1;2c), and the like. While a saved screen
+    // is being replayed, those questions were asked and answered long ago;
+    // answered again, every reply was typed into whatever is running now —
+    // hundreds of "52;3R" after a refresh of a window running Claude Code,
+    // which asks constantly. So replies are dropped while replaying. Anything
+    // you type starts with something other than ESC, or is a key that arrives
+    // after the replay has finished, in a few milliseconds.
+    const isReply = (d) => d.charCodeAt(0) === 0x1b;
     term.onData((d) => {
+      if (replaying && isReply(d)) return;
       window.HEROTERM_AUDIO.unlock(); // the keystroke is the gesture that lets audio play
       send({ t: 'i', d });
     });
-    term.onBinary((d) => send({ t: 'i', d }));
+    term.onBinary((d) => {
+      if (replaying) return;
+      send({ t: 'i', d });
+    });
 
     // BEL. Only this terminal listens: the replayed cards are built from the
     // same bytes, and a bell is something happening now, not a record of one.

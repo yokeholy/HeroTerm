@@ -913,6 +913,37 @@ test('Cmd-K twice clears a window and the commands behind it', { skip }, async (
   await page.until("HEROTERM_PROFILES.get('cleared').windows[0].history.length === 0", 'the saved history to clear');
 });
 
+// A refresh replays the window's saved screen. Programs ask the terminal
+// questions — where's the cursor (ESC[6n), what are you (ESC[c) — and those
+// questions are in the screen; replayed, the terminal answered them again and
+// typed every answer into whatever was running: "52;3R52;3R…1;2c".
+test("a refresh doesn't answer the screen's old questions again", { skip }, async () => {
+  const fs = require('fs');
+  const pathMod = require('path');
+  const rec = pathMod.join(srv.home, 'rec.js');
+  const got = pathMod.join(srv.home, 'got.txt');
+  fs.writeFileSync(
+    rec,
+    `process.stdin.setRawMode(true);
+     process.stdout.write('asking\\x1b[6n\\x1b[6n\\x1b[c\\r\\n');
+     process.stdin.on('data', (d) => require('fs').appendFileSync(${JSON.stringify(got)}, d));`
+  );
+  await page.focusWindow();
+  await page.type(`node ${rec}`);
+  // The live questions get answers — that's right.
+  await page.until(`${here}.textContent.includes('asking')`, 'the program to ask');
+  await new Promise((r) => setTimeout(r, 800));
+  assert.match(fs.readFileSync(got, 'utf8'), /\x1b\[\d+;\d+R/, 'the live question went unanswered');
+  fs.writeFileSync(got, '');
+
+  await page.reload();
+  await page.until(connected);
+  await new Promise((r) => setTimeout(r, 1200));
+  assert.equal(JSON.stringify(fs.readFileSync(got, 'utf8')), '""', 'the replay answered old questions again');
+  await page.key('c', { code: 'KeyC', keyCode: 67, modifiers: 2 }); // ^C, in raw mode just a byte: kill it
+  fs.writeFileSync(got, '');
+});
+
 test('nothing threw along the way', { skip }, () => {
   assert.deepEqual(page.errors, []);
 });
