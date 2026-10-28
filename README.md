@@ -128,6 +128,7 @@ still running, and three columns](https://raw.githubusercontent.com/yokeholy/Her
 | `⌘K` `⌘K` | twice: clear, and forget the earlier commands behind it |
 | `⌘+` / `⌘−` / `⌘0` | this window's text size |
 | `⌘C` / `⌘V` | copy / paste — or just select, and it's copied |
+| `⌥` drag | select inside a program that follows the mouse (Claude Code, vim) |
 
 ## 🎨 Make it yours
 

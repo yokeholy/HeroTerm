@@ -20,6 +20,14 @@ output of a command you ran ten commands ago. A click that selects nothing
 leaves the clipboard alone. Turn it off if you would rather your clipboard
 only changed when you asked.
 
+**Inside a program that follows the mouse itself** — Claude Code, vim, htop,
+anything that turns on mouse reporting — an ordinary drag belongs to that
+program, so nothing is selected and nothing is copied. Hold **⌥** while
+dragging and the gesture goes to the terminal instead, exactly as it does in
+iTerm. This is xterm's own rule, and `macOptionClickForcesSelection` in
+`public/container.js` is what turns it on: without it the Mac branch of that
+rule is unreachable and such programs cannot be selected in at all.
+
 Behavior also holds **Quiet commands**: a list, one pattern a line, of commands to
 neither hear nor watch. A command whose text contains one of them makes no
 sound and doesn't fly the sky — a dev server, a log you're tailing, anything

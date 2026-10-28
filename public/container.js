@@ -52,6 +52,12 @@
       cursorInactiveStyle: 'outline',
       scrollback: SCROLLBACK,
       macOptionIsMeta: true, // Option+f / Option+b move by word, as in iTerm
+      // A program that tracks the mouse — Claude Code, vim, htop — is sent
+      // every drag, so there is no selection to copy. Option-drag takes the
+      // gesture back for the terminal, which is what iTerm does and what the
+      // Mac branch of xterm's own shouldForceSelection waits for; without
+      // this flag that branch is dead and there is no way to select at all.
+      macOptionClickForcesSelection: true,
       allowProposedApi: true,
     });
 

@@ -329,6 +329,9 @@
         <dl>
           <dt>click</dt>
           <dd>bring one forward — keys go to that one</dd>
+          <dt>⌥ drag</dt>
+          <dd>select text inside a program that follows the mouse itself (Claude
+            Code, vim, htop), where an ordinary drag belongs to the program</dd>
           <dt>name</dt>
           <dd>double-click the name in a window's bar to rename it</dd>
           <dt>resize</dt>
@@ -557,7 +560,9 @@
               <label for="set-copysel">Copy what I select</label>
               <p class="hint">
                 Letting go of a selection puts it on the clipboard, the way iTerm
-                does. ⌘C works either way.
+                does. ⌘C works either way. Inside a program that follows the
+                mouse itself — Claude Code, vim, htop — hold ⌥ while you drag:
+                the gesture is the program's otherwise, and nothing is selected.
               </p>
             </div>
             <input id="set-copysel" class="switch" type="checkbox" />
